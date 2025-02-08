@@ -1,6 +1,6 @@
 @inherits SirenBaseComponent
 
-<MudTooltip Text="@Text" RootStyle="@Style">
+<MudTooltip Text="@Text" RootClass="@RootClass">
     <SirenIcon Icon="@Icon" Class="@Class" Color="@Color" />
 </MudTooltip>
 @code {
@@ -15,4 +15,7 @@
 
     [Parameter]
     public Size Size { get; set; } = Size.Medium;
+    
+    [Parameter]
+    public string RootClass { get; set; } = "";
 }
