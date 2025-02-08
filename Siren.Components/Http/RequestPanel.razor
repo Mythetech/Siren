@@ -29,11 +29,11 @@
         <SirenIcon Color="@Color.Inherit" Icon="@SirenIcons.Request" />
         <SirenText Typo="Typo.h6" Color="Color.Inherit">Request</SirenText>
         <SirenText Typo="Typo.body1">Body</SirenText>
-        <MudToggleGroup @bind-Value="@requestPayload" T="string" Outlined="false" Size="Size.Small" CheckMark="false" Class="px-4 gap-4 rounded-pill">
-            <MudToggleItem Value="@("none")"/>
-            <MudToggleItem Disabled="true" Value="@("form-data")"/>
-            <MudToggleItem Value="@("raw")"/>
-            <MudToggleItem Disabled="true" Value="@("binary")"/>
+        <MudToggleGroup @bind-Value="@requestPayload" T="string" Outlined="false" Size="Size.Small" CheckMark="false" Class="px-4 gap-4 rounded-xl">
+            <MudToggleItem Class="rounded-xl" Value="@("none")"/>
+            <MudToggleItem Class="rounded-xl" Disabled="true" Value="@("form-data")"/>
+            <MudToggleItem Class="rounded-xl" Value="@("raw")"/>
+            <MudToggleItem Class="rounded-xl" Disabled="true" Value="@("binary")"/>
         </MudToggleGroup>
         <SirenSpacer/>
         <SirenIconButton Icon="@SirenIcons.Format" Size="Size.Small" Tooltip="Format" OnClick="@(async () => await FormatDocumentAsync())"/>
