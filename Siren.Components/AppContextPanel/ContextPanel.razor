@@ -33,15 +33,15 @@
             </MudTooltip>
         </ActivatorContent>
         <ChildContent>
-            <MudToggleGroup T="string" Size="Size.Small" Value="@SelectedColorMode" ValueChanged="HandleColorModeChanged">
-                <MudToggleItem Value="@("light")" Style="min-width:unset;">
-                    <TooltipIcon Icon="@SirenIcons.LightMode" Text="Light Mode" />
+            <MudToggleGroup T="string" Size="Size.Small" Value="@SelectedColorMode" ValueChanged="HandleColorModeChanged" Style="align-items: center">
+                <MudToggleItem Value="@("light")" Style="min-width:unset;max-height:33px;">
+                    <TooltipIcon Icon="@SirenIcons.LightMode" Text="Light Mode" Style="max-height: 24px;width: unset;display:flex;" />
                 </MudToggleItem>
-                <MudToggleItem Value="@("dark")" Style="min-width:unset;">
-                    <TooltipIcon Icon="@SirenIcons.DarkMode" Text="Dark Mode"  />
+                <MudToggleItem Value="@("dark")" Style="min-width:unset;max-height:33px;">
+                    <TooltipIcon Icon="@SirenIcons.DarkMode" Text="Dark Mode" Style="max-height: 24px;width: unset;display:flex;" />
                 </MudToggleItem>
-                <MudToggleItem Value="@("system")" Style="min-width:unset;">
-                    <TooltipIcon Icon="@SirenIcons.Round("laptop")" Text="System Default"  />
+                <MudToggleItem Value="@("system")" Style="min-width:unset;max-height:33px;">
+                    <TooltipIcon Icon="@SirenIcons.Round("laptop")" Text="System Default" Style="max-height: 24px;width: unset;display:flex;"  />
                 </MudToggleItem>
             </MudToggleGroup>
         </ChildContent>
