@@ -6,7 +6,7 @@
         <MudText>@message</MudText>
     }
     <MudSpacer/>
-    <ProgressCountdown Duration="Snackbar.Configuration.VisibleStateDuration" Color="@GetColor(Severity)"/>
+    <ProgressCountdown Duration="@(VisibleDuration ?? Snackbar.Configuration.VisibleStateDuration)" Color="@GetColor(Severity)"/>
 </MudStack>
 @code {
     [Inject] protected ISnackbar Snackbar { get; set; } = default!;
@@ -14,6 +14,8 @@
     [Parameter] public string Message { get; set; } = "";
 
     [Parameter] public Severity Severity { get; set; } = Severity.Info;
+    
+    [Parameter] public int? VisibleDuration { get; set; }
 
     private Color GetColor(Severity severity)
     {
