@@ -1,5 +1,6 @@
 ﻿@using Siren.Components.Http
 @using Siren.Components.Collections
+@using Siren.Components.Shared.Notifications
 
 <SirenStack Spacing="6" Class="h-100" AlignItems="AlignItems.Start">
     @if (!_detailsOpen)
@@ -133,7 +134,7 @@
         catch (Exception ex)
         {
             Console.WriteLine(ex.Message);
-            Snackbar.Add("Error updating collection", Severity.Error, (opts) => opts.ErrorIcon = SirenIcons.Collection);
+            Snackbar.AddSirenError("Error updating collection",  (opts) => opts.ErrorIcon = SirenIcons.Collection);
         }
 
         StateHasChanged();
@@ -151,7 +152,7 @@
         {
             try
             {
-                Snackbar.Add("Request added", Severity.Success, opts =>
+                Snackbar.AddSirenSuccess("Request added",  opts =>
                 {
                     opts.SuccessIcon = SirenIcons.CollectionItemAdded;
                 });
@@ -160,7 +161,7 @@
             }
             catch (Exception ex)
             {
-                Snackbar.Add("Error adding request", Severity.Error);
+                Snackbar.AddSirenError("Error adding request");
             }
         }
     }
@@ -177,19 +178,8 @@
             CollectionsService.RemoveRequestFromCollection(id, request.Id);
 
             collection.Requests.Remove(request);
-
-            Snackbar.Add("Successfully removed request", Severity.Success, opts =>
-            {
-                opts.Action = "Undo";
-                opts.ActionColor = Color.Primary;
-                opts.ActionVariant = Variant.Text;
-                opts.VisibleStateDuration = 4000; //Longer for undo action
-                opts.OnClick = snackbar =>
-                {
-                    RestoreRequest(collection, request);
-                    return Task.CompletedTask;
-                };
-            });
+            
+            Snackbar.AddSuccessWithUndo("Successfully removed request", () => RestoreRequest(collection, request));
         }
         catch (Exception ex)
         {
@@ -282,19 +272,8 @@
         try
         {
             CollectionsService.DeleteCollection(c.Id);
-
-            Snackbar.Add("Successfully deleted collection", Severity.Success, opts =>
-            {
-                opts.Action = "Undo";
-                opts.ActionColor = Color.Primary;
-                opts.ActionVariant = Variant.Text;
-                opts.VisibleStateDuration = 5000; //Longer for undo action
-                opts.OnClick = snackbar =>
-                {
-                    RestoreCollection(c);
-                    return Task.CompletedTask;
-                };
-            });
+            
+            Snackbar.AddSuccessWithUndo("Successfully deleted collection", () => RestoreCollection(c));
         }
         catch (Exception ex)
         {
