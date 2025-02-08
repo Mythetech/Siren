@@ -1,0 +1,47 @@
+﻿@using System.Net.Http
+@inject SirenAppState AppState
+@if (Method?.Method != null)
+{
+    <SirenChip T="HttpMethod" Value="@Method" Style="@($"color:{GetColor(Method?.Method)};background-color:{GetBackgroundColor(Method?.Method)}")" />
+}
+
+@code {
+    [Parameter]
+    public HttpMethod? Method { get; set; }
+
+    string GetColor(string? method)
+    {
+        if (string.IsNullOrWhiteSpace(method))
+            return HttpMethodColors.Default;
+
+        return method.ToUpper() switch
+        {
+            "GET" => HttpMethodColors.Get,
+            "POST" => HttpMethodColors.Post,
+            "PUT" => HttpMethodColors.Put,
+            "DELETE" => HttpMethodColors.Delete,
+            "PATCH" => HttpMethodColors.Patch,
+            "OPTIONS" => HttpMethodColors.Options,
+            "HEAD" => HttpMethodColors.Head,
+            _ => HttpMethodColors.Default,
+        };
+    }
+
+    string GetBackgroundColor(string? method)
+    {
+        if (string.IsNullOrWhiteSpace(method))
+            return $"rgba(0, 0, 0, 0.1)";
+
+        var color = GetColor(method);
+        if (color.IndexOf("#") < 0)
+        {
+            return "rgba(255, 255, 255, 0.1)";
+        }
+
+        var hexColor = color.TrimStart('#');
+        var r = int.Parse(hexColor.Substring(0, 2), System.Globalization.NumberStyles.HexNumber);
+        var g = int.Parse(hexColor.Substring(2, 2), System.Globalization.NumberStyles.HexNumber);
+        var b = int.Parse(hexColor.Substring(4, 2), System.Globalization.NumberStyles.HexNumber);
+        return $"rgba({r}, {g}, {b}, 0.1)"; // 10% opacity
+    }
+}

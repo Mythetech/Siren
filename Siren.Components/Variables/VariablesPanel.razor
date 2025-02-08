@@ -1,0 +1,207 @@
+﻿
+@if (VariableGroups.Count < 2 && VariableGroups.First().Variables.Count == 0)
+{
+    <SirenStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="w-100">
+        <SirenIcon Icon="@SirenIcons.Empty" Style="font-size:4em;" Color="Color.Primary" />
+        <SirenText>No Variables</SirenText>
+        <SirenIconButton Variant="Variant.Filled" OnClick="@(() => AddVariable(Variables.VariableGroups.SystemGroup, "Key", "Value"))">
+            Add Variable
+        </SirenIconButton>
+    </SirenStack>
+}
+else
+{
+    @foreach (var group in VariableGroups)
+    {
+        <MudTreeView Dense="true"
+                     AutoExpand="true"
+                     ExpandOnClick="true"
+                     Context="context"
+                     Class="w-100"
+                     Color="@Color.Primary"
+                     T="Variable">
+            <MudTreeViewItem Expanded="true">
+                <BodyContent>
+                    <SirenStack Row="true" Spacing="3" Style="width:300px;">
+
+                        <SirenText>@group.Name</SirenText>
+                        <SirenSpacer />
+                        <SirenChip T="string" Color="Color.Primary">@group.Variables.Count.ToString()</SirenChip>
+                        <SirenIconButton OnClick="@(() => AddVariable(group.Name, "Key", "Value"))"
+                                         Icon="@SirenIcons.Add"
+                                         Tooltip="@($"Add Variable")"
+                                         Class="scale-75"
+                                         Size="Size.Medium" />
+                    </SirenStack>
+
+                </BodyContent>
+                <ChildContent>
+
+                    <SirenStack Class="w-100 " Spacing="2" Style="max-width:300px;width:300px;">
+                        <MudDataGrid T="Variables.Variable"
+                                     Items="@group.Variables"
+                                     Context="context"
+                                     Class="w-100"
+                                     Bordered="false"
+                                     Elevation="0"
+                                     RowClass="text-truncate hover-error-zone"
+                                     Style="overflow:hidden;"
+                                     EditMode="DataGridEditMode.Cell"
+                                     EditTrigger="DataGridEditTrigger.Manual"
+                                     CommittedItemChanges="UpdateVariable"
+                                     ReadOnly="false"
+                                     Dense="true"
+                                     Hover="true">
+                            <Columns>
+                                <MudBlazor.PropertyColumn Property="x => x.Key">
+                                    <EditTemplate>
+                                        <SirenStack Row="true" Class="w-100 hover-zone">
+                                            <MudTextField @bind-Value="@context.Item.Key" OnBlur="(() => UpdateVariable(context.Item))" />
+                                            <SirenSpacer />
+                                            <SirenIconButton OnClick="@(async () => { await JsApiService.CopyToClipboardAsync(context.Item.Key); NotifyCopied(context.Item.Key);})"
+                                                             Icon="@SirenIcons.Copy"
+                                                             Class="hover-visible hover-visible-primary scale-75"
+                                                             Tooltip="@($"Copy key")"
+                                                             Size="Size.Small"
+                                                             Variant="Variant.Text"
+                                                             Color="Color.Transparent" />
+                                        </SirenStack>
+                                    </EditTemplate>
+                                </MudBlazor.PropertyColumn>
+
+                                <MudBlazor.PropertyColumn Property="x => x.Value">
+                                    <EditTemplate>
+                                        <SirenStack Row="true" Class="w-100 hover-zone">
+                                            <MudTextField @bind-Value="@context.Item.Value" OnBlur="(() => UpdateVariable(context.Item))" />
+                                            <SirenSpacer />
+                                            <SirenIconButton OnClick="@(async () => { await JsApiService.CopyToClipboardAsync(context.Item.Value); NotifyCopied(context.Item.Value);})"
+                                                             Icon="@SirenIcons.Copy"
+                                                             Class="hover-visible hover-visible-primary scale-75"
+                                                             Tooltip="@($"Copy value")"
+                                                             Size="Size.Small"
+                                                             Variant="Variant.Text"
+                                                             Color="Color.Transparent" />
+                                        </SirenStack>
+                                    </EditTemplate>
+                                </MudBlazor.PropertyColumn>
+                                <MudBlazor.TemplateColumn>
+                                    <CellTemplate>
+                                        <SirenSpacer />
+                                        <SirenIconButton OnClick="@(() => DeleteVariable(context.Item) )"
+                                                         Icon="@SirenIcons.Delete"
+                                                         Class="hover-visible hover-visible-error scale-75"
+                                                         Tooltip="@($"Delete `{context?.Item.Key ?? "variable"}`")"
+                                                         Size="Size.Small"
+                                                         Variant="Variant.Text"
+                                                         Color="Color.Transparent" />
+
+                                    </CellTemplate>
+                                    <EditTemplate>
+                                        <SirenSpacer />
+                                        <SirenIconButton OnClick="@(() =>  DeleteVariable(context.Item) )"
+                                                         Icon="@SirenIcons.Delete"
+                                                         Class="hover-visible hover-visible-error scale-75"
+                                                         Tooltip="@($"Delete `{context?.Item.Key ?? "variable"}`")"
+                                                         Size="Size.Small"
+                                                         Variant="Variant.Text"
+                                                         Color="Color.Transparent" />
+                                    </EditTemplate>
+                                </MudBlazor.TemplateColumn>
+
+                            </Columns>
+                        </MudDataGrid>
+                    </SirenStack>
+
+                </ChildContent>
+            </MudTreeViewItem>
+        </MudTreeView>
+    }
+}
+
+@code {
+    [Inject]
+    public IVariableService VariableService { get; set; } = default!;
+
+    [Inject]
+    public IJsApiService JsApiService { get; set; } = default!;
+
+    [Inject]
+    public ISnackbar Snackbar { get; set; } = default!;
+
+    private List<VariableGroup> VariableGroups = new();
+
+    protected override void OnInitialized()
+    {
+        LoadVariables();
+    }
+
+    private void LoadVariables()
+    {
+        VariableGroups = VariableService.GetVariableGroups();
+
+        StateHasChanged();
+    }
+
+    private void VariableUpdated(Variable v)
+    {
+        VariableService.UpdateVariable(v);
+        LoadVariables();
+        NotifyVariableUpdated(v);
+    }
+
+    private void AddVariable(string? group, string key, string value, bool isSecret = false)
+    {
+        if (string.IsNullOrWhiteSpace(group))
+            group = Variables.VariableGroups.SystemGroup;
+
+        var v = Variable.Create(key, value, isSecret, group);
+
+        VariableService.CreateVariable(v);
+        LoadVariables();
+    }
+
+    protected void NotifyCopied(string value)
+    {
+        Snackbar.Add($"Copied `{value}` to clipboard", Severity.Info);
+    }
+
+    protected void NotifyVariableUpdated(Variable v)
+    {
+        Snackbar.Add($"Updated `{v.Key}` successfully", Severity.Success);
+    }
+
+    protected void NotifyVariableDeleted(Variable v)
+    {
+        Snackbar.Add($"Deleted `{v.Key}` successfully", Severity.Success, opts =>
+        {
+            opts.Action = "Undo";
+            opts.ActionColor = Color.Primary;
+            opts.ActionVariant = Variant.Text;
+            opts.VisibleStateDuration = 5000; //Longer for undo action
+            opts.Onclick = snackbar =>
+            {
+                RestoreVariable(v);
+                return Task.CompletedTask;
+            };
+        });
+    }
+
+    protected void RestoreVariable(Variable v)
+    {
+        VariableService.CreateVariable(v);
+        LoadVariables();
+    }
+
+    protected void UpdateVariable(Variable variable)
+    {
+        VariableUpdated(variable);
+    }
+
+    protected void DeleteVariable(Variable variable)
+    {
+        VariableService.DeleteVariable(variable.Id);
+        NotifyVariableDeleted(variable);
+        LoadVariables();
+    }
+}
+

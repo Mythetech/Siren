@@ -1,0 +1,26 @@
+﻿@inherits SirenBaseComponent
+
+<MudStack AlignItems="@AlignItems"
+          ChildContent="@ChildContent"
+          Class="@Class"
+          Style="@Style"
+          Justify="@Justify"
+          Spacing="@Spacing"
+          Row="@Row" />
+
+@code {
+    [Parameter]
+    public AlignItems AlignItems { get; set; } = default;
+
+    [Parameter]
+    public Justify Justify { get; set; } = default;
+
+    [Parameter]
+    public bool Row { get; set; } = default;
+
+    [Parameter]
+    public int Spacing { get; set; } = default;
+
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
+}

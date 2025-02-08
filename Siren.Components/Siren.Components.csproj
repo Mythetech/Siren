@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+
+  <ItemGroup>
+    <SupportedPlatform Include="browser" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="LiteDB" Version="5.0.21" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.0.8" />
+    <PackageReference Include="MudBlazor" Version="7.15.0" />
+    <PackageReference Include="BlazorMonaco" Version="3.2.0" />
+    <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components" Version="4.9.3" />
+    <PackageReference Include="Nerdbank.GitVersioning" Version="3.6.143">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Remove="wwwroot\" />
+    <Content Remove="wwwroot\open-iconic\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="wwwroot\" />
+    <Folder Include="wwwroot\open-iconic\" />
+    <Folder Include="Theme\" />
+    <Folder Include="Http\" />
+    <Folder Include="AppContextPanel\" />
+    <Folder Include="History\" />
+    <Folder Include="Settings\" />
+    <Folder Include="Collections\" />
+    <Folder Include="RequestContextPanel\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="Theme\" />
+    <None Remove="Shared\" />
+    <None Remove="Http\" />
+    <None Remove="Services\" />
+    <None Remove="AppContextPanel\" />
+    <None Remove="History\" />
+    <None Remove="Settings\" />
+    <None Remove="Collections\" />
+    <None Remove="RequestContextPanel\" />
+  </ItemGroup>
+</Project>

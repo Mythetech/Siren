@@ -1,0 +1,57 @@
+﻿<StandaloneCodeEditor @ref="@_editor" Id="@EditorId" ConstructionOptions="EditorConstructionOptions" />
+
+
+@code {
+    [Parameter]
+    public string EditorId { get; set; } = "siren-editor";
+
+    [Parameter]
+    public string Text { get; set; } = "{ \n\n }";
+
+    [Parameter]
+    public bool ReadOnly { get; set; } = true;
+
+    private StandaloneCodeEditor _editor;
+
+    public StandaloneCodeEditor Editor { get => _editor; }
+
+    private string _text { get; set; } = "";
+
+    public async Task ToggleReadonly()
+    {
+        await _editor.UpdateOptions(new EditorUpdateOptions()
+        {
+            ReadOnly = !(await _editor.GetOptions()).Get<bool>(EditorOption.readOnly)
+        });
+    }
+
+    private StandaloneEditorConstructionOptions EditorConstructionOptions(StandaloneCodeEditor editor)
+    {
+        return new StandaloneEditorConstructionOptions
+        {
+            ReadOnly = ReadOnly,
+            AutomaticLayout = true,
+            Language = "json",
+            Value = "{\n" +
+                    " \n" +
+                    "}"
+        };
+    }
+    protected override void OnParametersSet()
+    {
+        _text = Text;
+        base.OnParametersSet();
+    }
+
+    protected override void OnInitialized()
+    {
+        _text = Text;
+        base.OnInitialized();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+
+    }
+
+}

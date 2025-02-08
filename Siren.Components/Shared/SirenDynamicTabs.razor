@@ -1,0 +1,179 @@
+﻿@inherits SirenBaseComponent
+@using Siren.Components.Http
+@using Color = MudBlazor.Color
+@typeparam T
+
+<MudDynamicTabs @ref="@DynamicTabs"
+                AddTab="@AddTabCallback"
+                CloseTab="@CloseTabCallback"
+                ActivePanelIndexChanged="@(async (x) => await TabChanged.InvokeAsync(Items[x]))"
+                AddIconToolTip="New Request"
+                AddIconClass="icon-btn-sm mt-2"
+                CloseIconToolTip="Close"
+                Color="@Color"
+                MinimumTabWidth="60"
+                MaxHeight="60"
+                Class="@($"{Class}")"
+                Style="@Style"
+                PanelClass="px-1"
+                Elevation="@Elevation"
+                Rounded="@Rounded"
+                ScrollIconColor="Color.Primary"
+                ApplyEffectsToContainer>
+    @if (Items != null)
+    {
+        @foreach (var item in Items)
+        {
+            var request = item as SirenNetworkRequest;
+            <MudTabPanel ID="@(request.Id)" ShowCloseIcon="true" Icon="@SirenIcons.Close">
+                <TabContent>
+                    <NetworkRequestTab Request="@request" />
+                </TabContent>
+            </MudTabPanel>
+
+        }
+    }
+    else
+    {
+        @foreach (var tab in UserTabs)
+        {
+            <MudTabPanel ID="@tab.Id" Text="@tab.Label" ShowCloseIcon="@tab.ShowCloseIcon">@tab.Content</MudTabPanel>
+        }
+    }
+</MudDynamicTabs>
+
+@code {
+    [Parameter]
+    public MudBlazor.Color Color { get; set; } = Color.Primary;
+
+    [Parameter]
+    public int Elevation { get; set; } = 4;
+
+    [Parameter]
+    public List<T> Items { get; set; } = default!;
+
+    [Parameter]
+    public Func<T, string> ItemLabelDisplayFunc { get; set; } = default!;
+
+    [Parameter]
+    public RenderFragment ItemContentDisplay { get; set; } = default;
+
+    [Parameter]
+    public EventCallback<T> ItemClosed { get; set; } = default;
+
+    [Parameter]
+    public EventCallback ItemAdded { get; set; } = default;
+
+    [Parameter]
+    public EventCallback<T> TabChanged { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<T> TabDuplicated { get; set; } = default!;
+
+    [Parameter]
+    public bool Rounded { get; set; } = false;
+
+    public void ActivateTab(int index = 0)
+    {
+        DynamicTabs.ActivatePanel(DynamicTabs.Panels[index]);
+        StateHasChanged();
+    }
+
+    public void ActivateLastTab()
+    {
+        ActivateTab(DynamicTabs.Panels.Count - 1);
+    }
+
+    public class TabView
+    {
+        public string Label { get; set; }
+        public string Content { get; set; }
+        public Guid Id { get; set; }
+        public bool ShowCloseIcon { get; set; } = true;
+    }
+
+    public class TabView<T>
+    {
+        public string Label { get; set; }
+        public T ChildContent { get; set; }
+        public Guid Id { get; set; }
+        public bool ShowCloseIcon { get; set; } = true;
+    }
+
+    public MudDynamicTabs DynamicTabs;
+    public List<TabView> UserTabs { get; set; } = new();
+    public int UserIndex;
+    bool _stateHasChanged;
+    bool _showCloseIcon = false;
+
+    protected override void OnInitialized()
+    {
+
+        base.OnInitialized();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+        if (_stateHasChanged)
+        {
+            _stateHasChanged = false;
+            StateHasChanged();
+        }
+    }
+
+    public void AddTab(Guid id, string label = "untitled")
+    {
+        UserTabs.Add(new TabView { Id = id, Label = label, Content = $"" });
+        UserIndex = UserTabs.Count - 1; // Automatically switch to the new tab.
+        _stateHasChanged = true;
+    }
+
+    public void RemoveTab(Guid id)
+    {
+        var tabView = UserTabs.SingleOrDefault((t) => Equals(t.Id, id));
+        if (tabView is not null)
+        {
+            UserTabs.Remove(tabView);
+            _stateHasChanged = true;
+        }
+    }
+
+    async Task AddTabCallback()
+    {
+        if (Items == null)
+        {
+            //Dynamic managed mode
+            AddTab(Guid.NewGuid());
+        }
+        else
+        {
+            await ItemAdded.InvokeAsync();
+            await Task.Yield();
+            StateHasChanged();
+            UserIndex = Items.Count;
+            DynamicTabs.ActivatePanel(DynamicTabs.Panels.Last());
+            _stateHasChanged = true;
+        }
+    }
+
+    async Task CloseTabCallback(MudTabPanel panel)
+    {
+        if (Items == null)
+        {
+            RemoveTab((Guid)panel.ID);
+        }
+        else
+        {
+            var item = Items.FirstOrDefault(x => (x as SirenNetworkRequest).Id.Equals((Guid)panel.ID));
+            await ItemClosed.InvokeAsync(item);
+            await Task.Yield();
+            var replacement = DynamicTabs.ActivePanel;
+            var ri = Items.FirstOrDefault(x => (x as SirenNetworkRequest).Id.Equals((Guid)replacement.ID));
+            await TabChanged.InvokeAsync(ri);
+
+            if (Items.Count == 0)
+                await AddTabCallback();
+        }
+    }
+}

@@ -1,0 +1,208 @@
+﻿@page "/"
+@page "/index"
+@implements IDisposable
+@using Microsoft.FluentUI.AspNetCore.Components
+@using Siren.Components.Theme
+@using Siren.Components.Shared
+@using Siren.Components.Http
+@using Siren.Components.Services
+@using Siren.Components.RequestContextPanel
+@using Microsoft.FluentUI.AspNetCore
+@using System.Text.Json
+@using System.Text.Encodings
+
+<SirenStack Row="true" Class="w-100 h-100 ml-1">
+    <FluentMultiSplitter BarSize="1" @ref="_primarySplitter" OnResize="@SplitterResized" OnCollapse="@((args) => HandleCollapse(args))" OnExpand="HandleExpand" Height="100%" Width="@(sidePanelClosed ? "96%" :"100%")" Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Horizontal">
+        <FluentMultiSplitterPane Size="@(!sidePanelClosed ? "80%" : "88%")" Min="400px" Max="100%">
+            <FluentMultiSplitter OnResize="@SplitterResized" Height="100%" Width="100%" Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Vertical">
+                <FluentMultiSplitterPane Size="50%" Min="150px">
+                    <MudPaper Height="100%" Elevation="0" Width="98%">
+                        <RequestPanel Loading="@_loading" @ref="_requestPanel" SendClicked="HandleSendClicked" />
+                    </MudPaper>
+                </FluentMultiSplitterPane>
+                <FluentMultiSplitterPane Size="50%" Min="150px" Collapsible="true">
+                    <MudPaper Height="100%" Elevation="0" Width="98%">
+                        <ResponsePanel />
+                    </MudPaper>
+                </FluentMultiSplitterPane>
+            </FluentMultiSplitter>
+        </FluentMultiSplitterPane>
+        <FluentMultiSplitterPane Id="request-context-panel" Collapsed="@sidePanelClosed" Collapsible="true" Size="@(!sidePanelClosed ? "20%" :"12%")" Min="50px" Max="50%">
+            <MudPaper Height="100%">
+                <RequestContextPanel @ref="_requestContextPanel" PanelClosed="@(() => ToggleSidePanel())" />
+            </MudPaper>
+        </FluentMultiSplitterPane>
+    </FluentMultiSplitter>
+    @if (sidePanelClosed)
+    {
+        <SirenStack Spacing="3">
+            <SirenIconButton Tooltip="Authorization" Icon="@SirenIcons.Auth" OnClick="@(() => ToggleSidePanel("Auth"))" />
+
+            <SirenIconButton Tooltip="Headers" Icon="@SirenIcons.Headers" OnClick="@(() => ToggleSidePanel("Headers"))" />
+
+            <SirenIconButton Tooltip="Cookies" Icon="@SirenIcons.Cookies" OnClick="@(() => ToggleSidePanel("Cookies"))" />
+
+        </SirenStack>
+    }
+</SirenStack>
+
+@code {
+    [Inject]
+    protected SirenAppState AppState { get; set; } = default!;
+
+    [Inject]
+    protected IHttpRequestClient HttpRequestClient { get; set; } = default!;
+
+    private FluentMultiSplitter _primarySplitter = default!;
+
+    private FluentMultiSplitterPane _contextPanel = default!;
+
+    private RequestPanel _requestPanel = default!;
+
+    private RequestContextPanel.RequestContextPanel _requestContextPanel = default!;
+
+    private bool sidePanelClosed = true;
+
+    private bool _loading = false;
+
+    private string _responseText = "";
+
+    private CancellationTokenSource? _cts = default; 
+
+    protected void HandleExpand(FluentMultiSplitterEventArgs args)
+    {
+        if (args.Pane.Id == "request-context-panel")
+        {
+            sidePanelClosed = false;
+            StateHasChanged();
+        }
+    }
+
+    protected void HandleCollapse(FluentMultiSplitterEventArgs args)
+    {
+        if (args.Pane.Id == "request-context-panel")
+        {
+            sidePanelClosed = true;
+            StateHasChanged();
+        }
+    }
+
+    protected async Task ToggleSidePanel(string selectedTab = "")
+    {
+        sidePanelClosed = !sidePanelClosed;
+        
+        StateHasChanged();
+
+        if (!string.IsNullOrWhiteSpace(selectedTab))
+           await _requestContextPanel.Open(selectedTab);
+
+        StateHasChanged();
+    }
+
+    protected override void OnInitialized()
+    {
+        AppState.OnActiveNetworkRequestChanged += HandleNetworkRequestChanged;
+        if (AppState.Active == null)
+        {
+            var r = new SirenNetworkRequest()
+            {
+                Name = "New Request",
+                Request = new()
+                {
+
+                }
+            };
+
+            AppState.AddNetworkRequest(r);
+
+            AppState.SetActive(r);
+        }
+    }
+
+    public void HandleNetworkRequestChanged(SirenNetworkRequest? n)
+    {
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        AppState.OnActiveNetworkRequestChanged -= HandleNetworkRequestChanged;
+    }
+
+    private bool _containerResizing = false;
+
+    protected void SplitterResized(FluentMultiSplitterResizeEventArgs args)
+    {
+        Console.WriteLine(args.NewSize);
+    }
+
+    protected async Task HandleSendClicked()
+    {
+        if (_cts != null)
+        {
+            await _cts.CancelAsync();
+            _cts = null;
+            _loading = false;
+            _responseText = "Cancelled request.";
+            if(AppState?.Active != null)
+                AppState.Active.DisplayText = _responseText;
+            StateHasChanged();
+            return;
+        }
+
+        _cts = new();
+        _cts.CancelAfter(10_000);
+        
+        _loading = true;
+        _responseText = "";
+        StateHasChanged();
+
+        var active = AppState.Active!;
+
+        var req = new HttpRequest()
+        {
+            ContentType = "application/json",
+            RequestUri = active.Request.RequestUri,
+            Method = active.Request.Method,
+        };
+
+        req.Content = new StringContent(await _requestPanel.GetPayload(), System.Text.Encoding.UTF8, req.ContentType);
+
+        bool valid = ValidateRequest(req);
+
+        if (!valid)
+            return;
+
+        Console.WriteLine(req.RequestUri);
+
+        var r = await HttpRequestClient.SendHttpRequestAsync(req, _cts.Token);
+
+        _cts = default;
+
+        _responseText = r.ResponseText;
+
+        var state = AppState.Active ?? new();
+        state.Request = req;
+        state.Response = r;
+        state.Name = req.RequestUri;
+        state.DisplayText = _responseText;
+
+        AppState.SetActive(state.Id);
+
+        _loading = false;
+        StateHasChanged();
+    }
+
+    private bool ValidateRequest(HttpRequest req)
+    {
+
+        if (string.IsNullOrWhiteSpace(req.RequestUri))
+            return false;
+
+        if (string.IsNullOrWhiteSpace(req.Method.Method))
+            return false;
+
+        return true;
+    }
+
+}

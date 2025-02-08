@@ -1,0 +1,24 @@
+﻿@inherits SirenBaseComponent
+@using Align = MudBlazor.Align
+
+<MudText Align="@Align"
+         ChildContent="@ChildContent"
+         Class="@Class"
+         Color="@Color"
+         Style="@Style"
+         Typo="@Typo" />
+
+@code {
+    [Parameter]
+    public Align Align { get; set; } = default;
+
+    [Parameter]
+    public RenderFragment ChildContent { get; set; } = default!;
+
+    [Parameter]
+    public Color Color { get; set; } = default!;
+
+    [Parameter]
+    public Typo Typo { get; set; } = default!;
+}
+

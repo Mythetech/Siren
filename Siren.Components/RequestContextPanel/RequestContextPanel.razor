@@ -1,0 +1,80 @@
+﻿@using System.Reflection
+<SirenStack Class="h-100 w-100">
+    <SirenStack Row="true" Class="w-100">
+        <MudPaper Elevation="0" Square="true" Width="calc(100% - 3.5rem)" Class="flex-shrink-1 px-1">
+            <MudToggleGroup Class="mud-width-full" T="string" SelectionMode="SelectionMode.SingleSelection" @bind-Value="_openTab" @ref="_toggle" Outlined="false" >
+                <MudToggleItem Value="@("Auth")">
+                    <SirenIcon Class="mr-2" Icon="@SirenIcons.Auth" />
+                    <SirenText>Auth</SirenText>
+                </MudToggleItem>
+                <MudToggleItem Value="@("Headers")">
+                    <SirenIcon Class="mr-2" Icon="@SirenIcons.Headers" />
+                    <SirenText>Headers</SirenText>
+                </MudToggleItem>
+                <MudToggleItem Value="@("Cookies")">
+                    <SirenIcon Class="mr-2" Icon="@SirenIcons.Cookies"/>
+                    <SirenText>Cookies</SirenText>
+                </MudToggleItem>
+            </MudToggleGroup>
+        </MudPaper>
+        <MudPaper Elevation="0" Square="true" Width="3.5rem">
+            <MudTooltip Text="Close">
+                <MudIconButton Icon="@SirenIcons.Close" Color="Color.Surface" Variant="Variant.Text" OnClick="@PanelClosed"/>
+            </MudTooltip>
+        </MudPaper>
+    </SirenStack>
+    @if (_openTab.Equals("auth", StringComparison.OrdinalIgnoreCase))
+    {
+        <AuthenticationPanel />
+    }
+    else if (_openTab.Equals("headers", StringComparison.OrdinalIgnoreCase))
+    {
+        <HeadersPanel NetworkRequest="@AppState.Active"/>
+    }
+    else if (_openTab.Equals("cookies", StringComparison.OrdinalIgnoreCase))
+    {
+        <CookiePanel NetworkRequest="@AppState.Active"/>
+    }
+    else
+    {
+        <SirenStack AlignItems="AlignItems.Center" Justify="Justify.Center">
+            <SirenText>No panel selected</SirenText>
+        </SirenStack>
+    }
+</SirenStack>
+@code {
+    [Inject]
+    SirenAppState AppState { get; set; }
+
+    [Parameter]
+    public EventCallback PanelClosed { get; set; } = default!;
+
+    [Parameter]
+    public bool IsOpen { get; set; } = false;
+
+    private MudToggleGroup<string> _toggle;
+
+    private Dictionary<string, int> TabLookup = new()
+{
+        {"Auth", 0 },
+            { "Headers", 1 },
+        {"Cookies", 2 }
+    };
+
+    private string _openTab = "";
+
+    public async Task Open(string tab)
+    {
+        _openTab = tab;
+
+        /*
+        _toggle.Value = _openTab;
+        _toggle.GetType().GetMethod("OnValueChanged", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(_toggle, default);
+
+        await _toggle.ValueChanged.InvokeAsync(tab);
+        */
+
+        StateHasChanged();
+    }
+}
+

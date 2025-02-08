@@ -1,0 +1,61 @@
+﻿@using Siren.Components.Http
+
+<MudDialog Style="min-width:40dvh;min-height:30dvh">
+    <DialogContent>
+        <MudForm Class="w-100">
+            <SimpleHttpRequestMethodSelector @ref="_httpSelector" />
+            <MudTextField @bind-Value="@_newRequest.RequestUri" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <SirenButton Variant="Variant.Outlined" OnClick="Cancel">Cancel</SirenButton>
+        <SirenButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SaveClicked">Save</SirenButton>
+    </DialogActions>
+</MudDialog>
+@code {
+    [CascadingParameter]
+    private MudDialogInstance MudDialog { get; set; }
+
+    [Parameter]
+    public HttpRequest? InitialRequest { get; set; }
+
+    private SimpleHttpRequestMethodSelector _httpSelector { get; set; }
+
+    private void Save() => MudDialog.Close(DialogResult.Ok(_newRequest));
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private HttpRequest _newRequest = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _newRequest = InitialRequest ??= new();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            if (!string.IsNullOrWhiteSpace(_newRequest?.Method?.Method))
+            {
+                await _httpSelector.SetMethod(_newRequest.Method.Method);
+                StateHasChanged();
+            }
+        }
+    }
+
+    protected async void SaveClicked()
+    {
+        await _httpSelector.HttpSelector.Validate();
+
+        if (_httpSelector.HttpSelector.HasErrors)
+        {
+            return;
+        }
+
+        _newRequest.Method = new HttpMethod(_httpSelector.SelectedMethod);
+
+        Save();
+    }
+}
+

@@ -1,0 +1,183 @@
+﻿@using Siren.Components.History
+@using System.Net
+@using Siren.Components.Http
+
+<MudTable OnRowMouseEnter="@((args) => _hoveredRecord = args.Item)" OnRowMouseLeave="@(() => _hoveredRecord = null)"
+          Virtualize="true"
+          T="HistoryRecord"
+          Height="86dvh"
+          Items="@HistoryRecords"
+          Dense="true"
+          Bordered="false"
+          MultiSelection="false"
+          SelectOnRowClick="false"
+          Elevation="0"
+          Class="w-100 siren-table"
+          Striped="false"
+          Hover="true"
+          Filter="HistoryFilter">
+    <ToolBarContent>
+        <MudTextField @bind-Value="_searchString" Placeholder="Filter" Adornment="Adornment.Start" Immediate="true"
+                      AdornmentIcon="@Icons.Material.Outlined.FilterList" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+        <SirenIconButton Tooltip="Delete History" Variant="Variant.Text" Color="Color.Error" OnClick="PromptDeleteHistory" Icon="@SirenIcons.DeleteHistory" />
+    </ToolBarContent>
+    <RowTemplate>
+
+        <MudTd Class="px-0">
+            <HttpMethodChip Method="@(context.HttpMethod)" />
+        </MudTd>
+
+        <MudTd Class="px-0">
+            <TimeDisplayIcon Timestamp="@(context.Timestamp)"></TimeDisplayIcon>
+        </MudTd>
+
+        <MudTd Class="text-nowrap px-1" Style="max-width:175px;overflow:clip;text-overflow:ellipsis;cursor:copy;" @onclick="@(async() => await Copy(context.RequestUri))">
+            <MudTooltip>
+                <TooltipContent>
+                    <SirenStack Spacing="1" AlignItems="AlignItems.Center" Justify="Justify.Center" Class="w-100">
+                        <SirenText Typo="Typo.subtitle1">@context.RequestUri</SirenText>
+                        <SirenText Typo="Typo.subtitle2" Class="mud-text-secondary">Click to copy</SirenText>
+                    </SirenStack>
+                </TooltipContent>
+                <ChildContent>
+                    <SirenText Style="width:175px;">
+                        @context.RequestUri
+                    </SirenText>
+                </ChildContent>
+            </MudTooltip>
+        </MudTd>
+
+        <MudTd Class="px-0">
+            <Siren.Components.Http.HttpStatusCodeChip StatusCode="@context.StatusCode" IsDarkMode="@IsDarkMode" />
+        </MudTd>
+
+        <MudTd Class="px-0 pr-2">
+            <SirenIconButton Disabled="@(!HasHistoryData(context))" Class="scale-75" Tooltip="@(HasHistoryData(context) ? "Load request" : "No data")" Size="@Size.Small" OnClick="@(() => LoadHistoryRecord(context))" Icon="@SirenIcons.LoadNewTab" />
+        </MudTd>
+    </RowTemplate>
+</MudTable>
+
+@code {
+    [Inject]
+    protected SirenAppState AppState { get; set; } = default!;
+
+    [Inject]
+    protected IHistoryService HistoryService { get; set; } = default!;
+
+    [Parameter]
+    public bool IsDarkMode { get; set; } = default!;
+
+    [Inject]
+    protected ISnackbar Snackbar { get; set; } = default!;
+
+    [Inject]
+    protected IDialogService DialogService { get; set; } = default!;
+
+    [Inject]
+    protected IJsApiService JsApiService { get; set; } = default!;
+
+    private List<HistoryRecord> HistoryRecords { get; set; } = new();
+
+    private HistoryRecord? _hoveredRecord;
+
+    private bool _loading = false;
+
+    public bool HasHistoryData(HistoryRecord context)
+    {
+        return !string.IsNullOrWhiteSpace(context?.RequestUri) && (context?.Request != null || context?.Response != null);
+    }
+
+    protected override void OnInitialized()
+    {
+        HistoryService.HistoryRecordsChanged += HandleHistoryChange;
+        HistoryRecords = HistoryService.GetHistory().OrderByDescending(x => x.Timestamp).ToList();
+    }
+
+    protected async Task PromptDeleteHistory()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "siren-dialog" };
+
+        var dialogRef = await DialogService.ShowAsync<DeleteHistoryDialog>("Delete History", options);
+
+        var result = await dialogRef.Result;
+
+        if (!result.Canceled)
+        {
+            try
+            {
+                HistoryService.DeleteAllHistoryRecords();
+                Snackbar.Add("Successfully deleted history", Severity.Success, configure: (opts) =>
+                {
+                    opts.Icon = SirenIcons.History;
+                });
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add("Error deleting history", Severity.Error);
+            }
+        }
+    }
+
+    private string _searchString = "";
+
+    protected Func<HistoryRecord, bool> HistoryFilter => (HistoryRecord r) =>
+    {
+        if (string.IsNullOrWhiteSpace(_searchString))
+            return true;
+
+        if (r.RequestUri.Contains(_searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (r.HttpMethod.Method.Contains(_searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (r.StatusCode.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (((int)r.StatusCode).ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        return false;
+    };
+
+    private void HandleHistoryChange(List<HistoryRecord> newHistory)
+    {
+        HistoryRecords = newHistory.OrderByDescending(x => x.Timestamp).ToList();
+        StateHasChanged();
+    }
+
+    protected void LoadHistoryRecord(HistoryRecord record)
+    {
+        var n = new Http.SirenNetworkRequest()
+        {
+            Request = record?.Request?.Copy(),
+            Name = record?.RequestUri ?? "",
+            Response = record?.Response?.Copy(),
+            DisplayText = record?.DisplayText
+        };
+
+        AppState.AddNetworkRequest(n);
+
+        AppState.SetActive(n);
+
+        StateHasChanged();
+    }
+
+    private async Task LoadSavedHistoryAsync()
+    {
+
+    }
+
+    private async Task Copy(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return;
+        }
+
+        await JsApiService.CopyToClipboardAsync(value);
+
+        Snackbar.Add($"Copied `{value} to clipboard`", Severity.Info);
+    }
+
+}

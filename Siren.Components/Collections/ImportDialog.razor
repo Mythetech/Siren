@@ -1,0 +1,108 @@
+﻿<MudDialog Style="min-width:33vw;">
+    <DialogContent>
+        <SirenClearableTextField T="string" Class="w-100" Placeholder="Url" @bind-Input="@url" />
+        <SirenStack Class="w-100">
+            @if (Collection?.Name != null && Collection?.Requests != null)
+            {
+                @foreach (var req in Collection.Requests)
+                {
+                    <SirenStack Spacing="3" Row="true" Class="w-100" Style="@($"background-color:{GetBackgroundColor(req.Method.Method)}")">
+                        <Siren.Components.Http.HttpMethodChip Method="@req.Method" />
+                        <SirenText>@(!string.IsNullOrWhiteSpace(req.DisplayUri) ? req.DisplayUri : req.RequestUri)</SirenText>
+                    </SirenStack>
+                }
+            }
+        </SirenStack>
+    </DialogContent>
+    <DialogActions>
+        <SirenButton Variant="Variant.Text" OnClick="Cancel">Cancel</SirenButton>
+        @if (imported && !importError)
+        {
+            <SirenButton Disabled="@(importError)" Variant="Variant.Filled" OnClick="Submit">Save</SirenButton>
+        }
+        else
+        {
+            <SirenButton Disabled="@(importing || string.IsNullOrWhiteSpace(url))" Variant="Variant.Outlined" OnClick="Import">
+                @if (importing)
+                {
+                    <MudProgressCircular Size="Size.Small" />
+                    <span class="px-2">Importing...</span>
+                }
+                else
+                {
+                    <span>Import</span>
+                }
+            </SirenButton>
+
+        }
+    </DialogActions>
+</MudDialog>
+@code {
+    [CascadingParameter]
+    private MudDialogInstance MudDialog { get; set; }
+
+    [Inject]
+    public ICollectionsService CollectionsService { get; set; } = default!;
+
+    private Collection Collection { get; set; } = new();
+
+    bool imported = false;
+
+    bool importError = false;
+
+    bool importing = false;
+
+    private string url = "";
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(Collection));
+
+    private void Cancel() => MudDialog.Cancel();
+
+    protected async Task Import()
+    {
+        importError = false;
+
+        if (string.IsNullOrWhiteSpace(url))
+            return;
+
+        importing = true;
+
+        try
+        {
+            var c = await CollectionsService.ImportFromOpenApiSpec(url);
+            Collection = c;
+            imported = true;
+        }
+        catch (Exception ex)
+        {
+            importError = true;
+        }
+
+        importing = false;
+        StateHasChanged();
+    }
+
+    string GetColor(string method)
+    {
+        return method.ToUpper() switch
+        {
+            "GET" => HttpMethodColors.Get,
+            "POST" => HttpMethodColors.Post,
+            "PUT" => HttpMethodColors.Put,
+            "DELETE" => HttpMethodColors.Delete,
+            "PATCH" => HttpMethodColors.Patch,
+            "OPTIONS" => HttpMethodColors.Options,
+            "HEAD" => HttpMethodColors.Head,
+            _ => HttpMethodColors.Default,
+        };
+    }
+
+    string GetBackgroundColor(string method, double opacity = 0.1)
+    {
+        var hexColor = GetColor(method).TrimStart('#');
+        var r = int.Parse(hexColor.Substring(0, 2), System.Globalization.NumberStyles.HexNumber);
+        var g = int.Parse(hexColor.Substring(2, 2), System.Globalization.NumberStyles.HexNumber);
+        var b = int.Parse(hexColor.Substring(4, 2), System.Globalization.NumberStyles.HexNumber);
+        return $"rgba({r}, {g}, {b}, {opacity})";
+    }
+}

@@ -1,0 +1,27 @@
+﻿@using System.Net
+
+<MudTooltip Text="@((int)StatusCode == 0 ? "Cancelled" : StatusCode.ToString())">
+    <SirenChip T="string" Class="@(!IsDarkMode ? "mud-chip-content-light" : "")" Value="@(((int)StatusCode).ToString())" Color="GetColor()" />
+</MudTooltip>
+
+@code {
+    [Parameter]
+    public bool IsDarkMode { get; set; }
+
+    [Parameter]
+    public HttpStatusCode StatusCode { get; set; }
+
+    public Color GetColor()
+    {
+        var statusCode = (int)StatusCode;
+        return statusCode switch
+        {
+            var s when s >= 200 && s < 300 => Color.Success, // 2xx status codes are green
+            var s when s >= 300 && s < 400 => Color.Info, // 3xx status codes are blue
+            var s when s >= 400 && s < 500 => Color.Warning, // 4xx status codes are yellow
+            var s when s >= 500 && s < 600 => Color.Error, // 5xx status codes are red
+            _ => Color.Default // Other status codes use the default color
+        };
+    }
+}
+

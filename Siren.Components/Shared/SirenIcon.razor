@@ -1,0 +1,18 @@
+﻿@inherits SirenBaseComponent
+
+<MudIcon Title="@Title" Icon="@Icon" Color="@Color" Class="@Class" Style="@Style" Size="@Size" />
+
+@code {
+    [Parameter]
+    public string Icon { get; set; } = "fa-regular";
+
+    [Parameter]
+    public Color Color { get; set; } = Color.Default;
+
+    [Parameter]
+    public string? Title { get; set; }
+
+    [Parameter]
+    public Size Size { get; set; } = Size.Medium;
+}
+

@@ -1,0 +1,50 @@
+﻿@inherits SirenBaseComponent
+
+<MudTooltip Text="@(Timestamp.ToLocalTime().ToString("G"))">
+    <SirenStack Row="true" Class="w-100" Spacing="1">
+        <SirenIcon Size="Size.Small" Icon="@(GetIcon(Now - Timestamp))" />
+        <SirenText Typo="Typo.subtitle2" Class="mud-text-secondary">@GetDisplay(Now - Timestamp)</SirenText>
+    </SirenStack>
+</MudTooltip>
+
+@code {
+    [Parameter]
+    public DateTimeOffset Timestamp { get; set; }
+
+    private DateTimeOffset Now { get; set; }
+
+    protected override void OnInitialized()
+    {
+        Now = DateTimeOffset.UtcNow;
+    }
+
+    protected static string GetDisplay(TimeSpan time)
+    {
+        
+        if (time.TotalSeconds < 5)
+            return "now";
+        if (time.TotalMinutes < 1)
+            return $"{time.TotalSeconds:F0}s";
+        if (time.TotalHours < 1)
+            return $"{time.TotalMinutes:F0}m";
+        if (time.TotalDays < 1)
+            return $"{time.TotalHours:F0}h";
+        if (time.TotalDays < 30)
+            return $"{time.TotalDays:F0}d";
+        return "30d+";
+    }
+
+    protected static string GetIcon(TimeSpan time)
+    {
+        if (time.TotalMinutes < 1)
+            return SirenIcons.JustNow;
+
+        if (time.TotalMinutes < 15)
+            return SirenIcons.Recent;
+
+        if (time.TotalMinutes < 60)
+            return SirenIcons.Time;
+        
+        return SirenIcons.History;
+    }
+}

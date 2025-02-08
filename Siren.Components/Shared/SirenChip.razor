@@ -1,0 +1,29 @@
+﻿@inherits SirenBaseComponent
+@typeparam T
+
+<MudChip Variant="Variant.Text"
+         T="T"
+         Class="@Class"
+         Style="@Style"
+         Size="@Size"
+         Color="@Color"
+         ChildContent="@ChildContent"
+         Disabled="@Disabled"
+         Value="@Value" />
+@code {
+    [Parameter]
+    public RenderFragment ChildContent { get; set; } = default!;
+
+    [Parameter]
+    public Color Color { get; set; } = default!;
+
+    [Parameter]
+    public Size Size { get; set; } = Size.Small;
+
+    [Parameter]
+    public T Value { get; set; } = default!;
+
+    [Parameter]
+    public bool Disabled { get; set; } = false;
+}
+

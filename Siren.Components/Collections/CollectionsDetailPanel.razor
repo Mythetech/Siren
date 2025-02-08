@@ -1,0 +1,141 @@
+﻿@using Siren.Components.Http
+
+<SirenStack Row="true" Spacing="3" Class="w-100 px-4">
+    <SirenClearableTextField Input="@_searchString"
+                             Class="w-75"
+                             Placeholder="Filter"
+                             Icon="@SirenIcons.Filter" />
+    <SirenSpacer />
+    <SirenIconButton Icon="@SirenIcons.AddToCollection" Variant="Variant.Text" OnClick="@(async () => await AddNewRequestToCollection.InvokeAsync(Collection))" Tooltip="Add New Request" />
+    <SirenIconButton Icon="@SirenIcons.AddRequestToCollection" Variant="Variant.Text" OnClick="@(async () => await AddActiveRequestToCollection.InvokeAsync(Collection.Id))" Tooltip="Add Current Request" />
+</SirenStack>
+
+@if (Collection.Requests == null || Collection?.Requests?.Count < 1)
+{
+    <SirenStack Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="1" Class="w-100">
+        <SirenIcon Icon="@SirenIcons.Empty" Style="font-size:4em;" Color="Color.Primary" />
+        No Requests
+        <SirenButton Variant="Variant.Filled" OnClick="@(async () => await AddActiveRequestToCollection.InvokeAsync(Collection.Id))">
+            Add Current Request
+        </SirenButton>
+
+        <SirenButton Variant="Variant.Text" OnClick="@(async () => await AddNewRequestToCollection.InvokeAsync(Collection))">
+            Add New Request
+        </SirenButton>
+    </SirenStack>
+}
+
+else
+{
+    <SirenStack Spacing="1" Class="w-100 h-100" Style="min-width:330px;max-height:75dvh;overflow-y:auto;">
+        @foreach (var req in FilterRequests(Collection.Requests))
+        {
+            <SirenStack Spacing="1" Row="true" Class="w-100 collection-detail-item" AlignItems="AlignItems.Center" Style="min-height:24px;max-width:330px;">
+
+                <Siren.Components.Http.HttpMethodChip Method="req.Method" />
+
+                <SirenText Class="text-truncate hover-truncate" Style="max-width:275px;">@(!string.IsNullOrWhiteSpace(req.DisplayUri) ? req.DisplayUri : req.RequestUri)</SirenText>
+                <SirenSpacer />
+                <SirenIconButton Color="Color.Error" Style="display:none;" Class="hover-visible" Tooltip="Delete" Size="@Size.Small" OnClick="@(async () => await DeleteRequested.InvokeAsync(new CollectionDetailPanelEventArgs(Collection.Id, req)))" Icon="@SirenIcons.Delete" />
+                <SirenIconButton Style="display:none;" Class="hover-visible" Tooltip="Edit" Size="@Size.Small" OnClick="@(async () => await EditRequested.InvokeAsync(new CollectionDetailPanelEventArgs(Collection.Id, req)))" Icon="@SirenIcons.Edit" />
+                <SirenIconButton Style="display:none;" Class="hover-visible" Tooltip="Copy uri" Size="@Size.Small" OnClick="@(async () => await HandleCopy(req))" Icon="@SirenIcons.Copy" />
+                <SirenIconButton Style="display:none;" Class="hover-visible" Tooltip="Load request" Size="@Size.Small" OnClick="@(() => LoadRequest(req))" Icon="@SirenIcons.Load" />
+
+            </SirenStack>
+        }
+    </SirenStack>
+}
+
+
+@code {
+    public class CollectionDetailPanelEventArgs
+    {
+        public CollectionDetailPanelEventArgs(Guid collectionId, HttpRequest request)
+        {
+            this.CollectionId = collectionId;
+            this.Request = request;
+        }
+
+        public Guid CollectionId { get; set; }
+
+        public HttpRequest Request { get; set; }
+    }
+
+    [Inject]
+    protected ICollectionsService CollectionsService { get; set; } = default!;
+
+    [Inject]
+    protected SirenAppState AppState { get; set; } = default!;
+
+    [Parameter]
+    public Collection Collection { get; set; } = default!;
+
+    [Inject]
+    public IDialogService DialogService { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<CollectionDetailPanelEventArgs> EditRequested { get; set; } = default;
+
+    [Parameter]
+    public EventCallback<CollectionDetailPanelEventArgs> DeleteRequested { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<Guid> AddActiveRequestToCollection { get; set; } = default;
+
+    [Parameter]
+    public EventCallback<Collection> AddNewRequestToCollection { get; set; } = default!;
+
+    [Inject]
+    public ISnackbar Snackbar { get; set; } = default!;
+
+    [Inject]
+    public IJsApiService JsApiService { get; set; } = default!;
+
+    private string? _searchString = "";
+
+    protected void LoadRequest(Http.HttpRequest req)
+    {
+        var active = AppState?.Active;
+
+        if (active == null)
+        {
+            //need to handle this?
+            return;
+        }
+
+        if (Collection == null || req == null)
+        {
+            return;
+        }
+
+        active.Request = req.Copy();
+
+        AppState.SetActive(active);
+
+        StateHasChanged();
+    }
+
+    private List<Http.HttpRequest> FilterRequests(IEnumerable<Http.HttpRequest> requests)
+    {
+        if (string.IsNullOrWhiteSpace(_searchString))
+            return requests.ToList();
+
+        return requests.Where(x => x.RequestUri.Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            || x.Method.Method.Equals(_searchString, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+    }
+
+    protected async Task HandleCopy(HttpRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(req?.RequestUri))
+            return;
+
+        await JsApiService.CopyToClipboardAsync(req.RequestUri);
+
+        Snackbar.Add("Copied to clipboard!", Severity.Success, opts =>
+        {
+            opts.VisibleStateDuration = 2000;
+        });
+    }
+}
+

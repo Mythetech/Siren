@@ -1,0 +1,98 @@
+﻿@implements IDisposable
+
+<SirenStack Class="h-100">
+    <SirenStack Row="true" Spacing="6" Class="w-100 mt-2 px-4" AlignItems="AlignItems.Center">
+        <SirenIcon Icon="@SirenIcons.Response" Color="Color.Inherit" />
+        <SirenText Typo="Typo.h6" Color="Color.Inherit">Response</SirenText>
+        Body
+        <SirenSpacer/>
+        @if (AppState?.Active?.Response?.HttpStatusCode != null)
+        {
+            <HttpStatusCodeChip IsDarkMode="@AppState.IsDarkMode" StatusCode="@(AppState?.Active?.Response?.HttpStatusCode ?? System.Net.HttpStatusCode.InternalServerError)"/>
+        }
+        <MudText>@($"{AppState?.Active?.Response?.Duration.TotalMilliseconds}")ms</MudText>
+        <MudText>@($"{AppState?.Active?.Response?.ResponseSize?.Body + AppState?.Active?.Response?.ResponseSize?.Headers}")B</MudText>
+        <SirenIconButton Icon="@SirenIcons.Format" Size="Size.Small" Tooltip="Format" OnClick="@(async () => await FormatDocumentAsync())"/>
+        <SirenIconButton Icon="@SirenIcons.Copy" Size="Size.Small" Tooltip="Copy" OnClick="Copy"/>
+    </SirenStack>
+    <SirenEditor @ref="_editor" EditorId="siren-response-editor" />
+</SirenStack>
+
+@code {
+    [Inject]
+    SirenAppState AppState { get; set; } = default!;
+
+    [Inject]
+    IJsApiService JsApiService { get; set; } = default!;
+
+    [Inject]
+    ISnackbar Snackbar { get; set; } = default!;
+
+    public SirenEditor _editor { get; set; } = default!;
+
+
+    protected override void OnInitialized()
+    {
+        AppState.OnAppStateChanged += HandleAppStateChanged;
+    }
+
+    public void Dispose()
+    {
+        AppState.OnAppStateChanged -= HandleAppStateChanged;
+    }
+
+    public async void HandleAppStateChanged(SirenAppState state)
+    {
+        if (state?.Active?.Response != null)
+        {
+            try
+            {
+                await _editor.Editor.SetValue(state.Active.DisplayText);
+            }
+            catch
+            {
+            }
+        }
+        else
+        {
+            try
+            {
+                await _editor.Editor.SetValue("");
+            }
+            catch 
+            {
+            }
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public async void Copy()
+    {
+        if (_editor == null)
+            return;
+
+        string value = await _editor.Editor?.GetValue();
+
+        if (!string.IsNullOrWhiteSpace(value))
+            await JsApiService.CopyToClipboardAsync(value);
+
+        Snackbar.Add($"Copied response body to clipboard", Severity.Info);
+    }
+    
+    private async Task FormatDocumentAsync()
+    {
+        try
+        {
+            await _editor.ToggleReadonly();
+            
+            await _editor.Editor.Trigger("siren-response-editor", "editor.action.formatDocument", "");
+
+            await _editor.ToggleReadonly();
+        }
+        catch
+        {
+        }
+    }
+
+}

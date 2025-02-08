@@ -1,0 +1,116 @@
+﻿@inherits SirenBaseComponent
+
+<MudTextField Underline="@(!ReadOnly)"
+              ReadOnly="@ReadOnly"
+              @ref="_component"
+              T="string"
+              Typo="@Typo"
+              Value="@Value"
+              ValueChanged="@ValueChanged"
+              Class="@Class"
+              Style="@Style"
+              OnBlur="HandleBlur"
+              AdornmentIcon="@GetIcon()"
+              Adornment="Adornment.End"
+              AdornmentColor="Color.Primary"
+              AdornmentAriaLabel="@GetLabel()"
+              OnKeyDown="@HandleKeyDown"
+              OnAdornmentClick="@HandleAdornmentClick" />
+
+@code {
+    private MudTextField<string> _component = default;
+
+    public MudTextField<string> Component { get => _component; }
+
+    [Parameter]
+    public string Value { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<string> ValueChanged { get; set; } = default!;
+
+    [Parameter]
+    public string EditIcon { get; set; } = SirenIcons.Edit;
+
+    [Parameter]
+    public string CancelIcon { get; set; } = SirenIcons.CancelEdit;
+
+    [Parameter]
+    public Typo Typo { get; set; } = Typo.h5;
+
+    [Inject]
+    public ISnackbar Snackbar { get; set; } = default!;
+
+    [Parameter]
+    public bool SmallIcon { get; set; } = false;
+
+    private bool ReadOnly = true;
+
+    public string GetIcon()
+    {
+        return (ReadOnly ? EditIcon : CancelIcon) + (SmallIcon ? " small-icon" : "");
+    }
+
+    public string GetLabel()
+    {
+        return ReadOnly ? "Edit" : "Cancel";
+    }
+
+    private string? _clone;
+
+    private bool handlingClick = false;
+
+    private async Task HandleAdornmentClick()
+    {
+        if (handlingClick)
+            return;
+
+        handlingClick = true;
+
+        if (ReadOnly)
+        {
+            _clone = Value;
+            ReadOnly = false;
+            StateHasChanged();
+            await Component.FocusAsync();
+        }
+        else
+        {
+            ReadOnly = true;
+            Value = _clone;
+            StateHasChanged();
+            _clone = "";
+        }
+
+        handlingClick = false;
+    }
+
+    private async Task HandleBlur()
+    {
+        await Task.Delay(100);
+
+        if (handlingClick)
+        {
+            await Task.CompletedTask;
+            return;
+        }
+
+        ReadOnly = true;
+        StateHasChanged();
+        if (!string.IsNullOrWhiteSpace(_clone) && _clone != Value)
+        {
+            _clone = Value;
+            await ValueChanged.InvokeAsync(Value);
+            ReadOnly = true;
+            Snackbar.Add("Succesfully updated collection", Severity.Success);
+            StateHasChanged();
+        }
+    }
+
+    protected async Task HandleKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Code == KeyCode.Enter.ToString() || args.Code == "NumpadEnter")
+        {
+            await HandleBlur();
+        }
+    }
+}

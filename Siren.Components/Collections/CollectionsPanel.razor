@@ -1,0 +1,343 @@
+﻿@using Siren.Components.Http
+@using Siren.Components.Collections
+
+<SirenStack Spacing="6" Class="h-100" AlignItems="AlignItems.Start">
+    @if (!_detailsOpen)
+    {
+        <SirenStack Row="true" Spacing="3" AlignItems="AlignItems.Center">
+            <MudTextField @bind-Value="_searchString" Placeholder="Filter" Adornment="Adornment.Start" Immediate="true"
+                          AdornmentIcon="@SirenIcons.Filter" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+
+            @*<SirenIconButton Icon="@SirenIcons.Delete" Tooltip="Delete Collections" Color="Color.Error" Variant="Variant.Text" OnClick="@(() => {  })" /> *@
+            <SirenIconButton Icon="@SirenIcons.UrlImport" Tooltip="OpenApi Url Import" Variant="Variant.Text" OnClick="@OpenApiImportPrompt" />
+            <SirenIconButton Icon="@SirenIcons.AddCollection" Tooltip="Create Collection" Variant="Variant.Text"
+                             OnClick="@(() => { CollectionsService.CreateCollection("Untitled", default!); Snackbar.Add("Created collection", Severity.Success, opts => { opts.SuccessIcon = SirenIcons.Collection; }); _collections = CollectionsService.GetCollections(); StateHasChanged(); })" />
+        </SirenStack>
+
+        @if (_collections != null && _collections.Count > 0)
+        {
+            <MudGrid>
+                @foreach (var collection in FilterCollections(_collections).Select(x => (Collection)x))
+                {
+                    <MudItem xs="6">
+                        <CollectionCard Collection="@collection"
+                                        CollectionCardClicked="OpenCollectionCardDetails"
+                                        CollectionDeleted="DeleteCollection"
+                                        AddNewRequest="AddNewRequestToCollection" />
+                    </MudItem>
+                }
+            </MudGrid>
+        }
+        else
+        {
+            <SirenStack Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="1">
+                <SirenIcon Icon="@SirenIcons.Empty" Style="font-size:4em;" Color="Color.Primary" />
+                No Collections
+                <SirenButton Variant="Variant.Filled" OnClick="@(() => { CollectionsService.CreateCollection("Untitled", default!); StateHasChanged(); })">
+                    Add Collection
+                </SirenButton>
+            </SirenStack>
+        }
+    }
+    else
+    {
+        <SirenStack Row="true" Spacing="3" Justify="Justify.Center" Class="w-100 pr-4">
+            <SirenIconButton Icon="@SirenIcons.Back" Color="Color.Primary" OnClick="ClearSelected" Tooltip="Back" />
+            <SirenEditableTitle Value="@_selectedCollection.Name"
+                                ValueChanged="UpdateSelectedCollectionName"
+                                Typo="Typo.subtitle1" />
+
+        </SirenStack>
+
+        <CollectionsDetailPanel Collection="_selectedCollection" AddActiveRequestToCollection="AddActiveRequestToCollection"
+                                AddNewRequestToCollection="AddNewRequestToCollection"
+                                EditRequested="@EditCollectionRequest"
+                                DeleteRequested="@DeleteRequest" />
+    }
+    <SirenSpacer />
+    <SirenDivider />
+
+</SirenStack>
+
+@code {
+    [Inject]
+    ICollectionsService CollectionsService { get; set; } = default!;
+
+    [Inject]
+    ISnackbar Snackbar { get; set; } = default!;
+
+    [Inject]
+    IDialogService DialogService { get; set; } = default!;
+
+    [Inject]
+    SirenAppState AppState { get; set; } = default!;
+
+    private string _searchString = "";
+
+    private List<Collection> _collections;
+
+    private bool _detailsOpen = false;
+
+    private Collection? _selectedCollection;
+
+    protected List<Collection> FilterCollections(List<Collection> collections)
+    {
+        if (string.IsNullOrWhiteSpace(_searchString))
+        {
+            return collections;
+        }
+
+        return collections.Where(x => x.Name.Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+          || (x?.Requests?.Any(y => y.Method.Method.Contains(_searchString, StringComparison.OrdinalIgnoreCase)) ?? false)
+          || (x?.Requests?.Any(z => z.RequestUri.Contains(_searchString, StringComparison.OrdinalIgnoreCase)) ?? false))
+          .ToList();
+    }
+
+    protected override void OnInitialized()
+    {
+        _collections = CollectionsService.GetCollections();
+    }
+
+    protected void ClearSelected()
+    {
+        _detailsOpen = false;
+        _selectedCollection = default;
+        StateHasChanged();
+    }
+
+    protected void OpenCollectionCardDetails(Collection c)
+    {
+        _selectedCollection = c;
+        _detailsOpen = true;
+        StateHasChanged();
+    }
+
+    protected void UpdateSelectedCollectionName(string name)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(name) || _selectedCollection == null)
+                return;
+
+            _selectedCollection.Name = name;
+
+            var c = _collections.FirstOrDefault(x => x.Id.Equals(_selectedCollection.Id));
+
+            if (c == null)
+                return;
+
+            c.Name = name;
+
+            CollectionsService.UpdateCollection(c);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            Snackbar.Add("Error updating collection", Severity.Error, (opts) => opts.ErrorIcon = SirenIcons.Collection);
+        }
+
+        StateHasChanged();
+    }
+
+    protected async Task AddNewRequestToCollection(Collection collection)
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "siren-dialog" };
+
+        var dialogRef = await DialogService.ShowAsync<UpsertRequestDialog>("Add Request", options);
+
+        var result = await dialogRef.Result;
+
+        if (!result.Canceled)
+        {
+            try
+            {
+                Snackbar.Add("Request added", Severity.Success, opts =>
+                {
+                    opts.SuccessIcon = SirenIcons.CollectionItemAdded;
+                });
+
+                CollectionsService.AddRequestToCollection(collection.Id, (HttpRequest)result.Data!);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add("Error adding request", Severity.Error);
+            }
+        }
+    }
+
+    protected async Task DeleteRequest(CollectionsDetailPanel.CollectionDetailPanelEventArgs args)
+    {
+        var id = args.CollectionId;
+        var request = args.Request;
+
+        try
+        {
+            var collection = _collections.FirstOrDefault(x => x.Id == id);
+
+            CollectionsService.RemoveRequestFromCollection(id, request.Id);
+
+            collection.Requests.Remove(request);
+
+            Snackbar.Add("Successfully removed request", Severity.Success, opts =>
+            {
+                opts.Action = "Undo";
+                opts.ActionColor = Color.Primary;
+                opts.ActionVariant = Variant.Text;
+                opts.VisibleStateDuration = 4000; //Longer for undo action
+                opts.Onclick = snackbar =>
+                {
+                    RestoreRequest(collection, request);
+                    return Task.CompletedTask;
+                };
+            });
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Error deleting request", Severity.Error);
+        }
+
+        StateHasChanged();
+    }
+
+    private void RestoreRequest(Collection collection, HttpRequest request)
+    {
+        CollectionsService.AddRequestToCollection(collection.Id, request);
+        StateHasChanged();
+    }
+
+    protected async Task EditCollectionRequest(CollectionsDetailPanel.CollectionDetailPanelEventArgs args)
+    {
+        var request = args.Request;
+
+        var options = new DialogOptions() { CloseOnEscapeKey = true, BackgroundClass = "siren-dialog", MaxWidth = MaxWidth.Medium };
+
+        var parameters = new DialogParameters();
+        parameters.Add("InitialRequest", args.Request);
+
+        var dialogRef = await DialogService.ShowAsync<UpsertRequestDialog>("Edit Request", parameters, options);
+
+        var result = await dialogRef.Result;
+
+        if (!result.Canceled)
+        {
+            try
+            {
+                var collection = _collections.FirstOrDefault(x => x.Id.Equals(args.CollectionId));
+                if (collection == null)
+                    throw new InvalidOperationException("Cannot update a collection that doesn't exist");
+
+                var req = collection?.Requests.FirstOrDefault(x => x.Id == args.Request.Id);
+
+                if (req == null)
+                    throw new InvalidOperationException("Cannot update request that doesn't exist"); //TOdo, upsert?
+
+                req = args.Request;
+
+                CollectionsService.UpdateCollection(collection);
+
+                _collections = CollectionsService.GetCollections();
+                StateHasChanged();
+
+                Snackbar.Add("Updated request successfully", Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add("Error updating request", Severity.Error);
+            }
+        }
+    }
+
+    protected async Task AddActiveRequestToCollection(Guid collectionId)
+    {
+        var req = AppState?.Active;
+
+        var collection = _collections.FirstOrDefault(x => x.Id == collectionId);
+
+        if (collection == null || req == null || req?.Request == null)
+        {
+            await Task.CompletedTask;
+            return;
+        }
+
+        CollectionsService.AddRequestToCollection(collectionId, req.Request);
+
+        if (collection.Requests == null)
+        {
+            collection.Requests ??= new();
+            collection.Requests.Add(req.Request);
+        }
+
+        StateHasChanged();
+
+        Snackbar.Add($"Added `{req?.Request?.RequestUri ?? "request"}`", Severity.Success, configure: (opts) =>
+        {
+            opts.SuccessIcon = SirenIcons.CollectionItemAdded;
+        });
+    }
+
+    protected async Task DeleteCollection(Collection c)
+    {
+        var id = c.Id;
+
+        try
+        {
+            CollectionsService.DeleteCollection(c.Id);
+
+            Snackbar.Add("Successfully deleted collection", Severity.Success, opts =>
+            {
+                opts.Action = "Undo";
+                opts.ActionColor = Color.Primary;
+                opts.ActionVariant = Variant.Text;
+                opts.VisibleStateDuration = 5000; //Longer for undo action
+                opts.Onclick = snackbar =>
+                {
+                    RestoreCollection(c);
+                    return Task.CompletedTask;
+                };
+            });
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Error deleting collection", Severity.Error);
+        }
+
+        _collections = CollectionsService.GetCollections();
+
+        StateHasChanged();
+    }
+
+    private void RestoreCollection(Collection collection)
+    {
+        CollectionsService.CreateCollection(collection.Name, requests: collection?.Requests?.ToArray());
+        _collections = CollectionsService.GetCollections();
+        StateHasChanged();
+    }
+
+    protected async Task OpenApiImportPrompt()
+    {
+        var options = new DialogOptions() { CloseOnEscapeKey = true, BackgroundClass = "siren-dialog" };
+
+        var dialogRef = await DialogService.ShowAsync<ImportDialog>("Open API Import", options);
+
+        var result = await dialogRef.Result;
+
+        if (!result.Canceled)
+        {
+            try
+            {
+                CollectionsService.CreateCollection(((Collection)result.Data).Name, ((Collection)result.Data).Requests?.ToArray());
+                _collections = CollectionsService.GetCollections();
+                StateHasChanged();
+
+                Snackbar.Add($"Added `{((Collection)result.Data)?.Name ?? "new collection"}`", Severity.Success, configure: (opts) =>
+                {
+                    opts.SuccessIcon = SirenIcons.Collection;
+                });
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add("Error updating request", Severity.Error);
+            }
+        }
+    }
+}

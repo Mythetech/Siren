@@ -1,0 +1,46 @@
+﻿@using System.Net
+@using Siren.Components.Http
+@using Siren.Components.Services
+
+<SirenStack Class="w-100 h-100">
+    <MudPaper Elevation="0" Height="50%" Width="100%" Class="p-1">
+        <SirenText Typo="Typo.body1">Request Cookies</SirenText>
+        <SirenSpacer />
+        <SirenStack Spacing="1">
+        @foreach (var cookie in CookieService.GetCookies())
+        {
+            <SirenText>
+                @cookie.Name
+            </SirenText>
+        }
+        </SirenStack>
+    </MudPaper>
+    <SirenDivider />
+    <MudPaper class="overflow-y-scroll p-1" Elevation="0" Height="50%" Width="100%">
+        <SirenText Typo="Typo.body1">Response Cookies</SirenText>
+        @if (NetworkRequest?.Response?.Cookies != null)
+        {
+            <pre>
+                    @(System.Text.Json.JsonSerializer.Serialize(NetworkRequest.Response.Cookies, new System.Text.Json.JsonSerializerOptions() { WriteIndented = true }));
+                </pre>
+        }
+    </MudPaper>
+</SirenStack>
+
+
+@code {
+    [Parameter]
+    public SirenNetworkRequest NetworkRequest { get; set; }
+
+    [Inject] public ICookieService CookieService { get; set; } = default!;
+
+    private List<Cookie> _cookies = new();
+
+    protected override Task OnInitializedAsync()
+    {
+        
+        return base.OnInitializedAsync();
+    }
+
+}
+

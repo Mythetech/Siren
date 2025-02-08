@@ -1,0 +1,51 @@
+﻿<MudPaper Outlined="true" Square="true" Elevation="1" Width="9.375rem" MinHeight="100px" Class="d-flex collection-card p-2 rounded">
+    <SirenStack Style="min-height:100%;" Class="w-100">
+        <div class="d-flex flex-column flex-grow-1 collection-card-clickable w-100" style="min-height:75%;" @onclick="@(async () => await CollectionCardClicked.InvokeAsync(Collection))">
+
+            <SirenStack Row=" true" Spacing="1" Class="w-100" AlignItems="AlignItems.Center">
+                <SirenIcon Icon="@SirenIcons.Collection" />
+                <SirenText Class="text-truncate" Typo="Typo.body1">@Collection?.Name</SirenText>
+                <MudSpacer />
+                <SirenIconButton OnClick="@(async () => await CollectionDeleted.InvokeAsync(Collection))"
+                                 Icon="@SirenIcons.Close"
+                                 Class="collection-card-delete hover-visible"
+                                 Tooltip="@($"Delete `{Collection?.Name}`")"
+                                 Size="Size.Small"
+                                 Variant="Variant.Text"
+                                 Style="display:none;"
+                                 Color="Color.Error" />
+
+                <SirenIconButton OnClick="@(async () => await AddNewRequest.InvokeAsync(Collection))"
+                                 Icon="@SirenIcons.Add"
+                                 Class="hover-visible"
+                                 Tooltip="@($"Add Request")"
+                                 Size="Size.Small"
+                                 Variant="Variant.Text"
+                                 Style="display:none;" />
+            </SirenStack>
+            <SirenSpacer />
+        </div>
+        <SirenStack Row="true" Spacing="3">
+            <MudTooltip Text="@(Collection?.Requests?.Count > 1 ? $"{Collection?.Requests?.Count} requests" : "No requests")">
+                <SirenIcon Size="Size.Small" Icon="@SirenIcons.Request" />
+            </MudTooltip>
+            <SirenText Typo="Typo.body2" Class="mud-text-secondary">@(Collection?.Requests?.Count.ToString() ?? "--")</SirenText>
+        </SirenStack>
+    </SirenStack>
+
+</MudPaper>
+
+@code {
+    [Parameter]
+    public Collection Collection { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<Collection> CollectionCardClicked { get; set; } = default;
+
+    [Parameter]
+    public EventCallback<Collection> CollectionDeleted { get; set; } = default;
+
+    [Parameter]
+    public EventCallback<Collection> AddNewRequest { get; set; } = default!;
+}
+

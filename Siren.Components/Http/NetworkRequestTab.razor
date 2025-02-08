@@ -1,0 +1,14 @@
+﻿<MudPaper Elevation="0" Outlined="false" Square="true" MaxWidth="160px" Class="bg-transparent d-flex" Style="align-items: center;">
+    @if (Request?.Request?.Method != null)
+    {
+        <HttpMethodChip Method="@Request?.Request?.Method" />
+    }
+
+    <SirenText Class="text-truncate" Typo="Typo.body2" Color="Color.Primary">@(!string.IsNullOrWhiteSpace(Request?.Request?.RequestUri) ? Request.Request.RequestUri : "Untitled")</SirenText>
+</MudPaper>
+
+@code {
+    [Parameter]
+    public SirenNetworkRequest Request { get; set; } = default!;
+}
+

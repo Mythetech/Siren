@@ -1,0 +1,143 @@
+﻿@implements IDisposable
+
+<SirenDynamicTabs T="SirenNetworkRequest"
+                  @ref="_tabs"
+                  Elevation="0"
+                  Color="Color.Primary"
+                  Items="@AppState.NetworkRequests"
+                  Class="@($"w-100 {(AppState.SideBarOpen ? "siren-app-short-tabs" : "siren-app-tabs")}")"
+                  Style="height:48px"
+                  ItemAdded="HandleNetworkRequestAdded"
+                  ItemClosed="HandleNetworkRequestRemoved"
+                  TabChanged="HandleTabChange"
+                  TabDuplicated="HandleTabDuplicated"
+                  ItemLabelDisplayFunc="@ItemDisplayFunc" />
+
+@code {
+    [Inject]
+    protected SirenAppState AppState { get; set; } = default!;
+
+    private Func<SirenNetworkRequest, string> ItemDisplayFunc => (x) =>
+    {
+        var requestUri = x?.Request?.RequestUri;
+
+        if (string.IsNullOrWhiteSpace(x?.Request?.Method?.Method))
+        {
+            if (string.IsNullOrWhiteSpace(requestUri))
+            {
+                return "New Request";
+            }
+            else
+            {
+                return requestUri;
+            }
+        }
+        else
+        {
+            if (string.IsNullOrWhiteSpace(requestUri))
+                return $"{x?.Request?.Method?.Method}";
+
+            requestUri = requestUri.Replace("http:", "").Replace("https:", "").Replace("//", "");
+
+            return $"{x?.Request?.Method?.Method} | {(requestUri.Length > 15 ? requestUri[0..12] + "..." : requestUri)}";
+        }
+    };
+
+    protected SirenDynamicTabs<SirenNetworkRequest> _tabs = default!;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Task.Yield();
+
+            if (_tabs != null && _tabs?.UserTabs == null || _tabs?.UserTabs?.Count() < 1)
+            {
+                RefreshTabsFromState();
+            }
+        }
+    }
+
+    protected void RefreshTabsFromState()
+    {
+        if (AppState.NetworkRequests.Count < 1)
+        {
+            var r = new SirenNetworkRequest()
+            {
+                Name = "Untitled"
+            };
+
+            AppState.AddNetworkRequest(r);
+            _tabs.AddTab(r.Id, r.Name);
+            StateHasChanged();
+        }
+        StateHasChanged();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        AppState.OnNetworkRequestsChanged += HandleNetworkRequestsChanged;
+        AppState.OnNetworkRequestIndexChanged += HandleNetworkRequestIndexChanged;
+        AppState.OnAppStateChanged += HandleAppStateChanged;
+    }
+
+    public void Dispose()
+    {
+        AppState.OnNetworkRequestsChanged -= StateHasChanged;
+        AppState.OnAppStateChanged -= HandleAppStateChanged;
+
+    }
+
+    public void HandleAppStateChanged(SirenAppState state)
+    {
+        AppState = state;
+        StateHasChanged();
+    }
+
+    protected void HandleNetworkRequestsChanged()
+    {
+        StateHasChanged();
+    }
+
+    protected async void HandleNetworkRequestIndexChanged(int index)
+    {
+        await Task.Yield();
+
+        _tabs.ActivateTab(index);
+        StateHasChanged();
+    }
+
+    protected void HandleNetworkRequestAdded()
+    {
+        var networkRequest = new SirenNetworkRequest()
+        {
+            Name = "New Request",
+            Request = new(),
+        };
+
+        AppState.AddNetworkRequest(networkRequest);
+
+        AppState.SetActive(networkRequest.Id);
+
+        StateHasChanged();
+    }
+
+    protected void HandleNetworkRequestRemoved(SirenNetworkRequest request)
+    {
+        AppState.RemoveNetworkRequest(request.Id);
+
+        StateHasChanged();
+    }
+
+    protected void HandleTabChange(SirenNetworkRequest n)
+    {
+        AppState.SetActive(n);
+        StateHasChanged();
+    }
+
+    protected void HandleTabDuplicated(SirenNetworkRequest t)
+    {
+
+    }
+}
+

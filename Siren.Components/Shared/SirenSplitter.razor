@@ -1,0 +1,37 @@
+﻿@using Orientation = Microsoft.FluentUI.AspNetCore.Components.Orientation
+
+@inherits SirenBaseComponent
+
+<FluentSplitter Panel1="@Panel1"
+                Panel1Size="@($"{Panel1Size}px")"
+                Panel1MinSize="50px"
+                Panel2="@Panel2"
+                Panel2Size="@($"{Panel2Size}px")"
+                Panel2MinSize="50px"
+                Class="@($"{Class} mud-height-full")"
+                Style="@($"{Style} --neutral-stroke-rest: var(--mud-palette-tertiary); --neutral-stroke-hover: var(--mud-palette-primary); --neutral-stroke-active: var(--mud-palette-primary-lighten); --neutral-stroke-strong-rest:rgb(255 255 255 / 0%)")"
+                BarSize="2"
+                @bind-OnResized="@SplitterResized"
+                Orientation="@Orientation">
+</FluentSplitter>
+
+@code {
+    [Parameter]
+    public RenderFragment Panel1 { get; set; } = default!;
+
+    [Parameter]
+    public int Panel1Size { get; set; } = 50;
+
+    [Parameter]
+    public RenderFragment Panel2 { get; set; } = default!;
+
+    [Parameter]
+    public int Panel2Size { get; set; } = 50;
+
+    [Parameter]
+    public Orientation Orientation { get; set; } = Orientation.Horizontal;
+
+    [Parameter]
+    public EventCallback<SplitterResizedEventArgs> SplitterResized { get; set; }
+}
+

@@ -1,0 +1,184 @@
+﻿@using Microsoft.Extensions.Logging
+@using Siren.Components.Shared.Notifications
+@implements IDisposable
+
+<SirenStack Spacing="3" Class="h-100">
+    <SirenStack Row="true" Spacing="3" Class="w-100" AlignItems="AlignItems.Center">
+        <MudPaper Width="100%" Outlined="false" Class="d-flex px-4 py-4" Elevation="0">
+            <SirenStack Row="true" Class="w-100 http-request-group" Style="border-bottom: solid 1px var(--http-request-dropdown-color); border-top: solid 1px var(--http-request-dropdown-color); border-right: solid 1px var(--http-request-dropdown-color); ">
+                <HttpRequestMethodDropdown @ref="_httpMethodDropdown" SelectedMethodChanged="UpdateHttpMethod" />
+                <MudTextField 
+                    Variant="Variant.Text" 
+                    Underline="false" 
+                    Style="border-left:solid 1px var(--mud-palette-tertiary);border-right:none;border-top-right-radius:0px;border-bottom-right-radius:0px;padding-left:0.5em;"
+                    T="string" 
+                    Placeholder="Enter Request URL... e.g., `https://api.example.com/v1/resource`"
+                    Value="@AppState?.Active?.Request?.RequestUri"
+                    Class="http-request-input"
+                    @ref="_requestUriInput"
+                    ValueChanged="UpdateRequestUri"
+                    />
+
+                <MudButton OnClick="@OnSendClicked" Variant="Variant.Text" Color="@(Loading ? Color.Dark : Color.Primary)" Class="send-request-button">
+                    @(Loading ? "Cancel" : "Send" )
+                </MudButton>
+            </SirenStack>
+        </MudPaper>
+    </SirenStack>
+    <SirenStack Row="true" Spacing="6" Class="w-100 px-4" AlignItems="AlignItems.Center">
+        <SirenIcon Color="@Color.Inherit" Icon="@SirenIcons.Request" />
+        <SirenText Typo="Typo.h6" Color="Color.Inherit">Request</SirenText>
+        <SirenText Typo="Typo.body1">Body</SirenText>
+        <MudToggleGroup @bind-Value="@requestPayload" T="string" Outlined="false" Size="Size.Small" Rounded="@false" CheckMark="false" Class="px-4 gap-4">
+            <MudToggleItem Value="@("none")"/>
+            <MudToggleItem Disabled="true" Value="@("form-data")"/>
+            <MudToggleItem Value="@("raw")"/>
+            <MudToggleItem Disabled="true" Value="@("binary")"/>
+        </MudToggleGroup>
+        <SirenSpacer/>
+        <SirenIconButton Icon="@SirenIcons.Format" Size="Size.Small" Tooltip="Format" OnClick="@(async () => await FormatDocumentAsync())"/>
+        <SirenIconButton Icon="@SirenIcons.Copy" Size="Size.Small" Tooltip="Copy" OnClick="Copy"/>
+    </SirenStack>
+    <SirenEditor @ref="_editor" EditorId="siren-request-editor" ReadOnly="false" />
+</SirenStack>
+
+
+
+@code {
+    private string? _requestUri = default!;
+    private MudTextField<string>? _requestUriInput = default!;
+    
+    private HttpRequestMethodDropdown _httpMethodDropdown = default!;
+    
+    [Parameter]
+    public EventCallback SendClicked { get; set; } = default!;
+
+    [Inject]
+    public IJsApiService JsApiService { get; set; } = default!;
+
+    [Inject]
+    public ISnackbar Snackbar { get; set; } = default!;
+
+    [Inject] protected ILogger<RequestPanel> Logger { get; set; } = default!;
+
+    [Parameter] public bool Loading { get; set; } = false;
+
+    public async Task<string> GetPayload()
+    {
+        return await _editor.Editor.GetValue();
+    }
+
+    private SirenEditor _editor = default;
+
+    private string requestPayload = "raw";
+
+    public async void Copy()
+    {
+        if (_editor == null)
+            return;
+
+        string value = await _editor.Editor?.GetValue();
+
+        if (!string.IsNullOrWhiteSpace(value))
+            await JsApiService.CopyToClipboardAsync(value);
+
+        Snackbar.Add($"Copied request body to clipboard", Severity.Info);
+    }
+
+    private async Task FormatDocumentAsync()
+    {
+        try
+        {
+            await _editor.Editor.Trigger("messaging-editor", "editor.action.formatDocument", "");
+        }
+        catch(Exception ex)
+        {
+            Logger.LogError(ex, "Error formatting document");
+        }
+    }
+
+    public async Task OnSendClicked()
+    {
+        if (string.IsNullOrWhiteSpace(AppState?.Active?.Request?.RequestUri))
+        {
+            Snackbar.AddSirenError("Request URL Required");
+            await _requestUriInput!.FocusAsync();
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_httpMethodDropdown?.MethodDropdown?.Value))
+        {
+            Snackbar.AddSirenError("HTTP Method Required");
+            await _httpMethodDropdown.MethodDropdown.FocusAsync();
+            return;
+        }
+        
+        await SendClicked.InvokeAsync();
+    }
+
+    [Inject] public SirenAppState AppState { get; set; } = default!;
+
+    public string Method => _httpMethodDropdown?.SelectedMethod ?? "";
+
+    public string Address => _requestUri ?? ""; 
+
+    protected override void OnInitialized()
+    {
+        AppState.OnAppStateChanged += HandleAppStateChanged;
+    }
+
+    public void Dispose()
+    {
+        AppState.OnAppStateChanged -= HandleAppStateChanged;
+    }
+
+    protected async void HandleAppStateChanged(SirenAppState state)
+    {
+        if (state?.Active?.Request?.Method?.Method != _httpMethodDropdown.SelectedMethod)
+        {
+            await _httpMethodDropdown.SetMethod(state?.Active?.Request?.Method?.Method!);
+        }
+        StateHasChanged();
+    }
+
+    protected void UpdateHttpMethod(string method)
+    {
+        if (string.IsNullOrWhiteSpace(method))
+            return;
+
+        var req = AppState.Active;
+
+        req.Request.Method = new HttpMethod(method);
+
+        AppState.Active = req;
+
+        StateHasChanged();
+    }
+
+    protected void UpdateRequestUri(string uri)
+    {
+        var req = AppState.Active;
+
+        req.Request.RequestUri = uri;
+
+        AppState.Active = req;
+
+        StateHasChanged();
+    }
+
+    string GetColor(string method)
+    {
+        return method switch
+        {
+            "GET" => "#4caf50",
+            "POST" => "#2196f3",
+            "PUT" => "#ff9800",
+            "DELETE" => "#f44336",
+            "PATCH" => "#9c27b0",
+            "OPTIONS" => "#3f51b5",
+            "HEAD" => "#009688",
+            _ => "var(--mud-palette-surface)",
+        };
+    }
+
+}

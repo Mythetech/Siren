@@ -1,0 +1,158 @@
+﻿@implements IDisposable
+@using Siren.Components.Settings
+@using Siren.Components.History
+@using Siren.Components.Collections
+@using Siren.Components.Variables
+
+<SirenStack Spacing="1" Class="app-context-panel" Style="" AlignItems="MudBlazor.AlignItems.Start">
+    <SirenIconButton Class="p-2" Icon="app-icon" OnClick="@OpenAboutSiren" />
+
+    @*Side bar Panel*@
+    <ContextPanelItem Active="@(_activeItem?.Title == "History")" @ref="@_contextPanelItems["History"]" Title="History" Icon="@SirenIcons.History" ContextPanelItemClicked="HandleContextPanelItemClicked">
+        <PanelContent>
+            <HistoryPanel IsDarkMode="@IsDarkMode" />
+        </PanelContent>
+    </ContextPanelItem>
+    <ContextPanelItem Active="@(_activeItem?.Title == "Collections")" @ref="@_contextPanelItems["Collections"]" Title="Collections" Icon="@SirenIcons.Collections" ContextPanelItemClicked="HandleContextPanelItemClicked">
+        <PanelContent>
+            <CollectionsPanel />
+        </PanelContent>
+    </ContextPanelItem>
+    <ContextPanelItem Active="@(_activeItem?.Title == "Variables")" @ref="@_contextPanelItems[" Variables"]" Title="Variables" Icon="@SirenIcons.Variables" ContextPanelItemClicked="HandleContextPanelItemClicked">
+        <PanelContent>
+            <VariablesPanel />
+        </PanelContent>
+    </ContextPanelItem>
+    <MudSpacer />
+
+    @if (IsDarkMode)
+    {
+        <MudTooltip Text="Light">
+            <MudIconButton Class="ml-1" Icon="@SirenIcons.LightMode" Color="Color.Primary" Variant="Variant.Text" OnClick="@DarkModeToggled" />
+        </MudTooltip>
+    }
+    else
+    {
+        <MudTooltip Text="Dark">
+            <MudIconButton Class="ml-1" Icon="@SirenIcons.DarkMode" Color="Color.Primary" Variant="Variant.Text" OnClick="@DarkModeToggled" />
+        </MudTooltip>
+    }
+    <MudTooltip Text="Settings">
+        <MudIconButton Class="ml-1" Color="Color.Primary" Icon="@SirenIcons.Settings" OnClick="OpenSettingsDialog" />
+    </MudTooltip>
+
+    <MudIconButton Class="ml-1" Icon="@(AppState.SideBarOpen ? SirenIcons.CollapseLeft : SirenIcons.ExpandRight)" Color="Color.Inherit" OnClick="@DrawerToggled" />
+</SirenStack>
+
+<SirenStack Class="p-0 w-100" Style="@($"{(!AppState.SideBarOpen ? "width:0px;" : "")}")">
+    <MudPaper Class="h-100 w-100" Style="@($"{DrawerBackgroundColor};max-width:24vw;")" Square="true">
+        <SirenStack Spacing="3" Class="p-4 w-100">
+            @if (_activeItem != null)
+            {
+                <SirenStack Row="true" Class="w-100" Spacing="3" AlignItems="AlignItems.Center">
+                    <SirenIcon Icon="@_activeItem.Icon" Color="Color.Primary" />
+                    <SirenText Typo="Typo.h6">@_activeItem.Title</SirenText>
+                    <SirenSpacer />
+                    <SirenIconButton Tooltip="Close" Icon="@SirenIcons.Close" Variant="Variant.Text" OnClick="@CloseContextPanel" />
+                </SirenStack>
+                @_activeItem.PanelContent
+            }
+            else
+            {
+                <SirenStack Row="true" Class="w-100 p-4">
+                    <SirenText Typo="Typo.subtitle1">No Item Selected</SirenText>
+                    <SirenSpacer />
+                    <MudIconButton Icon="@SirenIcons.Close" Variant="Variant.Text" OnClick="@CloseContextPanel" />
+                </SirenStack>
+                <SirenText Typo="Typo.subtitle2" Class="mud-text-secondary">Select an item from the side menu</SirenText>
+            }
+        </SirenStack>
+    </MudPaper>
+</SirenStack>
+
+@code {
+    [Inject]
+    protected SirenAppState AppState { get; set; } = default!;
+
+    [Inject]
+    protected IDialogService DialogService { get; set; } = default!;
+
+    [Parameter]
+    public bool IsDarkMode { get; set; } = false;
+
+    [Parameter]
+    public EventCallback DarkModeToggled { get; set; }
+
+    [Parameter]
+    public EventCallback DrawerToggled { get; set; }
+
+    [Parameter]
+    public string DrawerBackgroundColor { get; set; } = "background-color:#FFFFFF";
+
+    private ContextPanelItem? _activeItem;
+
+    private Dictionary<string, ContextPanelItem>
+    _contextPanelItems = new();
+
+    protected override void OnInitialized()
+    {
+        AppState.OnChange += SideBarChanged;
+    }
+    protected void SideBarChanged()
+    {
+        if (AppState.SideBarOpen)
+        {
+            _activeItem = null;
+        }
+
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        AppState.OnChange -= SideBarChanged;
+    }
+
+    protected async Task CloseContextPanel()
+    {
+        if (AppState.SideBarOpen)
+        {
+            await DrawerToggled.InvokeAsync();
+            _activeItem = null;
+            StateHasChanged();
+        }
+    }
+
+    protected async Task HandleContextPanelItemClicked(ContextPanelItem item)
+    {
+        if (!AppState.SideBarOpen)
+        {
+            await DrawerToggled.InvokeAsync();
+        }
+        else if (_activeItem?.Title == item.Title)
+        {
+            _activeItem = null;
+            await DrawerToggled.InvokeAsync();
+        }
+
+        _activeItem = item;
+        StateHasChanged();
+    }
+
+    protected async Task OpenSettingsDialog()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "siren-dialog", MaxWidth = MaxWidth.Medium };
+
+        var dialog = await DialogService.ShowAsync<SettingsDialog>("Settings", options);
+        var result = await dialog.Result;
+    }
+
+    protected async Task OpenAboutSiren()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "siren-dialog", MaxWidth = MaxWidth.Small };
+
+        var dialog = await DialogService.ShowAsync<AboutSiren>("About", options);
+        var result = await dialog.Result;
+    }
+}
+

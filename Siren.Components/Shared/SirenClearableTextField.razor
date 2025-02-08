@@ -1,0 +1,41 @@
+﻿@inherits SirenBaseComponent
+
+<MudTextField Value="@Input"
+              ValueChanged="@InputChanged"
+              @ref="_ref"
+              Placeholder="@Placeholder"
+              Adornment="Adornment.Start"
+              Immediate="false"
+              T="string"
+              AdornmentIcon="@Icon"
+              Required="@Required"
+              IconSize="Size.Medium"
+              Class="@($"mt-0 {Class}")"
+              Underline="@Underline"
+              Clearable="true">
+
+</MudTextField>
+
+
+@code {
+    private MudTextField<string> _ref;
+
+    [Parameter]
+    public string Input { get; set; } = "";
+
+    [Parameter]
+    public EventCallback<string> InputChanged { get; set; }
+
+    [Parameter]
+    public string Placeholder { get; set; } = "";
+
+    [Parameter]
+    public string Icon { get; set; } = "";
+
+    [Parameter]
+    public bool Underline { get; set; } = true;
+
+    [Parameter]
+    public bool Required { get; set; } = false;
+}
+

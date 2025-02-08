@@ -1,0 +1,118 @@
+﻿@using Siren.Components.Services
+<MudDialog Class="w-75 h-75">
+    <TitleContent>
+        <SirenStack Row="true">
+            <SirenText Typo="Typo.h6">
+                <SirenIcon Color="Color.Primary" Class="mr-4" Icon="@SirenIcons.Gears" />
+                Settings
+            </SirenText>
+            <SirenSpacer />
+            <SirenText Typo="Typo.h6">
+                <MudIconButton Icon="@SirenIcons.Close" OnClick="Close" />
+            </SirenText>
+        </SirenStack>
+    </TitleContent>
+    <DialogContent>
+        <SirenStack Spacing="12" Class="w-100">
+            <SirenStack Spacing="2" Class="w-100">
+                <SirenStack Spacing="2" Class="w-100" Row="true">
+                <SirenIcon Icon="@SirenIcons.Request"/>
+                <SirenText Typo="Typo.h6">Requests</SirenText>
+                </SirenStack>
+                <SirenDivider/>
+                <SirenStack Row="true" Class="w-100" Spacing="3">
+                    <SirenText Typo="Typo.subtitle1">Send with Siren Token header</SirenText>
+                    <SirenText Typo="Typo.subtitle2" Class="mud-text-secondary">Recommended to easily flag requests as test requests</SirenText>
+                    <SirenSpacer/>
+                    <SirenSwitch Color="Color.Primary" Value="true"/>
+                </SirenStack>
+
+                <SettingDescriptionToggle Text="Save http response content"
+                                          Description="This allows requests to be restored from history, but takes more space on disk."
+                                          @bind-Value="@Settings.SaveHttpContent"/>
+            </SirenStack>
+
+            <SirenStack Spacing="2" Class="w-100">
+                <SirenStack Spacing="2" Class="w-100" Row="true">
+                <SirenIcon Icon="@SirenIcons.AppData"/>
+                <SirenText Typo="Typo.h6">Application Data</SirenText>
+                </SirenStack>
+                <SirenDivider/>
+                <SirenStack Row="true" Class="w-100">
+                    <SirenText>Delete saved data</SirenText>
+                    <SirenToolChip Value="@DisplayFileSize(_appdataSize)" Text="@($"{_appdataSize} bytes")"/>
+                    <SirenSpacer/>
+                    <SirenButton Variant="Variant.Outlined" Color="Color.Error" OnClick="DeleteAppData">
+                        <SirenIcon Icon="@SirenIcons.Delete" Color="Color.Error" Class="mr-2"/>
+                        Delete
+                    </SirenButton>
+                </SirenStack>
+            </SirenStack>
+        </SirenStack>
+    </DialogContent>
+    <DialogActions>
+        <SirenButton OnClick="Close" Variant=" Variant.Text">Cancel</SirenButton>
+        <SirenButton Variant="Variant.Filled" OnClick="Save">
+            Save
+        </SirenButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Inject]
+    SettingsState Settings { get; set; } = default!;
+
+    [Inject]
+    ISettingsService SettingsService { get; set; } = default!;
+
+    [Inject]
+    ISnackbar Snackbar { get; set; } = default!;
+
+    [CascadingParameter]
+    private MudDialogInstance MudDialog { get; set; } = default!;
+
+    private long _appdataSize = 0;
+
+    private void Close() => MudDialog.Close(DialogResult.Cancel);
+
+    protected override void OnInitialized()
+    {
+        _appdataSize = SettingsService.GetAppDataSize();
+    }
+
+    public void OnNotify(SettingsState state)
+    {
+        StateHasChanged();
+    }
+
+
+    private void Save()
+    {
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+
+    protected void DeleteAppData()
+    {
+        SettingsService.PurgeSavedData();
+
+        Snackbar.Add("Purged app data", Severity.Success);
+    }
+
+    protected string DisplayFileSize(long size)
+    {
+        double kilobytes = size / 1024.0; // 1 KB = 1024 bytes
+        double megabytes = kilobytes / 1024.0; // 1 MB = 1024 KB
+
+        if (megabytes > 0.1)
+        {
+            return $"{megabytes:F2} MB";
+        }
+        else
+        {
+            return $"{kilobytes:F2} KB";
+        }
+        return $"{kilobytes:F2} KB";
+    }
+}
+
+
