@@ -7,9 +7,6 @@ namespace Siren.Components.Theme
         public static string Rounded => "material-symbols-rounded/";
         
         public static string Round(string icon) => Rounded + icon;
-        public static string Regular => "fa-regular";
-
-        public static string Light => "fa-light";
 
         public static string Code => Round("code");
 

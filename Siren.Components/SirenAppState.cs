@@ -1,9 +1,15 @@
-﻿using Siren.Components.Http;
+﻿using MudBlazor;
+using Siren.Components.Http;
 
 namespace Siren.Components
 {
     public class SirenAppState
     {
+        private MudThemeProvider? _themeProvider = default;
+        
+        public void SetThemeProvider(MudThemeProvider provider)
+            => _themeProvider = provider;
+        
         private bool _sidebarOpen = false;
 
         public bool SideBarOpen
@@ -137,6 +143,14 @@ namespace Siren.Components
             SideBarOpen = !SideBarOpen;
 
             AppStateChanged();
+        }
+
+        public async Task SetSystemColorMode()
+        {
+            if (_themeProvider == null)
+                return;
+
+            IsDarkMode = await _themeProvider.GetSystemPreference();
         }
     }
 }
