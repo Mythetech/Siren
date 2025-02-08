@@ -1,23 +1,26 @@
-﻿using System;
-using Microsoft.AspNetCore.Components;
+﻿using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using MudBlazor;
 using MudBlazor.Services;
 using MudBlazor.Utilities;
-using static MudBlazor.CategoryTypes;
 
 namespace Siren.Components.Shared
 {
+    /// <summary>
+    /// Switch component with M3 specifications.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     public partial class SirenSwitch<T> : MudBooleanInput<T>
     {
         /// <summary>
         /// 
         /// </summary>
-        protected string? Classname =>
+        protected override string? Classname =>
         new CssBuilder("mud-switch-m3")
-            .AddClass($"mud-disabled", Disabled)
-            .AddClass($"mud-readonly", ReadOnly)
-            .AddClass(LabelPosition == LabelPosition.End ? "mud-ltr" : "mud-rtl", true)
+            .AddClass($"mud-disabled", GetDisabledState())
+            .AddClass($"mud-readonly", GetReadOnlyState())
+            .AddClass($"mud-switch-label-{Size.ToDescriptionString()}")
+            .AddClass($"mud-input-content-placement-{ConvertPlacement(LabelPlacement).ToDescriptionString()}")
             .AddClass(Class)
         .Build();
 
@@ -34,11 +37,11 @@ namespace Siren.Components.Shared
         /// </summary>
         protected string? SwitchClassname =>
         new CssBuilder("mud-button-root mud-icon-button mud-switch-base-m3")
-            .AddClass($"mud-ripple mud-ripple-switch", Ripple && !ReadOnly && !Disabled)
+            .AddClass($"mud-ripple mud-ripple-switch", Ripple && !GetReadOnlyState() && !GetDisabledState())
             .AddClass($"mud-{Color.ToDescriptionString()}-text hover:mud-{Color.ToDescriptionString()}-hover", BoolValue == true)
             //.AddClass($"mud-{UnCheckedColor.ToDescriptionString()}-text hover:mud-{UnCheckedColor.ToDescriptionString()}-hover", BoolValue == false)
-            .AddClass($"mud-switch-disabled", Disabled)
-            .AddClass($"mud-readonly", ReadOnly)
+            .AddClass($"mud-switch-disabled", GetDisabledState())
+            .AddClass($"mud-readonly", GetReadOnlyState())
             .AddClass($"mud-checked", BoolValue)
             .AddClass("mud-switch-base-dense-m3", !string.IsNullOrEmpty(ThumbOffIcon))
         .Build();
@@ -61,29 +64,7 @@ namespace Siren.Components.Shared
                 .AddStyle("color", "var(--mud-palette-background)", !string.IsNullOrEmpty(ThumbOffIcon))
                 .Build();
 
-        private IKeyInterceptor? _keyInterceptor;
-        [Inject] private IKeyInterceptorFactory? KeyInterceptorFactory { get; set; }
-
-        /// <summary>
-        /// The color of the component. It supports the theme colors.
-        /// </summary>
-        [Parameter]
-        [Category(CategoryTypes.FormComponent.Appearance)]
-        public Color Color { get; set; } = Color.Default;
-
-        /// <summary>
-        /// The text/label will be displayed next to the switch if set.
-        /// </summary>
-        [Parameter]
-        [Category(CategoryTypes.FormComponent.Behavior)]
-        public string? Label { get; set; }
-
-        /// <summary>
-        /// The position of the text/label.
-        /// </summary>
-        [Parameter]
-        [Category(CategoryTypes.FormComponent.Behavior)]
-        public LabelPosition LabelPosition { get; set; } = LabelPosition.End;
+        [Inject] private IKeyInterceptorService KeyInterceptorService { get; set; } = null!;
 
         /// <summary>
         /// Shows an icon on Switch's thumb.
@@ -100,17 +81,10 @@ namespace Siren.Components.Shared
         public string? ThumbOffIcon { get; set; }
 
         /// <summary>
-        /// If true, disables ripple effect.
-        /// </summary>
-        [Parameter]
-        [Category(CategoryTypes.FormComponent.Appearance)]
-        public bool Ripple { get; set; } = true;
-
-        /// <summary>
         /// Keydown event.
         /// </summary>
         /// <param name="obj"></param>
-        protected internal void HandleKeyDown(KeyboardEventArgs obj)
+        protected internal async Task HandleKeyDownAsync(KeyboardEventArgs obj)
         {
             if (Disabled || ReadOnly)
                 return;
@@ -118,21 +92,21 @@ namespace Siren.Components.Shared
             {
                 case "ArrowLeft":
                 case "Delete":
-                    SetBoolValueAsync(false);
+                    await SetBoolValueAsync(false);
                     break;
                 case "ArrowRight":
                 case "Enter":
                 case "NumpadEnter":
-                    SetBoolValueAsync(true);
+                    await SetBoolValueAsync(true);
                     break;
                 case " ":
                     if (BoolValue == true)
                     {
-                        SetBoolValueAsync(false);
+                        await SetBoolValueAsync(false);
                     }
                     else
                     {
-                        SetBoolValueAsync(true);
+                        await SetBoolValueAsync(true);
                     }
                     break;
             }
@@ -160,20 +134,17 @@ namespace Siren.Components.Shared
         {
             if (firstRender)
             {
-                _keyInterceptor = KeyInterceptorFactory?.Create();
+                var options = new KeyInterceptorOptions(
+                    "mud-switch-base",
+                    [
+                        // prevent scrolling page, instead increment
+                        new("ArrowUp", preventDown: "key+none"),
+                        // prevent scrolling page, instead decrement
+                        new("ArrowDown", preventDown: "key+none"),
+                        new(" ", preventDown: "key+none", preventUp: "key+none")
+                    ]);
 
-                await _keyInterceptor.Connect(_elementId, new KeyInterceptorOptions()
-                {
-                    //EnableLogging = true,
-                    TargetClass = "mud-switch-base-m3",
-                    Keys = {
-                        new KeyOptions { Key="ArrowUp", PreventDown = "key+none" }, // prevent scrolling page, instead increment
-                        new KeyOptions { Key="ArrowDown", PreventDown = "key+none" }, // prevent scrolling page, instead decrement
-                        new KeyOptions { Key=" ", PreventDown = "key+none", PreventUp = "key+none" },
-                    },
-                });
-
-                _keyInterceptor.KeyDown += HandleKeyDown;
+                await KeyInterceptorService.SubscribeAsync(_elementId, options, keyDown: HandleKeyDownAsync);
             }
             await base.OnAfterRenderAsync(firstRender);
         }
@@ -181,11 +152,16 @@ namespace Siren.Components.Shared
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="disposing"></param>
-        protected override void Dispose(bool disposing)
+        /// <returns></returns>
+        protected override async ValueTask DisposeAsyncCore()
         {
+            await base.DisposeAsyncCore();
 
+            if (IsJSRuntimeAvailable)
+            {
+                await KeyInterceptorService.UnsubscribeAsync(_elementId);
+            }
         }
+
     }
 }
-

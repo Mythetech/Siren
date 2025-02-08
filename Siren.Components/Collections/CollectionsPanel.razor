@@ -184,7 +184,7 @@
                 opts.ActionColor = Color.Primary;
                 opts.ActionVariant = Variant.Text;
                 opts.VisibleStateDuration = 4000; //Longer for undo action
-                opts.Onclick = snackbar =>
+                opts.OnClick = snackbar =>
                 {
                     RestoreRequest(collection, request);
                     return Task.CompletedTask;
@@ -289,7 +289,7 @@
                 opts.ActionColor = Color.Primary;
                 opts.ActionVariant = Variant.Text;
                 opts.VisibleStateDuration = 5000; //Longer for undo action
-                opts.Onclick = snackbar =>
+                opts.OnClick = snackbar =>
                 {
                     RestoreCollection(c);
                     return Task.CompletedTask;

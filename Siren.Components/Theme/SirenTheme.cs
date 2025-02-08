@@ -38,14 +38,14 @@ namespace Siren.Components.Theme
             };
             Typography = new Typography()
             {
-                Default = new Default()
+                Default = new DefaultTypography()
                 {
                     FontFamily = new[] { "Tahoma", "Geneva", "Verdana", },
                     TextTransform = "none",
                     FontSize = "0.75",
                 },
 
-                Button = new Button()
+                Button = new ButtonTypography()
                 {
                     FontFamily = new[] { "Tahoma", "Geneva", "Verdana", },
                     TextTransform = "none",

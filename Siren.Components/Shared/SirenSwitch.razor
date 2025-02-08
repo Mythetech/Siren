@@ -1,7 +1,7 @@
 ﻿@inherits MudBooleanInput<T>
 @typeparam T
 
-<label class="@Classname" style="@Style" @onkeydown="@HandleKeyDown" id="@_elementId">
+<label class="@Classname" style="@Style" @onkeydown="@HandleKeyDownAsync" id="@_elementId">
     <span class="@SwitchSpanClassname">
         <span tabindex="0" class="@SwitchClassname">
             <span class="mud-switch-button-m3">
@@ -31,9 +31,3 @@
         </MudText>
     }
 </label>
-
-@code
-{
-    [Parameter]
-    public RenderFragment? ChildContent { get; set; }
-}
