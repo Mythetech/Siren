@@ -55,9 +55,30 @@
         AppState.OnDarkModeChanged += HandleDarkModeChange;
     }
 
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            AppState.SetThemeProvider(_theme);
+        }
+        
+        base.OnAfterRender(firstRender);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await AppState.SetSystemColorMode();
+        }
+        
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
     protected async void HandleDarkModeChange(bool isDarkMode)
     {
         await BlazorMonaco.Editor.Global.SetTheme(JS, isDarkMode ? "vs-dark" : "vs");
+        StateHasChanged();
     }
 
     public void Dispose()

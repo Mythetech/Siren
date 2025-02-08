@@ -3,6 +3,7 @@
 @using Siren.Components.History
 @using Siren.Components.Collections
 @using Siren.Components.Variables
+@using MouseEvent = MudBlazor.MouseEvent
 
 <SirenStack Spacing="1" Class="app-context-panel" Style="" AlignItems="MudBlazor.AlignItems.Start">
     <SirenIconButton Class="p-2" Icon="app-icon" OnClick="@OpenAboutSiren" />
@@ -24,19 +25,27 @@
         </PanelContent>
     </ContextPanelItem>
     <MudSpacer />
-
-    @if (IsDarkMode)
-    {
-        <MudTooltip Text="Light">
-            <MudIconButton Class="ml-1" Icon="@SirenIcons.LightMode" Color="Color.Primary" Variant="Variant.Text" OnClick="@DarkModeToggled" />
-        </MudTooltip>
-    }
-    else
-    {
-        <MudTooltip Text="Dark">
-            <MudIconButton Class="ml-1" Icon="@SirenIcons.DarkMode" Color="Color.Primary" Variant="Variant.Text" OnClick="@DarkModeToggled" />
-        </MudTooltip>
-    }
+    
+    <MudMenu ActivationEvent="MouseEvent.MouseOver" AnchorOrigin="Origin.TopRight">
+        <ActivatorContent>
+            <MudTooltip Text="Color Mode">
+                <MudIconButton Class="ml-1" Icon="@(AppState.IsDarkMode ? SirenIcons.DarkMode : SirenIcons.LightMode)" Color="Color.Primary" Variant="Variant.Text" OnClick="@DarkModeToggled"/>
+            </MudTooltip>
+        </ActivatorContent>
+        <ChildContent>
+            <MudToggleGroup T="string" Size="Size.Small" Value="@SelectedColorMode" ValueChanged="HandleColorModeChanged">
+                <MudToggleItem Value="@("light")" Style="min-width:unset;">
+                    <TooltipIcon Icon="@SirenIcons.LightMode" Text="Light Mode" />
+                </MudToggleItem>
+                <MudToggleItem Value="@("dark")" Style="min-width:unset;">
+                    <TooltipIcon Icon="@SirenIcons.DarkMode" Text="Dark Mode"  />
+                </MudToggleItem>
+                <MudToggleItem Value="@("system")" Style="min-width:unset;">
+                    <TooltipIcon Icon="@SirenIcons.Round("laptop")" Text="System Default"  />
+                </MudToggleItem>
+            </MudToggleGroup>
+        </ChildContent>
+    </MudMenu>
     <MudTooltip Text="Settings">
         <MudIconButton Class="ml-1" Color="Color.Primary" Icon="@SirenIcons.Settings" OnClick="OpenSettingsDialog" />
     </MudTooltip>
@@ -89,10 +98,31 @@
     [Parameter]
     public string DrawerBackgroundColor { get; set; } = "background-color:#FFFFFF";
 
+    private string SelectedColorMode => AppState.IsDarkMode ? "dark" : "light";
+
     private ContextPanelItem? _activeItem;
 
     private Dictionary<string, ContextPanelItem>
     _contextPanelItems = new();
+
+    protected async Task HandleColorModeChanged(string s)
+    {
+        if (!AppState.IsDarkMode && s.Equals("light", StringComparison.OrdinalIgnoreCase))
+            return;
+        
+        if (s.Equals("light", StringComparison.OrdinalIgnoreCase))
+        {
+            AppState.IsDarkMode = false;            
+        }
+        else
+        {
+            AppState.IsDarkMode = true;
+        }
+
+        //await DarkModeToggled.InvokeAsync();
+        
+        StateHasChanged();
+    }
 
     protected override void OnInitialized()
     {

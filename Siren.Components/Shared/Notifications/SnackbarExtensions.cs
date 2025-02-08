@@ -35,7 +35,7 @@ public static class SnackbarExtensions
         {
             { "Message", message },
             { "Severity", Severity.Success },
-            {"VisibleDuration", undoActionVisibleStateDuration }
+            { "VisibleDuration", undoActionVisibleStateDuration }
         };
 
         snackbar.Add<SirenNotificationToast>(parameters, Severity.Success, opts =>
