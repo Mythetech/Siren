@@ -5,6 +5,7 @@ using MudBlazor;
 using MudBlazor.Services;
 using Siren.Components.Collections;
 using Siren.Components.History;
+using Siren.Components.RequestContextPanel.Authentication;
 using Siren.Components.Services;
 using Siren.Components.Settings;
 using Siren.Components.Variables;
@@ -48,6 +49,8 @@ namespace Siren.Components
             services.AddSingleton<IVariableService, TVariablesService>();
 
             services.AddSingleton<ISettingsService, TSettingsService>();
+
+            services.AddSingleton<RequestAuthenticationState>();
 
             return services;
         }

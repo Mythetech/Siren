@@ -5,9 +5,7 @@ using Microsoft.Extensions.Logging;
 using Siren.Components.History;
 using Siren.Components.Http;
 using Siren.Components.Settings;
-// Not correctly analyzing null when assigned in try / catch
-// ReSharper disable NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
-
+using Siren.Components.RequestContextPanel.Authentication;
 namespace Siren.Components.Services
 {
     public interface IHttpRequestClient
@@ -22,14 +20,16 @@ namespace Siren.Components.Services
         private readonly ILogger<HttpRequestClient> _logger;
         private readonly SettingsState _settings;
         private readonly ICookieService _cookieService;
+        private readonly RequestAuthenticationState _authState;
 
-        public HttpRequestClient(IHttpClientFactory httpClientFactory, IHistoryService historyService, ILogger<HttpRequestClient> logger, SettingsState settings, ICookieService cookieService)
+        public HttpRequestClient(IHttpClientFactory httpClientFactory, IHistoryService historyService, ILogger<HttpRequestClient> logger, SettingsState settings, ICookieService cookieService, RequestAuthenticationState authState)
         {
             _httpClientFactory = httpClientFactory;
             _historyService = historyService;
             _logger = logger;
             _settings = settings;
             _cookieService = cookieService;
+            _authState = authState;
         }
 
         public async Task<RequestResult> SendHttpRequestAsync(HttpRequest request, CancellationToken ct)
@@ -51,6 +51,7 @@ namespace Siren.Components.Services
             }
             
             AddCookiesToRequest(httpRequestMessage);
+            AddAuthenticationToRequest(httpRequestMessage);
 
             var stopwatch = Stopwatch.StartNew();
             HttpResponseMessage response = default!;
@@ -155,6 +156,36 @@ namespace Siren.Components.Services
             {
                 var cookieHeader = string.Join("; ", applicableCookies.Select(c => $"{c.Name}={c.Value}"));
                 request.Headers.Add("Cookie", cookieHeader);
+            }
+        }
+
+        private void AddAuthenticationToRequest(HttpRequestMessage request)
+        {
+            switch (_authState.AuthType)
+            {
+                case AuthenticationType.Bearer:
+                    if (_authState.AuthParams.TryGetValue("token", out var token))
+                    {
+                        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                    }
+                    break;
+                    
+                case AuthenticationType.Basic:
+                    if (_authState.AuthParams.TryGetValue("username", out var username) && 
+                        _authState.AuthParams.TryGetValue("password", out var password))
+                    {
+                        var credentials = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes($"{username}:{password}"));
+                        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", credentials);
+                    }
+                    break;
+                    
+                case AuthenticationType.ApiKey:
+                    if (_authState.AuthParams.TryGetValue("apiKeyName", out var keyName) && 
+                        _authState.AuthParams.TryGetValue("apiKeyValue", out var keyValue))
+                    {
+                        request.Headers.Add(keyName, keyValue);
+                    }
+                    break;
             }
         }
     }
