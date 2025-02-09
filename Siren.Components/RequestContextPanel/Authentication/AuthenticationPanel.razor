@@ -1,0 +1,96 @@
+﻿@using Siren.Components.Services
+@using Siren.Components.RequestContextPanel.Authentication
+
+<SirenStack Row="true" Spacing="3" Class="p-1">
+    <SirenIcon Icon="@SirenIcons.Auth" />
+    <SirenText Typo="Typo.h6">Authorization</SirenText>
+</SirenStack>
+
+<SirenStack Spacing="2" Class="d-flex w-100">
+    <MudSelect FullWidth="true" Class="w-100 pl-2 pr-4" T="AuthenticationType" Label="Auth Type" @bind-Value="AuthState.AuthType" Dense="true">
+        <MudSelectItem Value="AuthenticationType.None">No Auth</MudSelectItem>
+        <MudSelectItem Value="AuthenticationType.Bearer">Bearer Token</MudSelectItem>
+        <MudSelectItem Value="AuthenticationType.Basic">Basic Auth</MudSelectItem>
+        <MudSelectItem Value="AuthenticationType.ApiKey">API Key</MudSelectItem>
+    </MudSelect>
+
+    @switch (AuthState.AuthType)
+    {
+        case AuthenticationType.Bearer:
+            <MudTextField @bind-Value="@BearerToken" Label="Token" 
+                         Immediate="true" OnChange="UpdateAuthParams"/>
+            break;
+            
+        case AuthenticationType.Basic:
+            <MudTextField @bind-Value="@Username" Label="Username" 
+                         Immediate="true" OnChange="UpdateAuthParams"/>
+            <MudTextField @bind-Value="@Password" Label="Password" 
+                         InputType="InputType.Password" Immediate="true" OnChange="UpdateAuthParams"/>
+            break;
+            
+        case AuthenticationType.ApiKey:
+            <MudTextField @bind-Value="@ApiKeyName" Label="Key Name" 
+                         Immediate="true" OnChange="UpdateAuthParams"/>
+            <MudTextField @bind-Value="@ApiKeyValue" Label="Key Value" 
+                         Immediate="true" OnChange="UpdateAuthParams"/>
+            break;
+    }
+</SirenStack>
+
+<MudDivider Class="my-4"/>
+
+<SirenStack>
+    @foreach (var c in Cookies.GetCookies())
+    {
+        <MudPaper Class="pa-2">
+            @c.Name
+        </MudPaper>
+    }
+</SirenStack>
+
+@code {
+    [Inject] protected ICookieService Cookies { get; set; } = default!;
+    [Inject] protected RequestAuthenticationState AuthState { get; set; } = default!;
+
+    private string BearerToken
+    {
+        get => AuthState.AuthParams.GetValueOrDefault("token", "");
+        set => UpdateAuthParam("token", value);
+    }
+    
+    private string Username
+    {
+        get => AuthState.AuthParams.GetValueOrDefault("username", "");
+        set => UpdateAuthParam("username", value);
+    }
+    
+    private string Password
+    {
+        get => AuthState.AuthParams.GetValueOrDefault("password", "");
+        set => UpdateAuthParam("password", value);
+    }
+    
+    private string ApiKeyName
+    {
+        get => AuthState.AuthParams.GetValueOrDefault("apiKeyName", "");
+        set => UpdateAuthParam("apiKeyName", value);
+    }
+    
+    private string ApiKeyValue
+    {
+        get => AuthState.AuthParams.GetValueOrDefault("apiKeyValue", "");
+        set => UpdateAuthParam("apiKeyValue", value);
+    }
+
+    private void UpdateAuthParam(string key, string value)
+    {
+        AuthState.AuthParams[key] = value;
+        AuthState.NotifyAuthenticationStateChanged();
+    }
+
+    private void UpdateAuthParams()
+    {
+        AuthState.NotifyAuthenticationStateChanged();
+    }
+}
+

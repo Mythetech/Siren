@@ -36,7 +36,6 @@
     <Folder Include="History\" />
     <Folder Include="Settings\" />
     <Folder Include="Collections\" />
-    <Folder Include="RequestContextPanel\" />
   </ItemGroup>
   <ItemGroup>
     <None Remove="Theme\" />

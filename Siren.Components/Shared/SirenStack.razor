@@ -10,10 +10,10 @@
 
 @code {
     [Parameter]
-    public AlignItems AlignItems { get; set; } = default;
+    public AlignItems AlignItems { get; set; } = AlignItems.Baseline;
 
     [Parameter]
-    public Justify Justify { get; set; } = default;
+    public Justify Justify { get; set; } = Justify.FlexStart;
 
     [Parameter]
     public bool Row { get; set; } = default;

@@ -1,17 +1,18 @@
 ﻿@using System.Reflection
+@using Siren.Components.RequestContextPanel.Authentication
 <SirenStack Class="h-100 w-100">
     <SirenStack Row="true" Class="w-100">
         <MudPaper Elevation="0" Square="true" Width="calc(100% - 3.5rem)" Class="flex-shrink-1 px-1">
-            <MudToggleGroup Class="mud-width-full" T="string" SelectionMode="SelectionMode.SingleSelection" @bind-Value="_openTab" @ref="_toggle" Outlined="false" >
-                <MudToggleItem Value="@("Auth")">
+            <MudToggleGroup Class="mud-width-full gap-1" T="string" SelectionMode="SelectionMode.SingleSelection" @bind-Value="_openTab" @ref="_toggle" Outlined="false" >
+                <MudToggleItem Value="@("Auth")" Style="max-height: 24px;min-width:unset;">
                     <SirenIcon Class="mr-2" Icon="@SirenIcons.Auth" />
                     <SirenText>Auth</SirenText>
                 </MudToggleItem>
-                <MudToggleItem Value="@("Headers")">
+                <MudToggleItem Value="@("Headers")" Style="max-height: 24px;min-width:unset;">
                     <SirenIcon Class="mr-2" Icon="@SirenIcons.Headers" />
                     <SirenText>Headers</SirenText>
                 </MudToggleItem>
-                <MudToggleItem Value="@("Cookies")">
+                <MudToggleItem Value="@("Cookies")" Style="max-height: 24px;min-width:unset;">
                     <SirenIcon Class="mr-2" Icon="@SirenIcons.Cookies"/>
                     <SirenText>Cookies</SirenText>
                 </MudToggleItem>
@@ -55,9 +56,9 @@
     private MudToggleGroup<string> _toggle;
 
     private Dictionary<string, int> TabLookup = new()
-{
+    {
         {"Auth", 0 },
-            { "Headers", 1 },
+        { "Headers", 1 },
         {"Cookies", 2 }
     };
 
