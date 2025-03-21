@@ -11,40 +11,39 @@
 @using System.Text.Json
 @using System.Text.Encodings
 
-<SirenStack Row="true" Class="w-100 h-100 ml-1">
-    <FluentMultiSplitter BarSize="1" @ref="_primarySplitter" OnResize="@SplitterResized" OnCollapse="@((args) => HandleCollapse(args))" OnExpand="HandleExpand" Height="100%" Width="@(sidePanelClosed ? "96%" :"100%")" Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Horizontal">
+<MudStack Row="true" Class="w-100 h-100 ml-1" Spacing="0">
+    <FluentMultiSplitter BarSize="1" @ref="_primarySplitter" OnResize="@SplitterResized" OnCollapse="@((args) => HandleCollapse(args))" OnExpand="HandleExpand" Height="100%" Width="@(sidePanelClosed ? "97%" :"100%")" Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Horizontal" Style="overflow-x:clip;">
         <FluentMultiSplitterPane Size="@(!sidePanelClosed ? "80%" : "88%")" Min="400px" Max="100%">
             <FluentMultiSplitter OnResize="@SplitterResized" Height="100%" Width="100%" Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Vertical">
                 <FluentMultiSplitterPane Size="50%" Min="150px">
-                    <MudPaper Height="100%" Elevation="0" Width="98%">
+                    <MudPaper Height="100%" Elevation="0" Width="100%">
                         <RequestPanel Loading="@_loading" @ref="_requestPanel" SendClicked="HandleSendClicked" />
                     </MudPaper>
                 </FluentMultiSplitterPane>
                 <FluentMultiSplitterPane Size="50%" Min="150px" Collapsible="true">
-                    <MudPaper Height="100%" Elevation="0" Width="98%">
+                    <MudPaper Height="100%" Elevation="0" Width="100%">
                         <ResponsePanel />
                     </MudPaper>
                 </FluentMultiSplitterPane>
             </FluentMultiSplitter>
         </FluentMultiSplitterPane>
         <FluentMultiSplitterPane Id="request-context-panel" Collapsed="@sidePanelClosed" Collapsible="true" Size="@(!sidePanelClosed ? "20%" :"12%")" Min="50px" Max="50%">
-            <MudPaper Height="100%">
+            <MudPaper Height="100%" Width="100%">
                 <RequestContextPanel @ref="_requestContextPanel" PanelClosed="@(() => ToggleSidePanel())" />
             </MudPaper>
         </FluentMultiSplitterPane>
     </FluentMultiSplitter>
     @if (sidePanelClosed)
     {
-        <SirenStack Spacing="3">
+        <MudStack Spacing="3" AlignItems="AlignItems.Center" Class="w-100 pl-3" Style="min-width: 30px;max-width:30px;">
             <SirenIconButton Tooltip="Authorization" Icon="@SirenIcons.Auth" OnClick="@(() => ToggleSidePanel("Auth"))" />
 
             <SirenIconButton Tooltip="Headers" Icon="@SirenIcons.Headers" OnClick="@(() => ToggleSidePanel("Headers"))" />
 
             <SirenIconButton Tooltip="Cookies" Icon="@SirenIcons.Cookies" OnClick="@(() => ToggleSidePanel("Cookies"))" />
-
-        </SirenStack>
+        </MudStack>
     }
-</SirenStack>
+</MudStack>
 
 @code {
     [Inject]
