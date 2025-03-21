@@ -2,10 +2,10 @@
 @using Siren.Components.Collections
 @using Siren.Components.Shared.Notifications
 
-<SirenStack Spacing="6" Class="h-100" AlignItems="AlignItems.Start">
+<SirenStack Spacing="6" Class="h-100 w-100 pa-1" AlignItems="AlignItems.Start">
     @if (!_detailsOpen)
     {
-        <SirenStack Row="true" Spacing="3" AlignItems="AlignItems.Center">
+        <SirenStack Row="true" Spacing="3" AlignItems="AlignItems.Center" Class="w-100">
             <MudTextField @bind-Value="_searchString" Placeholder="Filter" Adornment="Adornment.Start" Immediate="true"
                           AdornmentIcon="@SirenIcons.Filter" IconSize="Size.Medium" Class="mt-0"></MudTextField>
 
@@ -17,7 +17,7 @@
 
         @if (_collections != null && _collections.Count > 0)
         {
-            <MudGrid>
+            <MudGrid Class="pa-0 mr-1">
                 @foreach (var collection in FilterCollections(_collections).Select(x => (Collection)x))
                 {
                     <MudItem xs="6">

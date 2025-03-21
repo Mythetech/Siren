@@ -5,6 +5,7 @@ using Siren.Components;
 using Siren.History;
 using Siren.Infrastructure;
 using Siren.Variables;
+using Velopack;
 
 namespace Siren
 {
@@ -13,6 +14,8 @@ namespace Siren
         [STAThread]
         static void Main(string[] args)
         {
+            VelopackApp.Build().Run();
+
             var appBuilder = PhotinoBlazorAppBuilder.CreateDefault(args);
 
             appBuilder.Services

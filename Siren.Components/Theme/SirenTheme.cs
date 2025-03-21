@@ -56,7 +56,8 @@ namespace Siren.Components.Theme
             {
                 DefaultBorderRadius = "0.5em",
                 AppbarHeight = "3rem",
-                DrawerWidthLeft = "3.25em",
+                DrawerWidthLeft = "25vw",
+                DrawerMiniWidthLeft = "3.25em",
             };
         }
     }
