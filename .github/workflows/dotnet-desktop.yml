@@ -72,7 +72,7 @@ jobs:
           - os: windows-latest
             rid: win-x64
             platform: Windows
-            icon: Siren/wwwroot/logo5.png
+            icon: Siren/wwwroot/logo.ico
           - os: ubuntu-latest
             rid: linux-x64
             platform: Linux
