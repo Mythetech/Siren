@@ -630,3 +630,15 @@ button:focus {
 .h-100 {
     height: 100%!important;
 }
+
+.mud-tabs-tabbar-primary .mud-tab:hover {
+    background-color: rgba(var(--mud-palette-primary-rgb), 0.25);
+}
+
+.mud-tabs-tabbar-primary .mud-tab.mud-tab-active:hover {
+    background-color: rgba(var(--mud-palette-primary-rgb), 0.20);
+}
+
+.mud-icon-button {
+    padding: 8px;
+}

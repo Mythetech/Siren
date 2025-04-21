@@ -5,8 +5,8 @@
 @using Siren.Components.Variables
 @using MouseEvent = MudBlazor.MouseEvent
 
-<SirenStack Spacing="1" Class="app-context-panel" Style="" AlignItems="MudBlazor.AlignItems.Start">
-    <SirenIconButton Class="p-2" Icon="app-icon" OnClick="@OpenAboutSiren" />
+<SirenStack Spacing="1" Class="app-context-panel" Style="" AlignItems="MudBlazor.AlignItems.Center">
+    <SirenIconButton Class="m-1 p-1" Icon="app-icon" OnClick="@OpenAboutSiren" />
 
     @*Side bar Panel*@
     <ContextPanelItem Active="@(_activeItem?.Title == "History")" @ref="@_contextPanelItems["History"]" Title="History" Icon="@SirenIcons.History" ContextPanelItemClicked="HandleContextPanelItemClicked">
@@ -29,7 +29,7 @@
     <MudMenu ActivationEvent="MouseEvent.MouseOver" AnchorOrigin="Origin.TopRight">
         <ActivatorContent>
             <MudTooltip Text="Color Mode">
-                <MudIconButton Class="ml-1" Icon="@(AppState.IsDarkMode ? SirenIcons.DarkMode : SirenIcons.LightMode)" Color="Color.Primary" Variant="Variant.Text" OnClick="@DarkModeToggled"/>
+                <MudIconButton  Icon="@(AppState.IsDarkMode ? SirenIcons.DarkMode : SirenIcons.LightMode)" Color="Color.Primary" Variant="Variant.Text" OnClick="@DarkModeToggled"/>
             </MudTooltip>
         </ActivatorContent>
         <ChildContent>
@@ -41,10 +41,10 @@
         </ChildContent>
     </MudMenu>
     <MudTooltip Text="Settings">
-        <MudIconButton Class="ml-1" Color="Color.Primary" Icon="@SirenIcons.Settings" OnClick="OpenSettingsDialog" />
+        <MudIconButton Color="Color.Primary" Icon="@SirenIcons.Settings" OnClick="OpenSettingsDialog" />
     </MudTooltip>
 
-    <MudIconButton Class="ml-1" Icon="@(AppState.SideBarOpen ? SirenIcons.CollapseLeft : SirenIcons.ExpandRight)" Color="Color.Inherit" OnClick="@DrawerToggled" />
+    <MudIconButton Icon="@(AppState.SideBarOpen ? SirenIcons.CollapseLeft : SirenIcons.ExpandRight)" Color="Color.Inherit" OnClick="@DrawerToggled" />
 </SirenStack>
 
 <MudStack Class="p-0 mud-width-full" Style="@($"{(!AppState.SideBarOpen ? "width:0px;" : "")}")">
