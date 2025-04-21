@@ -29,6 +29,9 @@
 	</ItemGroup>
 	<ItemGroup>
 		<Content Remove="wwwroot\siren-logo-full.png" />
+		<Content Update="wwwroot\logo.icns">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
 	</ItemGroup>
 	<ItemGroup>
 		<Content Update="wwwroot\**">
