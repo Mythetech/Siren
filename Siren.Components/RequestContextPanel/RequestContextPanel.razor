@@ -1,42 +1,29 @@
 ﻿@using System.Reflection
 @using Siren.Components.RequestContextPanel.Authentication
+@using Mythetech.Components.Components.SimpleTabs
 <SirenStack Class="h-100 w-100">
     <SirenStack Row="true" Class="w-100">
-        <MudPaper Elevation="0" Square="true" Width="calc(100% - 3.5rem)" Class="flex-shrink-1 px-1">
-            <MudToggleGroup Class="mud-width-full gap-1" T="string" SelectionMode="SelectionMode.SingleSelection" @bind-Value="_openTab" @ref="_toggle" Outlined="false" >
-                <MudToggleItem Value="@("Auth")" Style="max-height: 24px;min-width:unset;">
-                    <SirenIcon Class="mr-2" Icon="@SirenIcons.Auth" />
-                    <SirenText>Auth</SirenText>
-                </MudToggleItem>
-                <MudToggleItem Value="@("Headers")" Style="max-height: 24px;min-width:unset;">
-                    <SirenIcon Class="mr-2" Icon="@SirenIcons.Headers" />
-                    <SirenText>Headers</SirenText>
-                </MudToggleItem>
-                <MudToggleItem Value="@("Cookies")" Style="max-height: 24px;min-width:unset;">
-                    <SirenIcon Class="mr-2" Icon="@SirenIcons.Cookies"/>
-                    <SirenText>Cookies</SirenText>
-                </MudToggleItem>
-            </MudToggleGroup>
-        </MudPaper>
-        <MudPaper Elevation="0" Square="true" Width="3.5rem">
-            <MudTooltip Text="Close">
-                <MudIconButton Icon="@SirenIcons.Close" Color="Color.Surface" Variant="Variant.Text" OnClick="@PanelClosed"/>
-            </MudTooltip>
+        <MudPaper Elevation="0" Square="true" Width="calc(100% - 3.5rem)" Class="flex-shrink-1 py-2">
+            <SimpleTabs>
+                <Tab Name="Auth" Icon="@SirenIcons.Auth">
+                    <ChildContent>
+                        <AuthenticationPanel />
+                    </ChildContent>
+                </Tab>
+                <Tab Name="Headers" Icon="@SirenIcons.Headers">
+                    <ChildContent>
+                        <HeadersPanel />
+                    </ChildContent>
+                </Tab>
+                <Tab Name="Cookies" Icon="@SirenIcons.Cookies">
+                    <ChildContent>
+                        <CookiePanel />
+                    </ChildContent>
+                </Tab>
+            </SimpleTabs>
         </MudPaper>
     </SirenStack>
-    @if (_openTab.Equals("auth", StringComparison.OrdinalIgnoreCase))
-    {
-        <AuthenticationPanel />
-    }
-    else if (_openTab.Equals("headers", StringComparison.OrdinalIgnoreCase))
-    {
-        <HeadersPanel NetworkRequest="@AppState.Active"/>
-    }
-    else if (_openTab.Equals("cookies", StringComparison.OrdinalIgnoreCase))
-    {
-        <CookiePanel NetworkRequest="@AppState.Active"/>
-    }
-    else
+    @if(string.IsNullOrWhiteSpace(_openTab))
     {
         <SirenStack AlignItems="AlignItems.Center" Justify="Justify.Center">
             <SirenText>No panel selected</SirenText>

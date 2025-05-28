@@ -15,7 +15,6 @@
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.1" />
-		<PackageReference Include="Microsoft.AspNetCore.Components" Version="9.0.1" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.1" />
 		<PackageReference Include="Nerdbank.GitVersioning" Version="3.7.115">
 		  <PrivateAssets>all</PrivateAssets>
