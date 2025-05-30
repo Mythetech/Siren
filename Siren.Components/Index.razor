@@ -35,7 +35,7 @@
     </FluentMultiSplitter>
     @if (sidePanelClosed)
     {
-        <MudStack Spacing="3" AlignItems="AlignItems.Center" Class="w-100 pl-3" Style="min-width: 30px;max-width:30px;">
+        <MudStack Spacing="3" AlignItems="AlignItems.Center" Class="w-100 h-100 pl-3" Style="min-width: 30px;max-width:30px;">
             <SirenIconButton Tooltip="Authorization" Icon="@SirenIcons.Auth" OnClick="@(() => ToggleSidePanel("Auth"))" />
 
             <SirenIconButton Tooltip="Headers" Icon="@SirenIcons.Headers" OnClick="@(() => ToggleSidePanel("Headers"))" />

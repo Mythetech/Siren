@@ -1,27 +1,27 @@
 ﻿@using System.Reflection
 @using Siren.Components.RequestContextPanel.Authentication
 @using Mythetech.Components.Components.SimpleTabs
-<SirenStack Class="h-100 w-100">
-    <SirenStack Row="true" Class="w-100">
-        <MudPaper Elevation="0" Square="true" Width="calc(100% - 3.5rem)" Class="flex-shrink-1 py-2 h-100 w-100">
-            <SimpleTabs>
+<SirenStack Class="h-100 w-100 flex-grow-1">
+    <SirenStack Row="true" Class="w-100 h-100 flex-grow-1" Style="min-width:calc(100% - 3.5rem)">
+        
+            <SimpleTabs Class="mt-4 flex-grow-1" Style="width: 90%">
                 <Tab Name="Auth" Icon="@SirenIcons.Auth">
                     <ChildContent>
-                        <AuthenticationPanel />
+                        <AuthenticationPanel/>
                     </ChildContent>
                 </Tab>
                 <Tab Name="Headers" Icon="@SirenIcons.Headers">
                     <ChildContent>
-                        <HeadersPanel />
+                        <HeadersPanel/>
                     </ChildContent>
                 </Tab>
                 <Tab Name="Cookies" Icon="@SirenIcons.Cookies">
                     <ChildContent>
-                        <CookiePanel />
+                        <CookiePanel/>
                     </ChildContent>
                 </Tab>
             </SimpleTabs>
-        </MudPaper>
+        
     </SirenStack>
     @if(string.IsNullOrWhiteSpace(_openTab))
     {
