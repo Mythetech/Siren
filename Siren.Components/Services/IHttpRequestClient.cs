@@ -42,7 +42,7 @@ namespace Siren.Components.Services
                 Content = request.Content,
             };
 
-            if (request.Headers != null)
+            if (request?.Headers != null)
             {
                 foreach (var header in request.Headers)
                 {
@@ -54,8 +54,8 @@ namespace Siren.Components.Services
             AddAuthenticationToRequest(httpRequestMessage);
 
             var stopwatch = Stopwatch.StartNew();
-            HttpResponseMessage response = default!;
-            RequestResult? result = default!;
+            HttpResponseMessage? response;
+            RequestResult? result = null!;
 
             try
             {
@@ -69,8 +69,9 @@ namespace Siren.Components.Services
                 {
                     Error = ex,
                     Duration = stopwatch.Elapsed,
-
                 };
+
+                return result;
             }
             stopwatch.Stop();
             
@@ -109,7 +110,7 @@ namespace Siren.Components.Services
             {
                 try
                 {
-                    responseText = System.Text.Json.JsonSerializer.Serialize(System.Text.Json.JsonSerializer.Deserialize<dynamic>(result.ResponseContent?.ReadAsStream()), new System.Text.Json.JsonSerializerOptions() { WriteIndented = true }) ?? result?.Error?.Message ?? "No Content";
+                    responseText = System.Text.Json.JsonSerializer.Serialize(System.Text.Json.JsonSerializer.Deserialize<dynamic>(result?.ResponseContent?.ReadAsStream()), new System.Text.Json.JsonSerializerOptions() { WriteIndented = true }) ?? result?.Error?.Message ?? "No Content";
                 }
                 catch (Exception ex)
                 {
