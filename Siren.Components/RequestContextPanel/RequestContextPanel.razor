@@ -7,17 +7,17 @@
             <SimpleTabs Class="mt-4 flex-grow-1" Style="width: 90%">
                 <Tab Name="Auth" Icon="@SirenIcons.Auth">
                     <ChildContent>
-                        <AuthenticationPanel/>
+                        <AuthenticationPanel />
                     </ChildContent>
                 </Tab>
                 <Tab Name="Headers" Icon="@SirenIcons.Headers">
                     <ChildContent>
-                        <HeadersPanel/>
+                        <HeadersPanel NetworkRequest="@AppState.Active"/>
                     </ChildContent>
                 </Tab>
                 <Tab Name="Cookies" Icon="@SirenIcons.Cookies">
                     <ChildContent>
-                        <CookiePanel/>
+                        <CookiePanel NetworkRequest="@AppState.Active"/>
                     </ChildContent>
                 </Tab>
             </SimpleTabs>

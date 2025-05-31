@@ -1,6 +1,7 @@
 ﻿@page "/"
 @page "/index"
 @implements IDisposable
+@implements IAsyncDisposable
 @using Microsoft.FluentUI.AspNetCore.Components
 @using Siren.Components.Theme
 @using Siren.Components.Shared
@@ -10,6 +11,7 @@
 @using Microsoft.FluentUI.AspNetCore
 @using System.Text.Json
 @using System.Text.Encodings
+@using Microsoft.JSInterop
 
 <MudStack Row="true" Class="w-100 h-100 ml-1" Spacing="0">
     <FluentMultiSplitter BarSize="1" @ref="_primarySplitter" OnResize="@SplitterResized" OnCollapse="@((args) => HandleCollapse(args))" OnExpand="HandleExpand" Height="100%" Width="@(sidePanelClosed ? "97%" :"100%")" Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Horizontal" Style="overflow-x:clip;">
@@ -45,35 +47,16 @@
     }
 </MudStack>
 
-<script>
-    const resizer = document.querySelector('.resizer');
-    const drawer = document.querySelector('.mud-drawer');
-    const root = document.documentElement;
-
-    resizer.addEventListener('mousedown', (e) => {
-        e.preventDefault();
-
-        const onMouseMove = (e) => {
-            const newWidth = e.clientX - drawer.getBoundingClientRect().left;
-            root.style.setProperty('--mud-drawer-width-left', `${newWidth}px`);
-        };
-
-        const onMouseUp = () => {
-            window.removeEventListener('mousemove', onMouseMove);
-            window.removeEventListener('mouseup', onMouseUp);
-        };
-
-        window.addEventListener('mousemove', onMouseMove);
-        window.addEventListener('mouseup', onMouseUp);
-    });
-</script>
-
 @code {
     [Inject]
     protected SirenAppState AppState { get; set; } = default!;
 
     [Inject]
     protected IHttpRequestClient HttpRequestClient { get; set; } = default!;
+
+    [Inject] protected IJSRuntime JS { get; set; } = default!;
+
+    private IJSObjectReference _module;
 
     private FluentMultiSplitter _primarySplitter = default!;
 
@@ -144,6 +127,14 @@
     public void HandleNetworkRequestChanged(SirenNetworkRequest? n)
     {
         StateHasChanged();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _module = await JS.InvokeAsync<IJSObjectReference>("import", "./app.js");
+        }
     }
 
     public void Dispose()
@@ -225,6 +216,11 @@
             return false;
 
         return true;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await _module.DisposeAsync();
     }
 
 }
