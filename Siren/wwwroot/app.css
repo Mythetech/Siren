@@ -642,3 +642,13 @@ button:focus {
 .mud-icon-button {
     padding: 8px;
 }
+
+.resizer {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 10px;
+    height: 100%;
+    cursor: ew-resize;
+    z-index: 1;
+}
