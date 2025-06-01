@@ -99,7 +99,7 @@
         StateHasChanged();
 
         if (!string.IsNullOrWhiteSpace(selectedTab))
-           await _requestContextPanel.Open(selectedTab);
+            _requestContextPanel.Open(selectedTab);
 
         StateHasChanged();
     }

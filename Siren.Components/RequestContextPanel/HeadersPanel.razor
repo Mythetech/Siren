@@ -1,146 +1,167 @@
 ﻿@using Siren.Components.Http
+@using Orientation = Microsoft.FluentUI.AspNetCore.Components.Orientation
 
-<SirenStack Class="w-100 h-100">
-    <MudPaper Elevation="0" Height="50%" Width="100%" Class="p-1 overflow-y-scroll">
-        <SirenStack Row="true" Spacing="6">
-            <SirenText Typo="Typo.body1">Request Headers</SirenText>
-            <SirenSpacer />
-            <SirenIconButton OnClick="@(() => AddRequestHeader("Key", "Value"))"
-                             Icon="@SirenIcons.Add"
-                             Tooltip="@($"Add Header")"
-                             Class="scale-75"
-                             Size="Size.Medium"
-                             Variant="Variant.Text"
-                             Color="Color.Primary" />
-        </SirenStack>
+<SirenStack Class="w-100 h-100 d-flex">
+    <SirenSplitter Orientation="Orientation.Vertical" Panel1Size="40%" Panel2Size="60%" Class="w-100">
+        <Panel1>
+            <SirenStack Spacing="3" Class="p-1 overflow-y-scroll d-flex h-100 w-100">
+                <SirenStack Row="true" Spacing="3" Class="w-100" AlignItems="AlignItems.Center">
+                    <SirenText Typo="Typo.body1">Request Headers</SirenText>
+                    <SirenSpacer/>
+                    <SirenIconButton OnClick="@(() => AddRequestHeader("Key", "Value"))"
+                                     Icon="@SirenIcons.Add"
+                                     Tooltip="@($"Add Header")"
+                                     Class="scale-75"
+                                     Size="Size.Medium"
+                                     Variant="Variant.Text"
+                                     Color="Color.Primary"/>
+                </SirenStack>
 
-        <MudDataGrid T="DictionaryViewModel"
-                     Items="@requestHeaders"
-                     Context="context"
-                     Class="w-100"
-                     Bordered="false"
-                     Elevation="0"
-                     RowClass="text-truncate hover-error-zone"
-                     Style="overflow:hidden;"
-                     EditMode="DataGridEditMode.Cell"
-                     EditTrigger="DataGridEditTrigger.Manual"
-                     CommittedItemChanges="UpdateHeader"
-                     ReadOnly="false"
-                     Dense="true"
-                     Hover="true">
-            <Columns>
-                <MudBlazor.PropertyColumn Property="x => x.Key" Title="Header">
-                    <EditTemplate>
-                        <SirenStack Row="true" Class="w-100 hover-zone">
-                            <MudTextField @bind-Value="@context.Item.Key" OnBlur="(() => UpdateHeader(context.Item))" />
-                            <SirenSpacer />
-                            <SirenIconButton OnClick="@(async () => { await JsApiService.CopyToClipboardAsync(context.Item.Key); NotifyCopied(context.Item.Key);})"
-                                             Icon="@SirenIcons.Copy"
-                                             Class="hover-visible hover-visible-primary scale-75"
-                                             Tooltip="@($"Copy key")"
-                                             Size="Size.Small"
-                                             Variant="Variant.Text"
-                                             Color="Color.Transparent" />
-                        </SirenStack>
-                    </EditTemplate>
-                </MudBlazor.PropertyColumn>
+                <MudDataGrid T="DictionaryViewModel"
+                             Items="@requestHeaders"
+                             Context="context"
+                             Class="w-100"
+                             Bordered="false"
+                             Elevation="0"
+                             RowClass="text-truncate hover-error-zone"
+                             Style="overflow:hidden;"
+                             EditMode="DataGridEditMode.Cell"
+                             EditTrigger="DataGridEditTrigger.Manual"
+                             CommittedItemChanges="UpdateHeader"
+                             ReadOnly="false"
+                             Dense="true"
+                             Hover="true">
+                    <Columns>
+                        <MudBlazor.PropertyColumn Property="x => x.Key" Title="Header">
+                            <EditTemplate>
+                                <SirenStack Row="true" Class="w-100 hover-zone">
+                                    <MudTextField @bind-Value="@context.Item.Key" OnBlur="(() => UpdateHeader(context.Item))"/>
+                                    <SirenSpacer/>
+                                    <SirenIconButton OnClick="@(async () =>
+                                                              {
+                                                                  await JsApiService.CopyToClipboardAsync(context.Item.Key);
+                                                                  NotifyCopied(context.Item.Key);
+                                                              })"
+                                                     Icon="@SirenIcons.Copy"
+                                                     Class="hover-visible hover-visible-primary scale-75"
+                                                     Tooltip="@($"Copy key")"
+                                                     Size="Size.Small"
+                                                     Variant="Variant.Text"
+                                                     Color="Color.Transparent"/>
+                                </SirenStack>
+                            </EditTemplate>
+                        </MudBlazor.PropertyColumn>
 
-                <MudBlazor.PropertyColumn Property="x => x.Value" Title="Value">
-                    <EditTemplate>
-                        <SirenStack Row="true" Class="w-100 hover-zone">
-                            <MudTextField @bind-Value="@context.Item.Value" OnBlur="(() => UpdateHeader(context.Item))" />
-                            <SirenSpacer />
-                            <SirenIconButton OnClick="@(async () => { await JsApiService.CopyToClipboardAsync(context.Item.Value); NotifyCopied(context.Item.Value);})"
-                                             Icon="@SirenIcons.Copy"
-                                             Class="hover-visible hover-visible-primary scale-75"
-                                             Tooltip="@($"Copy value")"
-                                             Size="Size.Small"
-                                             Variant="Variant.Text"
-                                             Color="Color.Transparent" />
-                        </SirenStack>
-                    </EditTemplate>
-                </MudBlazor.PropertyColumn>
-                <MudBlazor.TemplateColumn>
-                    <CellTemplate>
-                        <SirenSpacer />
-                        <SirenIconButton OnClick="@(() => DeleteHeader(context.Item) )"
-                                         Icon="@SirenIcons.Delete"
-                                         Class="hover-visible hover-visible-error scale-75"
-                                         Tooltip="@($"Delete `{context?.Item.Key ?? "variable"}`")"
-                                         Size="Size.Small"
-                                         Variant="Variant.Text"
-                                         Color="Color.Transparent" />
-
-                    </CellTemplate>
-                    <EditTemplate>
-                        <SirenSpacer />
-                        <SirenIconButton OnClick="@(() =>  DeleteHeader(context.Item) )"
-                                         Icon="@SirenIcons.Delete"
-                                         Class="hover-visible hover-visible-error scale-75"
-                                         Tooltip="@($"Delete `{context?.Item.Key ?? "variable"}`")"
-                                         Size="Size.Small"
-                                         Variant="Variant.Text"
-                                         Color="Color.Transparent" />
-                    </EditTemplate>
-                </MudBlazor.TemplateColumn>
-
-            </Columns>
-        </MudDataGrid>
-    </MudPaper>
-    <SirenDivider />
-    <MudPaper Elevation="0" Height="50%" Width="100%" Class="p-1 overflow-y-scroll">
-        <SirenText Typo="Typo.body1">Response Headers</SirenText>
-        @if (NetworkRequest?.Response?.Headers != null)
-        {
-            <MudDataGrid T="DictionaryViewModel"
-                         Items="@(NetworkRequest.Response.Headers.ToViewModel())"
-                         Context="context"
-                         Class="w-100"
-                         Bordered="false"
-                         Elevation="0"
-                         RowClass="text-truncate hover-error-zone"
-                         Style="overflow:hidden;"
-                         ReadOnly="true"
-                         Dense="true"
-                         Hover="true">
-                <Columns>
-                    <MudBlazor.PropertyColumn Property="x => x.Key">
-                        <CellTemplate>
-                            <SirenStack Row="true" Class="w-100 hover-zone">
-                                <MudTextField @bind-Value="@context.Item.Key" />
-                                <SirenSpacer />
-                                <SirenIconButton OnClick="@(async () => { await JsApiService.CopyToClipboardAsync(context.Item.Key); NotifyCopied(context.Item.Key);})"
-                                                 Icon="@SirenIcons.Copy"
-                                                 Class="hover-visible hover-visible-primary scale-75"
-                                                 Tooltip="@($"Copy key")"
+                        <MudBlazor.PropertyColumn Property="x => x.Value" Title="Value">
+                            <EditTemplate>
+                                <SirenStack Row="true" Class="w-100 hover-zone">
+                                    <MudTextField @bind-Value="@context.Item.Value" OnBlur="(() => UpdateHeader(context.Item))"/>
+                                    <SirenSpacer/>
+                                    <SirenIconButton OnClick="@(async () =>
+                                                              {
+                                                                  await JsApiService.CopyToClipboardAsync(context.Item.Value);
+                                                                  NotifyCopied(context.Item.Value);
+                                                              })"
+                                                     Icon="@SirenIcons.Copy"
+                                                     Class="hover-visible hover-visible-primary scale-75"
+                                                     Tooltip="@($"Copy value")"
+                                                     Size="Size.Small"
+                                                     Variant="Variant.Text"
+                                                     Color="Color.Transparent"/>
+                                </SirenStack>
+                            </EditTemplate>
+                        </MudBlazor.PropertyColumn>
+                        <MudBlazor.TemplateColumn>
+                            <CellTemplate>
+                                <SirenSpacer/>
+                                <SirenIconButton OnClick="@(() => DeleteHeader(context.Item))"
+                                                 Icon="@SirenIcons.Delete"
+                                                 Class="hover-visible hover-visible-error scale-75"
+                                                 Tooltip="@($"Delete `{context?.Item.Key ?? "variable"}`")"
                                                  Size="Size.Small"
                                                  Variant="Variant.Text"
-                                                 Color="Color.Transparent" />
-                            </SirenStack>
-                        </CellTemplate>
-                    </MudBlazor.PropertyColumn>
+                                                 Color="Color.Transparent"/>
 
-                    <MudBlazor.PropertyColumn Property="x => x.Value">
-                        <CellTemplate>
-                            <SirenStack Row="true" Class="w-100 hover-zone">
-                                <MudTextField @bind-Value="@context.Item.Value" />
-                                <SirenSpacer />
-                                <SirenIconButton OnClick="@(async () => { await JsApiService.CopyToClipboardAsync(context.Item.Value); NotifyCopied(context.Item.Value);})"
-                                                 Icon="@SirenIcons.Copy"
-                                                 Class="hover-visible hover-visible-primary scale-75"
-                                                 Tooltip="@($"Copy value")"
+                            </CellTemplate>
+                            <EditTemplate>
+                                <SirenSpacer/>
+                                <SirenIconButton OnClick="@(() => DeleteHeader(context.Item))"
+                                                 Icon="@SirenIcons.Delete"
+                                                 Class="hover-visible hover-visible-error scale-75"
+                                                 Tooltip="@($"Delete `{context?.Item.Key ?? "variable"}`")"
                                                  Size="Size.Small"
                                                  Variant="Variant.Text"
-                                                 Color="Color.Transparent" />
-                            </SirenStack>
-                        </CellTemplate>
-                    </MudBlazor.PropertyColumn>
-                </Columns>
-            </MudDataGrid>
-        }
-    </MudPaper>
+                                                 Color="Color.Transparent"/>
+                            </EditTemplate>
+                        </MudBlazor.TemplateColumn>
+
+                    </Columns>
+                </MudDataGrid>
+            </SirenStack>
+        </Panel1>
+        <Panel2>
+            <SirenStack Spacing="3" Class="p-1 overflow-y-scroll flex-grow-1 d-flex w-100 h-100">
+                <SirenText Typo="Typo.body1">Response Headers</SirenText>
+                @if (NetworkRequest?.Response?.Headers != null)
+                {
+                    <MudDataGrid T="DictionaryViewModel"
+                                 Items="@(NetworkRequest.Response.Headers.ToViewModel())"
+                                 Context="context"
+                                 Class="w-100 h-100 d-flex"
+                                 Bordered="false"
+                                 Elevation="0"
+                                 RowClass="text-truncate hover-error-zone"
+                                 Style="overflow:hidden;"
+                                 ReadOnly="true"
+                                 Dense="true"
+                                 Hover="true">
+                        <Columns>
+                            <MudBlazor.PropertyColumn Property="x => x.Key">
+                                <CellTemplate>
+                                    <SirenStack Row="true" Class="w-100 hover-zone">
+                                        <MudTextField @bind-Value="@context.Item.Key"/>
+                                        <SirenSpacer/>
+                                        <SirenIconButton OnClick="@(async () =>
+                                                                  {
+                                                                      await JsApiService.CopyToClipboardAsync(context.Item.Key);
+                                                                      NotifyCopied(context.Item.Key);
+                                                                  })"
+                                                         Icon="@SirenIcons.Copy"
+                                                         Class="hover-visible hover-visible-primary scale-75"
+                                                         Tooltip="@($"Copy key")"
+                                                         Size="Size.Small"
+                                                         Variant="Variant.Text"
+                                                         Color="Color.Transparent"/>
+                                    </SirenStack>
+                                </CellTemplate>
+                            </MudBlazor.PropertyColumn>
+
+                            <MudBlazor.PropertyColumn Property="x => x.Value">
+                                <CellTemplate>
+                                    <SirenStack Row="true" Class="w-100 hover-zone">
+                                        <MudTextField @bind-Value="@context.Item.Value"/>
+                                        <SirenSpacer/>
+                                        <SirenIconButton OnClick="@(async () =>
+                                                                  {
+                                                                      await JsApiService.CopyToClipboardAsync(context.Item.Value);
+                                                                      NotifyCopied(context.Item.Value);
+                                                                  })"
+                                                         Icon="@SirenIcons.Copy"
+                                                         Class="hover-visible hover-visible-primary scale-75"
+                                                         Tooltip="@($"Copy value")"
+                                                         Size="Size.Small"
+                                                         Variant="Variant.Text"
+                                                         Color="Color.Transparent"/>
+                                    </SirenStack>
+                                </CellTemplate>
+                            </MudBlazor.PropertyColumn>
+                        </Columns>
+                    </MudDataGrid>
+                }
+            </SirenStack>
+        </Panel2>
+    </SirenSplitter>
 </SirenStack>
-
 
 @code {
     [Parameter]

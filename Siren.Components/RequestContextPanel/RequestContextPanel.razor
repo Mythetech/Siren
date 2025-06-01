@@ -4,7 +4,7 @@
 <SirenStack Class="h-100 w-100 flex-grow-1">
     <SirenStack Row="true" Class="w-100 h-100 flex-grow-1" Style="min-width:calc(100% - 3.5rem)">
         
-            <SimpleTabs Class="mt-4 flex-grow-1" Style="width: 90%">
+            <SimpleTabs Class="mt-4 flex-grow-1" Style="width: 90%" @ref="_tabs">
                 <Tab Name="Auth" Icon="@SirenIcons.Auth">
                     <ChildContent>
                         <AuthenticationPanel />
@@ -40,6 +40,8 @@
     [Parameter]
     public bool IsOpen { get; set; } = false;
 
+    private SimpleTabs? _tabs;
+
     private MudToggleGroup<string> _toggle;
 
     private Dictionary<string, int> TabLookup = new()
@@ -51,16 +53,10 @@
 
     private string _openTab = "";
 
-    public async Task Open(string tab)
+    public void Open(string tab)
     {
         _openTab = tab;
-
-        /*
-        _toggle.Value = _openTab;
-        _toggle.GetType().GetMethod("OnValueChanged", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(_toggle, default);
-
-        await _toggle.ValueChanged.InvokeAsync(tab);
-        */
+        _tabs?.SelectTab(tab);
 
         StateHasChanged();
     }
