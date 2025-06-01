@@ -281,6 +281,10 @@ a, .btn-link {
 }
 
 .collection-card {
+    flex: 1 1 40%;
+    max-width: 48%;
+    box-shadow: 0 0 4px 2px transparent;
+
 }
 
     .collection-card:hover {

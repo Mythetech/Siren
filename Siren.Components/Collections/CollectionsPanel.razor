@@ -17,17 +17,17 @@
 
         @if (_collections != null && _collections.Count > 0)
         {
-            <MudGrid Class="pa-0 mr-1">
+            <SirenStack Row="true" Class="flex-wrap px-1 mr-1 w-100" Spacing="3"  AlignItems="AlignItems.Center">
                 @foreach (var collection in FilterCollections(_collections).Select(x => (Collection)x))
                 {
-                    <MudItem xs="6">
+                    
                         <CollectionCard Collection="@collection"
                                         CollectionCardClicked="OpenCollectionCardDetails"
                                         CollectionDeleted="DeleteCollection"
                                         AddNewRequest="AddNewRequestToCollection" />
-                    </MudItem>
+                   
                 }
-            </MudGrid>
+            </SirenStack>
         }
         else
         {
