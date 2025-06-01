@@ -17,22 +17,22 @@
     @switch (AuthState.AuthType)
     {
         case AuthenticationType.Bearer:
-            <MudTextField @bind-Value="@BearerToken" Label="Token" 
-                         Immediate="true" OnChange="UpdateAuthParams"/>
+            <MudTextField @bind-Value="@BearerToken" Label="Token" FullWidth="true" 
+                         Immediate="true" OnInternalInputChanged="UpdateAuthParams"/>
             break;
             
         case AuthenticationType.Basic:
-            <MudTextField @bind-Value="@Username" Label="Username" 
-                         Immediate="true" OnChange="UpdateAuthParams"/>
-            <MudTextField @bind-Value="@Password" Label="Password" 
-                         InputType="InputType.Password" Immediate="true" OnChange="UpdateAuthParams"/>
+            <MudTextField @bind-Value="@Username" Label="Username" FullWidth="true" 
+                         Immediate="true" OnInternalInputChanged="UpdateAuthParams"/>
+            <MudTextField @bind-Value="@Password" Label="Password" FullWidth="true"
+                         InputType="InputType.Password" Immediate="true" OnInternalInputChanged="UpdateAuthParams"/>
             break;
             
         case AuthenticationType.ApiKey:
-            <MudTextField @bind-Value="@ApiKeyName" Label="Key Name" 
-                         Immediate="true" OnChange="UpdateAuthParams"/>
-            <MudTextField @bind-Value="@ApiKeyValue" Label="Key Value" 
-                         Immediate="true" OnChange="UpdateAuthParams"/>
+            <MudTextField @bind-Value="@ApiKeyName" Label="Key Name" FullWidth="true"
+                         Immediate="true" OnInternalInputChanged="UpdateAuthParams"/>
+            <MudTextField @bind-Value="@ApiKeyValue" Label="Key Value" FullWidth="true"
+                         Immediate="true" OnInternalInputChanged="UpdateAuthParams"/>
             break;
     }
 </SirenStack>
