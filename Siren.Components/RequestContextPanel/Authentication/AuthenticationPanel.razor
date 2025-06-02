@@ -40,10 +40,10 @@
 <MudDivider Class="my-4"/>
 
 <SirenStack>
-    @foreach (var c in Cookies.GetCookies())
+    @foreach (var cookie in Cookies.GetCookies())
     {
         <MudPaper Class="pa-2">
-            @c.Name
+            @cookie.Name
         </MudPaper>
     }
 </SirenStack>
