@@ -13,6 +13,7 @@ namespace Siren.Test.Components
         public SirenEditableTitleTests()
         {
             Services.AddMudServices();
+            JSInterop.SetupVoid("mudElementRef.addOnBlurEvent", _ => true);
         }
 
         [Fact(DisplayName = "Can render readonly edit title")]
