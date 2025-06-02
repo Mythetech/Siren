@@ -28,6 +28,8 @@ namespace Siren.Test.Components
             JSInterop.Setup<int>("mudpopoverHelper.countProviders");
             JSInterop.SetupVoid("mudPopover.connect", _ => true);
             JSInterop.SetupVoid("mudKeyInterceptor.connect", _ => true);
+            JSInterop.SetupVoid("mudElementRef.addOnBlurEvent", _ => true);
+            JSInterop.SetupVoid("mudElementRef.addOnBlurEvent", _ => true);
 
             var popover = RenderComponent<MudPopoverProvider>();
         }
