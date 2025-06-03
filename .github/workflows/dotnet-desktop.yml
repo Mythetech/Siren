@@ -39,21 +39,7 @@
 name: .NET Core Desktop
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
   workflow_dispatch:
-    inputs:
-      platform:
-        description: 'Platform to publish for'
-        required: true
-        type: choice
-        options:
-          - Windows
-          - Linux
-          - macOS
-          - All
 
 jobs:
   test:
@@ -82,10 +68,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch'
     strategy:
       matrix:
-        ${{ if github.event.inputs.platform == 'All' }}:
-          os: [windows-latest, ubuntu-latest, macos-latest]
-        ${{ if github.event.inputs.platform != 'All' }}:
-          os: [${{ github.event.inputs.platform }}-latest]
+        os: [windows-latest, ubuntu-latest, macos-latest]
         include:
           - os: windows-latest
             rid: win-x64
