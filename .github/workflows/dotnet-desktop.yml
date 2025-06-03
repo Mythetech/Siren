@@ -103,7 +103,8 @@ jobs:
       id: get_version
       run: echo "VERSION=0.0.${{ github.run_number }}" >> $GITHUB_OUTPUT
       shell: bash
-        
+    - name: Setup GitHub Package Authentication
+      run: dotnet nuget add source --username USERNAME --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/mythetech/index.json"       
     - name: Publish
       run: dotnet publish Siren/Siren.csproj -c Release -r ${{ matrix.rid }} --self-contained -p:PublishSingleFile=true -p:PublishTrimmed=false -o publish/${{ matrix.rid }}
         
