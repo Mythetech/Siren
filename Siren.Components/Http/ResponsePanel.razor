@@ -10,8 +10,8 @@
         {
             <HttpStatusCodeChip IsDarkMode="@AppState.IsDarkMode" StatusCode="@(AppState?.Active?.Response?.HttpStatusCode ?? System.Net.HttpStatusCode.InternalServerError)"/>
         }
-        <MudText>@($"{AppState?.Active?.Response?.Duration.TotalMilliseconds}")ms</MudText>
-        <MudText>@($"{AppState?.Active?.Response?.ResponseSize?.Body + AppState?.Active?.Response?.ResponseSize?.Headers}")B</MudText>
+        <SirenChip T="string" Color="Color.Info">@($"{AppState?.Active?.Response?.Duration.TotalMilliseconds}")ms</SirenChip>
+        <SirenChip T="string" Color="Color.Inherit" Style="color:#2f4f4f;background-color:#2f4f4f66">@($"{AppState?.Active?.Response?.ResponseSize?.Body + AppState?.Active?.Response?.ResponseSize?.Headers}")B</SirenChip>
         <SirenIconButton Icon="@SirenIcons.Format" Size="Size.Small" Tooltip="Format" OnClick="@(async () => await FormatDocumentAsync())"/>
         <SirenIconButton Icon="@SirenIcons.Copy" Size="Size.Small" Tooltip="Copy" OnClick="Copy"/>
     </SirenStack>
