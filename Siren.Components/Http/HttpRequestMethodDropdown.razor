@@ -47,6 +47,7 @@
 
         _selectedMethod = method;
         await SelectedMethodChanged.InvokeAsync(_selectedMethod);
+        StateHasChanged();
     }
 
     [Parameter]
