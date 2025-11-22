@@ -1,6 +1,6 @@
 ﻿@inherits SirenBaseComponent
 @using Siren.Components.Http
-@using Color = MudBlazor.Color
+@using MouseEvent = MudBlazor.MouseEvent
 @typeparam T
 
 <MudDynamicTabs @ref="@DynamicTabs"
@@ -18,16 +18,26 @@
                 PanelClass="px-1"
                 Elevation="@Elevation"
                 Rounded="@Rounded"
-                ScrollIconColor="Color.Primary"
+                ScrollIconColor="MudBlazor.Color.Primary"
                 ApplyEffectsToContainer>
     @if (Items != null)
     {
         @foreach (var item in Items)
         {
             var request = item as SirenNetworkRequest;
+            var itemLocal = item;
             <MudTabPanel ID="@(request.Id)" ShowCloseIcon="true" Icon="@SirenIcons.Close">
                 <TabContent>
-                    <NetworkRequestTab Request="@request" />
+                    <MudMenu ActivationEvent="MudBlazor.MouseEvent.RightClick" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft" Dense="true" ListClass="pa-2">
+                        <ActivatorContent>
+                            <span @oncontextmenu:preventDefault="true" style="display: contents;">
+                                <NetworkRequestTab Request="@request" />
+                            </span>
+                        </ActivatorContent>
+                        <ChildContent>
+                            <MudMenuItem class="rounded-lg" OnClick="@(() => HandleDuplicate(itemLocal))">Duplicate</MudMenuItem>
+                        </ChildContent>
+                    </MudMenu>
                 </TabContent>
             </MudTabPanel>
 
@@ -44,7 +54,7 @@
 
 @code {
     [Parameter]
-    public MudBlazor.Color Color { get; set; } = Color.Primary;
+    public MudBlazor.Color Color { get; set; } = MudBlazor.Color.Primary;
 
     [Parameter]
     public int Elevation { get; set; } = 4;
@@ -175,5 +185,10 @@
             if (Items.Count == 0)
                 await AddTabCallback();
         }
+    }
+
+    async Task HandleDuplicate(T item)
+    {
+        await TabDuplicated.InvokeAsync(item);
     }
 }

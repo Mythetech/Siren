@@ -29,7 +29,7 @@ namespace Siren.Components.Http
         {
             return new HttpRequest
             {
-                Method = Method,
+                Method = new HttpMethod(Method.ToString()),
                 RequestUri = RequestUri,
                 DisplayUri = DisplayUri,
                 QueryParameters = QueryParameters?.ToDictionary(entry => entry.Key, entry => entry.Value),

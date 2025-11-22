@@ -137,7 +137,13 @@
 
     protected void HandleTabDuplicated(SirenNetworkRequest t)
     {
+        if (t == null) return;
 
+        var duplicatedRequest = t.Copy();
+        AppState.AddNetworkRequest(duplicatedRequest);
+        AppState.SetActive(duplicatedRequest.Id);
+
+        StateHasChanged();
     }
 }
 
