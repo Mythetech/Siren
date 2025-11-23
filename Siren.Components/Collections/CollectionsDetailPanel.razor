@@ -31,11 +31,11 @@ else
     <SirenStack Spacing="1" Class="w-100 h-100" Style="min-width:330px;max-height:75dvh;overflow-y:auto;">
         @foreach (var req in FilterRequests(Collection.Requests))
         {
-            <SirenStack Spacing="1" Row="true" Class="w-100 collection-detail-item" AlignItems="AlignItems.Center" Style="min-height:24px;max-width:330px;">
+            <SirenStack Spacing="1" Row="true" Class="w-100 collection-detail-item" AlignItems="AlignItems.Center" Style="min-height:24px">
 
                 <Siren.Components.Http.HttpMethodChip Method="req.Method" />
 
-                <SirenText Class="text-truncate hover-truncate" Style="max-width:275px;">@(!string.IsNullOrWhiteSpace(req.DisplayUri) ? req.DisplayUri : req.RequestUri)</SirenText>
+                <SirenText Class="text-truncate hover-truncate">@(!string.IsNullOrWhiteSpace(req.DisplayUri) ? req.DisplayUri : req.RequestUri)</SirenText>
                 <SirenSpacer />
                 <SirenIconButton Color="Color.Error" Style="display:none;" Class="hover-visible" Tooltip="Delete" Size="@Size.Small" OnClick="@(async () => await DeleteRequested.InvokeAsync(new CollectionDetailPanelEventArgs(Collection.Id, req)))" Icon="@SirenIcons.Delete" />
                 <SirenIconButton Style="display:none;" Class="hover-visible" Tooltip="Edit" Size="@Size.Small" OnClick="@(async () => await EditRequested.InvokeAsync(new CollectionDetailPanelEventArgs(Collection.Id, req)))" Icon="@SirenIcons.Edit" />

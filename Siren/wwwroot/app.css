@@ -331,10 +331,6 @@ a, .btn-link {
         display: flex !important;
     }
 
-    .collection-detail-item:hover .hover-truncate {
-        max-width: 185px !important;
-    }
-
 .hover-zone:hover .hover-visible {
     display: flex !important;
 }
