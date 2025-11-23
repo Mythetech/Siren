@@ -25,17 +25,16 @@
         @foreach (var item in Items)
         {
             var request = item as SirenNetworkRequest;
-            var itemLocal = item;
             <MudTabPanel ID="@(request.Id)" ShowCloseIcon="true" Icon="@SirenIcons.Close">
                 <TabContent>
-                    <MudMenu ActivationEvent="MudBlazor.MouseEvent.RightClick" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft" Dense="true" ListClass="pa-2">
+                    <MudMenu ActivationEvent="MudBlazor.MouseEvent.RightClick" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft" Dense="true" ListClass="pa-1">
                         <ActivatorContent>
                             <span @oncontextmenu:preventDefault="true" style="display: contents;">
                                 <NetworkRequestTab Request="@request" />
                             </span>
                         </ActivatorContent>
                         <ChildContent>
-                            <MudMenuItem class="rounded-lg" OnClick="@(() => HandleDuplicate(itemLocal))">Duplicate</MudMenuItem>
+                            <MudMenuItem class="rounded-lg" OnClick="@(() => HandleDuplicate(item))">Duplicate</MudMenuItem>
                         </ChildContent>
                     </MudMenu>
                 </TabContent>

@@ -29,7 +29,7 @@
         <SirenIcon Color="@Color.Inherit" Icon="@SirenIcons.Request" />
         <SirenText Typo="Typo.h6" Color="Color.Inherit">Request</SirenText>
         <SirenText Typo="Typo.body1">Body</SirenText>
-        <MudToggleGroup @bind-Value="@requestPayload" T="string" Outlined="false" Size="Size.Small" CheckMark="false" Class="px-4 gap-4 rounded-xl">
+        <MudToggleGroup @bind-Value="@requestPayload" T="string" Outlined="true" Size="Size.Small" CheckMark="false" Class="pa-1 gap-4 rounded-xl" Color="Color.Primary">
             <MudToggleItem Class="rounded-xl" Value="@("none")"/>
             <MudToggleItem Class="rounded-xl" Disabled="true" Value="@("form-data")"/>
             <MudToggleItem Class="rounded-xl" Value="@("raw")"/>
