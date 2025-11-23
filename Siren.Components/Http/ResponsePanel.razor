@@ -48,6 +48,7 @@
             try
             {
                 await _editor.Editor.SetValue(state.Active.DisplayText);
+                await FormatDocumentAsync();
             }
             catch
             {
