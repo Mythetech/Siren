@@ -1,0 +1,48 @@
+@typeparam T
+
+<BaseSettingItem Text="@Text" Label="@Label" Spacing="@Spacing">
+    <SirenSelect T="T" 
+                 Value="@Value" 
+                 ValueChanged="@ValueChanged"
+                 FullWidth="false"
+                 Dense="true">
+        @foreach (var item in Items)
+        {
+            <MudSelectItem Value="@item">@GetDisplayText(item)</MudSelectItem>
+        }
+    </SirenSelect>
+</BaseSettingItem>
+
+@code {
+    [Parameter]
+    public string Text { get; set; } = "";
+    
+    [Parameter]
+    public string? Label { get; set; }
+    
+    [Parameter]
+    public T[] Items { get; set; } = Array.Empty<T>();
+    
+    [Parameter]
+    public T? Value { get; set; }
+    
+    [Parameter]
+    public EventCallback<T?> ValueChanged { get; set; }
+    
+    [Parameter]
+    public int Spacing { get; set; } = 3;
+    
+    [Parameter]
+    public Func<T, string>? DisplayTextSelector { get; set; }
+    
+    private string GetDisplayText(T item)
+    {
+        if (DisplayTextSelector != null)
+        {
+            return DisplayTextSelector(item);
+        }
+        
+        return item?.ToString() ?? "";
+    }
+}
+

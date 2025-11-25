@@ -3,9 +3,16 @@ using Microsoft.AspNetCore.Components;
 
 namespace Siren.Components.Settings
 {
+    public enum TimeDisplayOptions
+    {
+        Milliseconds,
+        Seconds
+    }
+
     public class SettingsState
     {
-        public EventCallback<SettingsState> SettingsChanged;
+        public EventCallback<SettingsState> SettingsCallback;
+        public event Action<SettingsState> SettingsChanged;
 
         private int _requestTimeout = 10;
         public int RequestTimeout
@@ -47,9 +54,24 @@ namespace Siren.Components.Settings
             }
         }
 
+        private TimeDisplayOptions _timeDisplay = TimeDisplayOptions.Milliseconds;
+        
+        public TimeDisplayOptions TimeDisplay
+        {
+            get => _timeDisplay;
+            set
+            {
+                if (_timeDisplay == value) return;
+                
+                _timeDisplay = value;
+                NotifyChangeSubscribersAsync();
+            }
+        }
+
         private async void NotifyChangeSubscribersAsync()
         {
-            await SettingsChanged.InvokeAsync();
+            await SettingsCallback.InvokeAsync();
+            SettingsChanged?.Invoke(this);
         }
 
     }
