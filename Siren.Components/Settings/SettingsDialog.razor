@@ -1,4 +1,5 @@
 ﻿@using Siren.Components.Services
+@using Siren.Components.Settings.Controls
 <MudDialog Class="w-75 h-75">
     <TitleContent>
         <SirenStack Row="true">
@@ -14,40 +15,25 @@
     </TitleContent>
     <DialogContent>
         <SirenStack Spacing="12" Class="w-100">
-            <SirenStack Spacing="2" Class="w-100">
-                <SirenStack Spacing="2" Class="w-100" Row="true">
-                <SirenIcon Icon="@SirenIcons.Request"/>
-                <SirenText Typo="Typo.h6">Requests</SirenText>
-                </SirenStack>
-                <SirenDivider/>
-                <SirenStack Row="true" Class="w-100" Spacing="3">
-                    <SirenText Typo="Typo.subtitle1">Send with Siren Token header</SirenText>
-                    <SirenText Typo="Typo.subtitle2" Class="mud-text-secondary">Recommended to easily flag requests as test requests</SirenText>
-                    <SirenSpacer/>
-                    <SirenSwitch Color="Color.Primary" Value="true"/>
-                </SirenStack>
+            <SettingsSection Icon="@SirenIcons.Request" Title="Requests">
+                <BooleanSettingItem Text="Send with Siren Token header"
+                                    Label="Recommended to easily flag requests as test requests"
+                                    Value="@true" />
 
-                <SettingDescriptionToggle Text="Save http response content"
-                                          Description="This allows requests to be restored from history, but takes more space on disk."
+                <BooleanSettingItem Text="Save http response content"
+                                          Label="This allows requests to be restored from history, but takes more space on disk."
                                           @bind-Value="@Settings.SaveHttpContent"/>
-            </SirenStack>
+            </SettingsSection>
 
-            <SirenStack Spacing="2" Class="w-100">
-                <SirenStack Spacing="2" Class="w-100" Row="true">
-                <SirenIcon Icon="@SirenIcons.AppData"/>
-                <SirenText Typo="Typo.h6">Application Data</SirenText>
-                </SirenStack>
-                <SirenDivider/>
-                <SirenStack Row="true" Class="w-100">
-                    <SirenText>Delete saved data</SirenText>
-                    <SirenToolChip Value="@DisplayFileSize(_appdataSize)" Text="@($"{_appdataSize} bytes")"/>
-                    <SirenSpacer/>
-                    <SirenButton Variant="Variant.Outlined" Color="Color.Error" OnClick="DeleteAppData">
-                        <SirenIcon Icon="@SirenIcons.Delete" Color="Color.Error" Class="mr-2"/>
-                        Delete
-                    </SirenButton>
-                </SirenStack>
-            </SirenStack>
+            <SettingsSection Icon="@SirenIcons.AppData" Title="Application Data">
+                <ActionSettingItem Text="Delete saved data"
+                                   ToolChip="@(new BaseSettingItem.ToolChipData(DisplayFileSize(_appdataSize), $"{_appdataSize} bytes"))"
+                                   ButtonText="Delete"
+                                   ButtonIcon="@SirenIcons.Delete"
+                                   ButtonColor="Color.Error"
+                                   ButtonIconColor="Color.Error"
+                                   OnButtonClick="DeleteAppData" />
+            </SettingsSection>
         </SirenStack>
     </DialogContent>
     <DialogActions>

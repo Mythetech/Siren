@@ -1,0 +1,19 @@
+<SirenStack Spacing="2" Class="w-100">
+    <SirenStack Spacing="2" Class="w-100" Row="true">
+        <SirenIcon Icon="@Icon"/>
+        <SirenText Typo="Typo.h6">@Title</SirenText>
+    </SirenStack>
+    <SirenDivider/>
+    @ChildContent
+</SirenStack>
+
+@code {
+    [Parameter]
+    public string Icon { get; set; } = "";
+
+    [Parameter]
+    public string Title { get; set; } = "";
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}
+

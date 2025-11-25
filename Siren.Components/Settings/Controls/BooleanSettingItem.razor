@@ -1,23 +1,20 @@
-﻿<SirenStack Row="true" Class="w-100" Spacing="@Spacing">
-    <SirenText Typo="Typo.subtitle1">@Text</SirenText>
-    <SirenText Typo="Typo.subtitle2" Class="mud-text-secondary">@Description</SirenText>
-    <SirenSpacer />
+<BaseSettingItem Text="@Text" Label="@Label" Spacing="@Spacing">
     <SirenSwitch Color="Color.Primary" Value="@Value" ValueChanged="@ValueChanged" />
-</SirenStack>
+</BaseSettingItem>
 
 @code {
     [Parameter]
     public string Text { get; set; } = "";
-
+    
     [Parameter]
-    public string Description { get; set; } = "";
-
+    public string? Label { get; set; }
+    
     [Parameter]
     public bool Value { get; set; }
-
+    
     [Parameter]
     public EventCallback<bool> ValueChanged { get; set; }
-
+    
     [Parameter]
     public int Spacing { get; set; } = 3;
 }
