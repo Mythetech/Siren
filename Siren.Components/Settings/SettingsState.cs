@@ -9,6 +9,13 @@ namespace Siren.Components.Settings
         Seconds
     }
 
+    public record SettingsStateSnapshot(
+        int RequestTimeout,
+        bool SendRequestsWithSystemToken,
+        bool SaveHttpContent,
+        TimeDisplayOptions TimeDisplay
+    );
+
     public class SettingsState
     {
         public EventCallback<SettingsState> SettingsCallback;
@@ -66,6 +73,33 @@ namespace Siren.Components.Settings
                 _timeDisplay = value;
                 NotifyChangeSubscribersAsync();
             }
+        }
+
+        /// <summary>
+        /// Creates a snapshot of the current settings state for later restoration.
+        /// </summary>
+        /// <returns>A snapshot containing all current setting values.</returns>
+        public SettingsStateSnapshot CreateSnapshot()
+        {
+            return new SettingsStateSnapshot(
+                RequestTimeout,
+                SendRequestsWithSystemToken,
+                SaveHttpContent,
+                TimeDisplay
+            );
+        }
+
+        /// <summary>
+        /// Restores settings from a previously created snapshot and notifies subscribers of changes.
+        /// </summary>
+        /// <param name="snapshot">The snapshot to restore from.</param>
+        public void RestoreFromSnapshot(SettingsStateSnapshot snapshot)
+        {
+            _requestTimeout = snapshot.RequestTimeout;
+            _sendRequestsWithSystemToken = snapshot.SendRequestsWithSystemToken;
+            _saveHttpContent = snapshot.SaveHttpContent;
+            _timeDisplay = snapshot.TimeDisplay;
+            NotifyChangeSubscribersAsync();
         }
 
         private async void NotifyChangeSubscribersAsync()

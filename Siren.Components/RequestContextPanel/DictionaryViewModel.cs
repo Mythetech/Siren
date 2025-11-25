@@ -20,6 +20,13 @@ namespace Siren.Components.RequestContextPanel
                 Value = x.Value,
             }).ToList();
         }
+
+        public static Dictionary<string, string> ToSafeDictionary(this IEnumerable<DictionaryViewModel> viewModels)
+        {
+            return viewModels
+                .Where(x => !string.IsNullOrWhiteSpace(x.Key))
+                .ToDictionary(x => x.Key, x => x.Value ?? "");
+        }
     }
 }
 
