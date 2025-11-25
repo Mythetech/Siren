@@ -63,18 +63,30 @@
     [Inject]
     ISnackbar Snackbar { get; set; } = default!;
 
+    [Inject]
+    IDialogService DialogService { get; set; } = default!;
+
     [CascadingParameter]
     private IMudDialogInstance MudDialog { get; set; } = default!;
 
     private long _appdataSize = 0;
+    private SettingsStateSnapshot? _snapshot;
 
     private TimeDisplayOptions[] TimeDisplayOptionsArray => Enum.GetValues<TimeDisplayOptions>();
 
-    private void Close() => MudDialog.Close(DialogResult.Cancel);
+    private void Close()
+    {
+        if (_snapshot != null)
+        {
+            Settings.RestoreFromSnapshot(_snapshot);
+        }
+        MudDialog.Close(DialogResult.Cancel);
+    }
 
     protected override void OnInitialized()
     {
         _appdataSize = SettingsService.GetAppDataSize();
+        _snapshot = Settings.CreateSnapshot();
     }
 
     public void OnNotify(SettingsState state)
@@ -88,11 +100,23 @@
         MudDialog.Close(DialogResult.Ok(true));
     }
 
-    protected void DeleteAppData()
+    protected async Task DeleteAppData()
     {
-        SettingsService.PurgeSavedData();
+        var options = new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "siren-dialog" };
 
-        Snackbar.Add("Purged app data", Severity.Success);
+        var dialogRef = await DialogService.ShowAsync<DeleteAppDataDialog>("Delete App Data", options);
+
+        var result = await dialogRef.Result;
+
+        if (!result.Canceled)
+        {
+            SettingsService.PurgeSavedData();
+
+            Snackbar.Add("Purged app data", Severity.Success);
+            
+            _appdataSize = SettingsService.GetAppDataSize();
+            StateHasChanged();
+        }
     }
 
     private void OnTimeDisplayChanged(TimeDisplayOptions value)

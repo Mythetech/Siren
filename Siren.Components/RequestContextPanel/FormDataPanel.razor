@@ -1,0 +1,169 @@
+@using Siren.Components.Http
+@using Orientation = Microsoft.FluentUI.AspNetCore.Components.Orientation
+
+<SirenStack Class="w-100 h-100 d-flex">
+    <SirenStack Spacing="3" Class="p-1 overflow-y-scroll d-flex h-100 w-100">
+        <SirenStack Row="true" Spacing="3" Class="w-100" AlignItems="AlignItems.Center">
+            <SirenText Typo="Typo.body1">Form Data</SirenText>
+            <SirenSpacer/>
+            <SirenIconButton OnClick="@(() => AddFormDataEntry("Key", "Value"))"
+                             Icon="@SirenIcons.Add"
+                             Tooltip="@($"Add Form Data Entry")"
+                             Class="scale-75"
+                             Size="Size.Medium"
+                             Variant="Variant.Text"
+                             Color="Color.Primary"/>
+        </SirenStack>
+
+        <MudDataGrid T="DictionaryViewModel"
+                     Items="@formDataEntries"
+                     Context="context"
+                     Class="w-100"
+                     Bordered="false"
+                     Elevation="0"
+                     RowClass="text-truncate hover-error-zone"
+                     Style="overflow:hidden;"
+                     EditMode="DataGridEditMode.Cell"
+                     EditTrigger="DataGridEditTrigger.Manual"
+                     CommittedItemChanges="UpdateFormDataEntry"
+                     ReadOnly="false"
+                     Dense="true"
+                     Hover="true">
+            <Columns>
+                <MudBlazor.PropertyColumn Property="x => x.Key" Title="Key">
+                    <EditTemplate>
+                        <SirenStack Row="true" Class="w-100 hover-zone">
+                            <MudTextField @bind-Value="@context.Item.Key" OnBlur="(() => UpdateFormDataEntry(context.Item))"/>
+                            <SirenSpacer/>
+                            <SirenIconButton OnClick="@(async () =>
+                                                      {
+                                                          await JsApiService.CopyToClipboardAsync(context.Item.Key);
+                                                          NotifyCopied(context.Item.Key);
+                                                      })"
+                                             Icon="@SirenIcons.Copy"
+                                             Class="hover-visible hover-visible-primary scale-75"
+                                             Tooltip="@($"Copy key")"
+                                             Size="Size.Small"
+                                             Variant="Variant.Text"
+                                             Color="Color.Transparent"/>
+                        </SirenStack>
+                    </EditTemplate>
+                </MudBlazor.PropertyColumn>
+
+                <MudBlazor.PropertyColumn Property="x => x.Value" Title="Value">
+                    <EditTemplate>
+                        <SirenStack Row="true" Class="w-100 hover-zone">
+                            <MudTextField @bind-Value="@context.Item.Value" OnBlur="(() => UpdateFormDataEntry(context.Item))"/>
+                            <SirenSpacer/>
+                            <SirenIconButton OnClick="@(async () =>
+                                                      {
+                                                          await JsApiService.CopyToClipboardAsync(context.Item.Value);
+                                                          NotifyCopied(context.Item.Value);
+                                                      })"
+                                             Icon="@SirenIcons.Copy"
+                                             Class="hover-visible hover-visible-primary scale-75"
+                                             Tooltip="@($"Copy value")"
+                                             Size="Size.Small"
+                                             Variant="Variant.Text"
+                                             Color="Color.Transparent"/>
+                        </SirenStack>
+                    </EditTemplate>
+                </MudBlazor.PropertyColumn>
+                <MudBlazor.TemplateColumn>
+                    <CellTemplate>
+                        <SirenSpacer/>
+                        <SirenIconButton OnClick="@(() => DeleteFormDataEntry(context.Item))"
+                                         Icon="@SirenIcons.Delete"
+                                         Class="hover-visible hover-visible-error scale-75"
+                                         Tooltip="@($"Delete `{context?.Item.Key ?? "entry"}`")"
+                                         Size="Size.Small"
+                                         Variant="Variant.Text"
+                                         Color="Color.Transparent"/>
+
+                    </CellTemplate>
+                    <EditTemplate>
+                        <SirenSpacer/>
+                        <SirenIconButton OnClick="@(() => DeleteFormDataEntry(context.Item))"
+                                         Icon="@SirenIcons.Delete"
+                                         Class="hover-visible hover-visible-error scale-75"
+                                         Tooltip="@($"Delete `{context?.Item.Key ?? "entry"}`")"
+                                         Size="Size.Small"
+                                         Variant="Variant.Text"
+                                         Color="Color.Transparent"/>
+                    </EditTemplate>
+                </MudBlazor.TemplateColumn>
+
+            </Columns>
+        </MudDataGrid>
+    </SirenStack>
+</SirenStack>
+
+@code {
+    [Parameter]
+    public SirenNetworkRequest NetworkRequest { get; set; }
+
+    [Inject]
+    public IJsApiService JsApiService { get; set; } = default!;
+
+    [Inject]
+    public ISnackbar Snackbar { get; set; } = default!;
+
+    private List<DictionaryViewModel> formDataEntries = new();
+
+    protected override void OnInitialized()
+    {
+        if (NetworkRequest?.Request?.FormData != null)
+        {
+            formDataEntries = NetworkRequest.Request.FormData.ToViewModel();
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (NetworkRequest?.Request?.FormData != null)
+        {
+            formDataEntries = NetworkRequest.Request.FormData.ToViewModel();
+        }
+    }
+
+    private void AddFormDataEntry(string key, string value)
+    {
+        formDataEntries.Add(new() { Key = key, Value = value });
+        SyncToNetworkRequest();
+    }
+
+    protected void NotifyCopied(string value)
+    {
+        Snackbar.Add($"Copied `{value}` to clipboard", Severity.Info);
+    }
+
+    protected void UpdateFormDataEntry(DictionaryViewModel m)
+    {
+        var entry = formDataEntries.Find(x => x.Id.Equals(m.Id));
+        if (entry != null)
+        {
+            entry.Key = m.Key;
+            entry.Value = m.Value;
+            SyncToNetworkRequest();
+        }
+        StateHasChanged();
+    }
+
+    protected void DeleteFormDataEntry(DictionaryViewModel m)
+    {
+        formDataEntries.Remove(m);
+        SyncToNetworkRequest();
+        StateHasChanged();
+    }
+
+    private void SyncToNetworkRequest()
+    {
+        if (NetworkRequest?.Request != null)
+        {
+            NetworkRequest.Request.FormData = formDataEntries
+                .Where(x => !string.IsNullOrWhiteSpace(x.Key))
+                .ToDictionary(x => x.Key, x => x.Value ?? "");
+        }
+    }
+}
+

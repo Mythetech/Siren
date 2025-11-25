@@ -186,6 +186,7 @@
     private void AddRequestHeader(string key, string value)
     {
         requestHeaders.Add(new() { Key = key, Value = value });
+        SyncToNetworkRequest();
     }
 
     protected void NotifyCopied(string value)
@@ -196,16 +197,30 @@
     protected void UpdateHeader(DictionaryViewModel m)
     {
         var header = requestHeaders.Find(x => x.Id.Equals(m.Id));
-        header.Key = m.Key;
-        header.Value = m.Value;
-
+        if (header != null)
+        {
+            header.Key = m.Key;
+            header.Value = m.Value;
+            SyncToNetworkRequest();
+        }
         StateHasChanged();
     }
 
     protected void DeleteHeader(DictionaryViewModel m)
     {
         requestHeaders.Remove(m);
+        SyncToNetworkRequest();
         StateHasChanged();
+    }
+
+    private void SyncToNetworkRequest()
+    {
+        if (NetworkRequest?.Request != null)
+        {
+            NetworkRequest.Request.Headers = requestHeaders
+                .Where(x => !string.IsNullOrWhiteSpace(x.Key))
+                .ToDictionary(x => x.Key, x => x.Value ?? "");
+        }
     }
 
 }

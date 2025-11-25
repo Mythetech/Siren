@@ -9,6 +9,13 @@ namespace Siren.Components.Settings
         Seconds
     }
 
+    public record SettingsStateSnapshot(
+        int RequestTimeout,
+        bool SendRequestsWithSystemToken,
+        bool SaveHttpContent,
+        TimeDisplayOptions TimeDisplay
+    );
+
     public class SettingsState
     {
         public EventCallback<SettingsState> SettingsCallback;
@@ -66,6 +73,25 @@ namespace Siren.Components.Settings
                 _timeDisplay = value;
                 NotifyChangeSubscribersAsync();
             }
+        }
+
+        public SettingsStateSnapshot CreateSnapshot()
+        {
+            return new SettingsStateSnapshot(
+                RequestTimeout,
+                SendRequestsWithSystemToken,
+                SaveHttpContent,
+                TimeDisplay
+            );
+        }
+
+        public void RestoreFromSnapshot(SettingsStateSnapshot snapshot)
+        {
+            _requestTimeout = snapshot.RequestTimeout;
+            _sendRequestsWithSystemToken = snapshot.SendRequestsWithSystemToken;
+            _saveHttpContent = snapshot.SaveHttpContent;
+            _timeDisplay = snapshot.TimeDisplay;
+            NotifyChangeSubscribersAsync();
         }
 
         private async void NotifyChangeSubscribersAsync()

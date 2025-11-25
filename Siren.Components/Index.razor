@@ -172,14 +172,42 @@
 
         var active = AppState.Active!;
 
+        var bodyType = _requestPanel.GetBodyType();
+        var contentType = "application/json";
+        HttpContent? content = null;
+
+        if (bodyType == "form-data")
+        {
+            contentType = "application/x-www-form-urlencoded";
+            var formData = active.Request?.FormData ?? new Dictionary<string, string>();
+            if (formData.Any())
+            {
+                content = new FormUrlEncodedContent(formData);
+            }
+            else
+            {
+                content = new FormUrlEncodedContent(new Dictionary<string, string>());
+            }
+        }
+        else if (bodyType == "raw")
+        {
+            var payload = await _requestPanel.GetPayload();
+            content = new StringContent(payload, System.Text.Encoding.UTF8, contentType);
+        }
+        else
+        {
+            content = null;
+        }
+
         var req = new HttpRequest()
         {
-            ContentType = "application/json",
-            RequestUri = active.Request.RequestUri,
-            Method = active.Request.Method,
+            ContentType = contentType,
+            RequestUri = active.Request?.RequestUri ?? "",
+            Method = active.Request?.Method ?? HttpMethod.Get,
+            Headers = active.Request?.Headers != null ? new Dictionary<string, string>(active.Request.Headers) : new Dictionary<string, string>(),
+            FormData = active.Request?.FormData != null ? new Dictionary<string, string>(active.Request.FormData) : new Dictionary<string, string>(),
+            Content = content
         };
-
-        req.Content = new StringContent(await _requestPanel.GetPayload(), System.Text.Encoding.UTF8, req.ContentType);
 
         bool valid = ValidateRequest(req);
 
