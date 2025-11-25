@@ -25,6 +25,15 @@
                                           @bind-Value="@Settings.SaveHttpContent"/>
             </SettingsSection>
 
+            <SettingsSection Icon="@SirenIcons.Response" Title="Response">
+                <GenericArraySettingItem T="TimeDisplayOptions"
+                                         Text="Time display"
+                                         Items="@TimeDisplayOptionsArray"
+                                         Value="@Settings.TimeDisplay"
+                                         ValueChanged="@OnTimeDisplayChanged"
+                                         DisplayTextSelector="@(opt => opt.ToString())" />
+            </SettingsSection>
+
             <SettingsSection Icon="@SirenIcons.AppData" Title="Application Data">
                 <ActionSettingItem Text="Delete saved data"
                                    ToolChip="@(new BaseSettingItem.ToolChipData(DisplayFileSize(_appdataSize), $"{_appdataSize} bytes"))"
@@ -59,6 +68,8 @@
 
     private long _appdataSize = 0;
 
+    private TimeDisplayOptions[] TimeDisplayOptionsArray => Enum.GetValues<TimeDisplayOptions>();
+
     private void Close() => MudDialog.Close(DialogResult.Cancel);
 
     protected override void OnInitialized()
@@ -82,6 +93,11 @@
         SettingsService.PurgeSavedData();
 
         Snackbar.Add("Purged app data", Severity.Success);
+    }
+
+    private void OnTimeDisplayChanged(TimeDisplayOptions value)
+    {
+        Settings.TimeDisplay = value;
     }
 
     protected string DisplayFileSize(long size)
