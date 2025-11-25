@@ -34,7 +34,6 @@
     <Folder Include="Http\" />
     <Folder Include="AppContextPanel\" />
     <Folder Include="History\" />
-    <Folder Include="Settings\" />
     <Folder Include="Collections\" />
   </ItemGroup>
   <ItemGroup>
