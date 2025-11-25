@@ -160,9 +160,7 @@
     {
         if (NetworkRequest?.Request != null)
         {
-            NetworkRequest.Request.FormData = formDataEntries
-                .Where(x => !string.IsNullOrWhiteSpace(x.Key))
-                .ToDictionary(x => x.Key, x => x.Value ?? "");
+            NetworkRequest.Request.FormData = formDataEntries.ToSafeDictionary();
         }
     }
 }

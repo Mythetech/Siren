@@ -180,17 +180,14 @@
         {
             contentType = "application/x-www-form-urlencoded";
             var formData = active.Request?.FormData ?? new Dictionary<string, string>();
-            if (formData.Any())
-            {
-                content = new FormUrlEncodedContent(formData);
-            }
-            else
-            {
-                content = new FormUrlEncodedContent(new Dictionary<string, string>());
-            }
+            content = new FormUrlEncodedContent(formData);
         }
         else if (bodyType == "raw")
         {
+            if (active.Request?.Headers != null && active.Request.Headers.TryGetValue("Content-Type", out var headerContentType))
+            {
+                contentType = headerContentType;
+            }
             var payload = await _requestPanel.GetPayload();
             content = new StringContent(payload, System.Text.Encoding.UTF8, contentType);
         }

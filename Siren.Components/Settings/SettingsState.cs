@@ -75,6 +75,10 @@ namespace Siren.Components.Settings
             }
         }
 
+        /// <summary>
+        /// Creates a snapshot of the current settings state for later restoration.
+        /// </summary>
+        /// <returns>A snapshot containing all current setting values.</returns>
         public SettingsStateSnapshot CreateSnapshot()
         {
             return new SettingsStateSnapshot(
@@ -85,6 +89,10 @@ namespace Siren.Components.Settings
             );
         }
 
+        /// <summary>
+        /// Restores settings from a previously created snapshot and notifies subscribers of changes.
+        /// </summary>
+        /// <param name="snapshot">The snapshot to restore from.</param>
         public void RestoreFromSnapshot(SettingsStateSnapshot snapshot)
         {
             _requestTimeout = snapshot.RequestTimeout;

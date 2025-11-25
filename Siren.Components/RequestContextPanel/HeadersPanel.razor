@@ -217,9 +217,7 @@
     {
         if (NetworkRequest?.Request != null)
         {
-            NetworkRequest.Request.Headers = requestHeaders
-                .Where(x => !string.IsNullOrWhiteSpace(x.Key))
-                .ToDictionary(x => x.Key, x => x.Value ?? "");
+            NetworkRequest.Request.Headers = requestHeaders.ToSafeDictionary();
         }
     }
 
