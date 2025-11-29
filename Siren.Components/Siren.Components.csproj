@@ -29,7 +29,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="wwwroot\" />
-    <Folder Include="wwwroot\open-iconic\" />
     <Folder Include="Theme\" />
     <Folder Include="Http\" />
     <Folder Include="AppContextPanel\" />
