@@ -1,7 +1,7 @@
 ﻿@inherits SirenBaseComponent
 
 <MudTooltip Text="@(Timestamp.ToLocalTime().ToString("G"))">
-    <SirenStack Row="true" Class="w-100" Spacing="1">
+    <SirenStack Row="true" Class="w-100" Spacing="1" AlignItems="AlignItems.Center">
         <SirenIcon Size="Size.Small" Icon="@(GetIcon(Now - Timestamp))" />
         <SirenText Typo="Typo.subtitle2" Class="mud-text-secondary">@GetDisplay(Now - Timestamp)</SirenText>
     </SirenStack>
