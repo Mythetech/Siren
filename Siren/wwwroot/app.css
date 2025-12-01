@@ -221,6 +221,12 @@ a, .btn-link {
     padding: 6px;
 }
 
+.mud-menu-activator > .mud-button {
+    min-width: 64px;
+    height: 32px;
+    border-radius: 1.5rem;
+}
+
 .mud-button {
     height: 42px;
     min-width: 120px;
@@ -651,4 +657,12 @@ button:focus {
     height: 100%;
     cursor: ew-resize;
     z-index: 1;
+}
+
+.max-w-160 {
+    max-width: 160px;
+}
+
+.mud-menu-sub-menu-activator {
+    border-radius: 0.25rem;
 }

@@ -1,0 +1,27 @@
+<MudDialog>
+    <DialogContent>
+        <MudTextField @bind-Value="@Value" Label="@Label" Placeholder="@Placeholder" />
+    </DialogContent>
+    <DialogActions>
+        <SirenButton Variant="Variant.Text" OnClick="Cancel">Cancel</SirenButton>
+        <SirenButton Variant="Variant.Filled" OnClick="Submit" Disabled="@string.IsNullOrWhiteSpace(Value)">OK</SirenButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public string Label { get; set; } = "";
+
+    [Parameter]
+    public string Placeholder { get; set; } = "";
+
+    private string Value { get; set; } = "";
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(Value));
+
+    private void Cancel() => MudDialog.Cancel();
+}
+

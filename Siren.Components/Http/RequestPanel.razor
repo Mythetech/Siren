@@ -113,11 +113,14 @@
         Snackbar.Add($"Copied request body to clipboard", Severity.Info);
     }
 
-    private async Task FormatDocumentAsync()
+    public async Task FormatDocumentAsync()
     {
         try
         {
-            await _editor.Editor.Trigger("messaging-editor", "editor.action.formatDocument", "");
+            if (_editor?.Editor != null)
+            {
+                await _editor.Editor.Trigger("messaging-editor", "editor.action.formatDocument", "");
+            }
         }
         catch(Exception ex)
         {

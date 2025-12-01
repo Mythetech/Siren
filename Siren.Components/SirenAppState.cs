@@ -152,6 +152,13 @@ namespace Siren.Components
 
             IsDarkMode = await _themeProvider.GetSystemPreference();
         }
+
+        public event Action? OnFormatRequest;
+
+        public void TriggerFormatRequest()
+        {
+            OnFormatRequest?.Invoke();
+        }
     }
 }
 

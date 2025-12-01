@@ -83,6 +83,10 @@ namespace Siren.Components.Theme
         public static string Cookies => Round("cookie"); 
 
         public static string Format => Round("format_align_left");
+        
+        public static string FormatIndent => Round("format_indent_increase");
+        
+        public static string Export => Round("download");
 
         public static string Auth => Round("security");
 

@@ -1,0 +1,293 @@
+@using Siren.Components.Http
+@using Siren.Components.Collections
+@using Siren.Components.Variables
+@using Siren.Components.History
+@using System.Text.Json
+@using Microsoft.Extensions.Logging
+@using MouseEvent = MudBlazor.MouseEvent
+
+<SirenStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+    <MudMenu ActivationEvent="MouseEvent.MouseOver" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft" Dense="true" ListClass="pa-1">
+        <ActivatorContent>
+            <MudButton Size="Size.Small" Variant="Variant.Text" Color="Color.Inherit" Class="text-transform-none">File</MudButton>
+        </ActivatorContent>
+        <ChildContent>
+            <MudMenuItem Class="rounded" Icon="@SirenIcons.Add" OnClick="HandleNewRequest">New Request</MudMenuItem>
+            <MudMenuItem Disabled="true" Class="rounded" Icon="@SirenIcons.AddToCollection" OnClick="HandleSaveRequest">Save Request</MudMenuItem>
+        </ChildContent>
+    </MudMenu>
+
+    <MudMenu ActivationEvent="MouseEvent.MouseOver" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft" Dense="true" ListClass="pa-1">
+        <ActivatorContent>
+            <MudButton Size="Size.Small" Variant="Variant.Text" Color="Color.Inherit" Class="text-transform-none">Edit</MudButton>
+        </ActivatorContent>
+        <ChildContent>
+            <MudMenuItem Class="rounded" Icon="@SirenIcons.FormatIndent" OnClick="HandleFormatRequest">Format Request</MudMenuItem>
+        </ChildContent>
+    </MudMenu>
+
+    <MudMenu ActivationEvent="MouseEvent.MouseOver" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft" Dense="true" ListClass="pa-1 max-w-160">
+        <ActivatorContent>
+            <MudButton Size="Size.Small" Variant="Variant.Text" Color="Color.Inherit" Class="text-transform-none">Tools</MudButton>
+        </ActivatorContent>
+        <ChildContent>
+            <MudMenu Label="History" StartIcon="@SirenIcons.History" Dense="true" ListClass="pa-1">
+                    <MudMenuItem Class="rounded" Icon="@SirenIcons.DeleteHistory" OnClick="HandleClearHistory">Clear</MudMenuItem>
+            </MudMenu>
+            <MudMenu Label="Collections" StartIcon="@SirenIcons.Collections" Dense="true" ListClass="pa-1">
+                    <MudMenuItem Class="rounded" Icon="@SirenIcons.AddCollection" OnClick="HandleCreateCollection">Create new</MudMenuItem>
+                    <MudMenuItem Class="rounded" Icon="@SirenIcons.UrlImport" OnClick="HandleImportFromOpenApi">Import from OpenAPI</MudMenuItem>
+                    <MudMenuItem Class="rounded" Icon="@SirenIcons.Export" OnClick="HandleExportToJson">Export to JSON</MudMenuItem>
+            </MudMenu>
+            <MudMenu Label="Variables" StartIcon="@SirenIcons.Variables" Dense="true" ListClass="pa-1">
+                    <MudMenuItem Disabled="true" Class="rounded" Icon="@SirenIcons.Add" OnClick="HandleAddGroup">Add Group</MudMenuItem>
+                    <MudMenuItem Disabled="true" Class="rounded" Icon="@SirenIcons.Add" OnClick="HandleAddGlobalVariable">Add Global Variable</MudMenuItem>
+                    <MudMenuItem Disabled="true" Class="rounded" Icon="@SirenIcons.Add" OnClick="HandleAddVariable">Add Variable</MudMenuItem>
+            </MudMenu>
+        </ChildContent>
+    </MudMenu>
+</SirenStack>
+
+@code {
+    [Inject]
+    protected SirenAppState AppState { get; set; } = default!;
+
+    [Inject]
+    protected ICollectionsService CollectionsService { get; set; } = default!;
+
+    [Inject]
+    protected IVariableService VariableService { get; set; } = default!;
+
+    [Inject]
+    protected IHistoryService HistoryService { get; set; } = default!;
+
+    [Inject]
+    protected IDialogService DialogService { get; set; } = default!;
+
+    [Inject]
+    protected ISnackbar Snackbar { get; set; } = default!;
+
+    [Inject]
+    protected IJsApiService JsApiService { get; set; } = default!;
+
+    [Inject]
+    protected ILogger<MenuBar> Logger { get; set; } = default!;
+
+    private void HandleNewRequest()
+    {
+        var networkRequest = new SirenNetworkRequest()
+        {
+            Name = "New Request",
+            Request = new(),
+        };
+
+        AppState.AddNetworkRequest(networkRequest);
+        AppState.SetActive(networkRequest.Id);
+    }
+
+    private async Task HandleSaveRequest()
+    {
+        if (AppState.Active?.Request == null)
+        {
+            Snackbar.Add("No active request to save", Severity.Warning);
+            return;
+        }
+
+        var options = new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "siren-dialog" };
+        var dialogRef = await DialogService.ShowAsync<UpsertRequestDialog>("Save Request", options);
+
+        var result = await dialogRef.Result;
+
+        if (!result.Canceled && result.Data is HttpRequest request)
+        {
+            var collections = CollectionsService.GetCollections();
+            
+            if (collections.Count == 0)
+            {
+                var newCollection = CollectionsService.CreateCollection("My Collection", new[] { request });
+                Snackbar.Add("Created collection and saved request", Severity.Success, opts =>
+                {
+                    opts.SuccessIcon = SirenIcons.Collection;
+                });
+            }
+            else
+            {
+                var firstCollection = collections.First();
+                CollectionsService.AddRequestToCollection(firstCollection.Id, request);
+                Snackbar.Add("Request saved to collection", Severity.Success, opts =>
+                {
+                    opts.SuccessIcon = SirenIcons.CollectionItemAdded;
+                });
+            }
+        }
+    }
+
+    private void HandleFormatRequest()
+    {
+        AppState.TriggerFormatRequest();
+    }
+
+    private async Task HandleClearHistory()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "siren-dialog" };
+        var dialogRef = await DialogService.ShowAsync<DeleteHistoryDialog>("Delete History", options);
+
+        var result = await dialogRef.Result;
+
+        if (!result.Canceled)
+        {
+            try
+            {
+                HistoryService.DeleteAllHistoryRecords();
+                Snackbar.Add("Successfully deleted history", Severity.Success, configure: opts =>
+                {
+                    opts.Icon = SirenIcons.History;
+                });
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Error deleting history");
+                Snackbar.Add("Error deleting history", Severity.Error);
+            }
+        }
+    }
+
+    private void HandleCreateCollection()
+    {
+        CollectionsService.CreateCollection("Untitled", default!);
+        Snackbar.Add("Created collection", Severity.Success, opts =>
+        {
+            opts.SuccessIcon = SirenIcons.Collection;
+        });
+    }
+
+    private async Task HandleImportFromOpenApi()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "siren-dialog" };
+        var dialogRef = await DialogService.ShowAsync<ImportDialog>("Open API Import", options);
+
+        var result = await dialogRef.Result;
+
+        if (!result.Canceled && result.Data is Collection collection)
+        {
+            CollectionsService.UpdateCollection(collection);
+            Snackbar.Add("Imported from OpenAPI", Severity.Success, opts =>
+            {
+                opts.SuccessIcon = SirenIcons.UrlImport;
+            });
+        }
+    }
+
+    private async Task HandleExportToJson()
+    {
+        try
+        {
+            var collections = CollectionsService.GetCollections();
+            
+            if (collections.Count == 0)
+            {
+                Snackbar.Add("No collections to export", Severity.Warning);
+                return;
+            }
+
+            var json = JsonSerializer.Serialize(collections, new JsonSerializerOptions
+            {
+                WriteIndented = true
+            });
+
+            await JsApiService.CopyToClipboardAsync(json);
+            Snackbar.Add("Collections exported to JSON (copied to clipboard)", Severity.Success, opts =>
+            {
+                opts.SuccessIcon = SirenIcons.Collection;
+            });
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error exporting collections");
+            Snackbar.Add("Error exporting collections", Severity.Error);
+        }
+    }
+
+    private async Task HandleAddGroup()
+    {
+        /*
+        var prompt = await DialogService.ShowInputAsync(
+            "Add Variable Group",
+            "Enter group name:",
+            "New Group");
+
+        if (!string.IsNullOrWhiteSpace(prompt))
+        {
+            var variable = Variable.Create("Key", "Value", false, prompt);
+            VariableService.CreateVariable(variable);
+            Snackbar.Add($"Created group '{prompt}'", Severity.Success, opts =>
+            {
+                opts.SuccessIcon = SirenIcons.Variables;
+            });
+        }
+        */
+        await Task.CompletedTask;
+    }
+
+    private async Task HandleAddGlobalVariable()
+    {
+        /*
+        var keyPrompt = await DialogService.ShowInputAsync(
+            "Add Global Variable",
+            "Enter variable key:",
+            "Key");
+
+        if (string.IsNullOrWhiteSpace(keyPrompt))
+            return;
+
+        var valuePrompt = await DialogService.ShowInputAsync(
+            "Add Global Variable",
+            "Enter variable value:",
+            "Value");
+
+        if (!string.IsNullOrWhiteSpace(valuePrompt))
+        {
+            var variable = Variable.Create(keyPrompt, valuePrompt, false, VariableGroups.SystemGroup);
+            VariableService.CreateVariable(variable);
+            Snackbar.Add($"Added global variable '{keyPrompt}'", Severity.Success, opts =>
+            {
+                opts.SuccessIcon = SirenIcons.Variables;
+            });
+        }
+        */
+        await Task.CompletedTask;
+    }
+
+    private async Task HandleAddVariable()
+    {
+        /*
+        var keyPrompt = await DialogService.ShowInputAsync(
+            "Add Variable",
+            "Enter variable key:",
+            "Key");
+
+        if (string.IsNullOrWhiteSpace(keyPrompt))
+            return;
+
+        var valuePrompt = await DialogService.ShowInputAsync(
+            "Add Variable",
+            "Enter variable value:",
+            "Value");
+
+        if (!string.IsNullOrWhiteSpace(valuePrompt))
+        {
+            var groups = VariableService.GetVariableGroups();
+            var defaultGroup = groups.FirstOrDefault()?.Name ?? VariableGroups.SystemGroup;
+            
+            var variable = Variable.Create(keyPrompt, valuePrompt, false, defaultGroup);
+            VariableService.CreateVariable(variable);
+            Snackbar.Add($"Added variable '{keyPrompt}'", Severity.Success, opts =>
+            {
+                opts.SuccessIcon = SirenIcons.Variables;
+            });
+        }
+        */
+        await Task.CompletedTask;
+    }
+}
+

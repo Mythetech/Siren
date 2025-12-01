@@ -107,6 +107,7 @@
     protected override void OnInitialized()
     {
         AppState.OnActiveNetworkRequestChanged += HandleNetworkRequestChanged;
+        AppState.OnFormatRequest += HandleFormatRequest;
         if (AppState.Active == null)
         {
             var r = new SirenNetworkRequest()
@@ -121,6 +122,14 @@
             AppState.AddNetworkRequest(r);
 
             AppState.SetActive(r);
+        }
+    }
+
+    private async void HandleFormatRequest()
+    {
+        if (_requestPanel != null)
+        {
+            await _requestPanel.FormatDocumentAsync();
         }
     }
 
@@ -140,6 +149,7 @@
     public void Dispose()
     {
         AppState.OnActiveNetworkRequestChanged -= HandleNetworkRequestChanged;
+        AppState.OnFormatRequest -= HandleFormatRequest;
     }
 
     private bool _containerResizing = false;

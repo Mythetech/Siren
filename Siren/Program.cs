@@ -27,7 +27,7 @@ namespace Siren
             appBuilder.RootComponents.Add<Components.App>("app");
 
             appBuilder.Services.AddSirenComponents<HistoryService, CollectionsService, VariablesService, SettingsService>();
-
+            
             var app = appBuilder.Build();
 
             // customize window
@@ -42,7 +42,7 @@ namespace Siren
             {
                 app.MainWindow.ShowMessage("Fatal exception", error.ExceptionObject.ToString());
             };
-
+            
             app.Run();
         }
     }
