@@ -30,6 +30,7 @@ namespace Siren.Components
                 config.SnackbarConfiguration.HideTransitionDuration = 200;
                 config.SnackbarConfiguration.ShowTransitionDuration = 100;
                 config.SnackbarConfiguration.SnackbarVariant = Variant.Outlined;
+                config.PopoverOptions.QueueDelay = TimeSpan.FromSeconds(0.01);
             });
 
             services.AddFluentUIComponents();
