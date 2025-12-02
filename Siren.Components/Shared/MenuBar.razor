@@ -4,6 +4,7 @@
 @using Siren.Components.History
 @using System.Text.Json
 @using Microsoft.Extensions.Logging
+@using Siren.Components.Settings
 @using MouseEvent = MudBlazor.MouseEvent
 
 <SirenStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
@@ -44,6 +45,7 @@
                     <MudMenuItem Disabled="true" Class="rounded" Icon="@SirenIcons.Add" OnClick="HandleAddGlobalVariable">Add Global Variable</MudMenuItem>
                     <MudMenuItem Disabled="true" Class="rounded" Icon="@SirenIcons.Add" OnClick="HandleAddVariable">Add Variable</MudMenuItem>
             </MudMenu>
+            <MudMenuItem Class="rounded" Icon="@SirenIcons.Settings" OnClick="HandleOpenSettings">Settings</MudMenuItem>
         </ChildContent>
     </MudMenu>
 </SirenStack>
@@ -288,6 +290,12 @@
         }
         */
         await Task.CompletedTask;
+    }
+
+    private async Task HandleOpenSettings()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "siren-dialog", MaxWidth = MaxWidth.Medium};
+        await DialogService.ShowAsync<SettingsDialog>("Settings", options);
     }
 }
 
