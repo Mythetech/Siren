@@ -1,6 +1,7 @@
 ﻿@using Microsoft.Extensions.Logging
 @using Siren.Components.Shared.Notifications
 @using Siren.Components.RequestContextPanel
+@using Siren.Components.Http
 @implements IDisposable
 
 <SirenStack Spacing="3" Class="h-100">
@@ -34,7 +35,7 @@
             <MudToggleItem Class="rounded-xl" Value="@("none")" Style="height:1.375rem;"/>
             <MudToggleItem Class="rounded-xl" Value="@("form-data")" Style="height:1.375rem;"/>
             <MudToggleItem Class="rounded-xl" Value="@("raw")" Style="height:1.375rem;"/>
-            <MudToggleItem Class="rounded-xl" Disabled="true" Value="@("binary")" Style="height: 1.375rem;"/>
+            <MudToggleItem Class="rounded-xl" Value="@("binary")" Style="height: 1.375rem;"/>
         </MudToggleGroup>
         <SirenSpacer/>
         @if (requestPayload == "raw")
@@ -50,6 +51,10 @@
     else if (requestPayload == "raw")
     {
         <SirenEditor @ref="_editor" EditorId="siren-request-editor" ReadOnly="false" />
+    }
+    else if (requestPayload == "binary")
+    {
+        <BinaryAttachmentPanel NetworkRequest="@AppState.Active" />
     }
     else
     {

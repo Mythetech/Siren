@@ -25,7 +25,7 @@ namespace Siren.History
             if (_history != null)
                 return _history;
 
-            return _history = HistoryRepository.GetHistoryRecords();
+            return _history = HistoryRepository.GetHistoryRecords(_logger);
         }
 
         public void AddHistoryRecord(HistoryRecord record)
