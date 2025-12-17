@@ -15,6 +15,8 @@ namespace Siren.Components.Http
         public Dictionary<string, string> Headers { get; set; } = new();
 
         public Dictionary<string, string> FormData { get; set; } = new();
+
+        public List<BinaryAttachment> BinaryAttachments { get; set; } = new();
         
         [BsonIgnore]
         public HttpContent Content { get; set; }
@@ -37,6 +39,7 @@ namespace Siren.Components.Http
                 QueryParameters = QueryParameters?.ToDictionary(entry => entry.Key, entry => entry.Value),
                 Headers = new Dictionary<string, string>(Headers),
                 FormData = new Dictionary<string, string>(FormData),
+                BinaryAttachments = BinaryAttachments?.Select(a => a.Copy()).ToList() ?? new List<BinaryAttachment>(),
                 Content = Content, 
                 ContentType = ContentType,
                 Timeout = Timeout,

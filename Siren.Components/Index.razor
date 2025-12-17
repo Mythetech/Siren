@@ -56,6 +56,9 @@
 
     [Inject] protected IJSRuntime JS { get; set; } = default!;
 
+    [Inject]
+    protected ILogger<Index> Logger { get; set; } = default!;
+    
     private IJSObjectReference _module;
 
     private FluentMultiSplitter _primarySplitter = default!;
@@ -156,7 +159,7 @@
 
     protected void SplitterResized(FluentMultiSplitterResizeEventArgs args)
     {
-        Console.WriteLine(args.NewSize);
+        Logger.LogDebug("Splitter resized to {NewSize}", args.NewSize);
     }
 
     protected async Task HandleSendClicked()
@@ -201,6 +204,34 @@
             var payload = await _requestPanel.GetPayload();
             content = new StringContent(payload, System.Text.Encoding.UTF8, contentType);
         }
+        else if (bodyType == "binary")
+        {
+            var attachments = active.Request?.BinaryAttachments ?? new List<BinaryAttachment>();
+            
+            if (attachments.Count == 1)
+            {
+                var attachment = attachments.First();
+                contentType = attachment.ContentType;
+                content = new ByteArrayContent(attachment.Data ?? Array.Empty<byte>());
+                content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(attachment.ContentType);
+            }
+            else if (attachments.Count > 1)
+            {
+                var multipartContent = new MultipartFormDataContent();
+                foreach (var attachment in attachments)
+                {
+                    var fileContent = new ByteArrayContent(attachment.Data ?? Array.Empty<byte>());
+                    fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(attachment.ContentType);
+                    multipartContent.Add(fileContent, "file", attachment.FileName);
+                }
+                contentType = multipartContent.Headers.ContentType?.ToString() ?? "multipart/form-data";
+                content = multipartContent;
+            }
+            else
+            {
+                content = null;
+            }
+        }
         else
         {
             content = null;
@@ -213,6 +244,7 @@
             Method = active.Request?.Method ?? HttpMethod.Get,
             Headers = active.Request?.Headers != null ? new Dictionary<string, string>(active.Request.Headers) : new Dictionary<string, string>(),
             FormData = active.Request?.FormData != null ? new Dictionary<string, string>(active.Request.FormData) : new Dictionary<string, string>(),
+            BinaryAttachments = active.Request?.BinaryAttachments != null ? active.Request.BinaryAttachments.Select(a => a.Copy()).ToList() : new List<BinaryAttachment>(),
             Content = content
         };
 
@@ -221,7 +253,7 @@
         if (!valid)
             return;
 
-        Console.WriteLine(req.RequestUri);
+        Logger.LogInformation("Sending HTTP request to {RequestUri}", req.RequestUri);
 
         var r = await HttpRequestClient.SendHttpRequestAsync(req, _cts.Token);
 

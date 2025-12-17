@@ -1,4 +1,5 @@
 ﻿using LiteDB;
+using Microsoft.Extensions.Logging;
 using Siren.Components.History;
 
 namespace Siren.History
@@ -25,7 +26,7 @@ namespace Siren.History
             collection.Insert(PersistentHistoryRecord.Create(record));
         }
 
-        public static List<HistoryRecord> GetHistoryRecords()
+        public static List<HistoryRecord> GetHistoryRecords(ILogger? logger = null)
         {
             using var db = GetDatabase();
             var collection = db.GetCollection<PersistentHistoryRecord>();
@@ -38,7 +39,7 @@ namespace Siren.History
             }
             catch(Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                logger?.LogError(ex, "Error loading history records from database");
             }
 
             return records;

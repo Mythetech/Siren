@@ -73,6 +73,9 @@
     [Inject]
     SirenAppState AppState { get; set; } = default!;
 
+    [Inject]
+    ILogger<CollectionsPanel> Logger { get; set; } = default!;
+
     private string _searchString = "";
 
     private List<Collection> _collections;
@@ -133,7 +136,7 @@
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex.Message);
+            Logger.LogError(ex, "Error updating collection {CollectionId}", _selectedCollection?.Id);
             Snackbar.AddSirenError("Error updating collection",  (opts) => opts.ErrorIcon = SirenIcons.Collection);
         }
 

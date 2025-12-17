@@ -1,0 +1,182 @@
+@using Siren.Components.Http
+@using Siren.Components.Theme
+@using Siren.Components.Shared.Notifications
+@using System.IO
+@using Mythetech.Components.Infrastructure
+
+<SirenStack Class="w-100 h-100 d-flex">
+    <SirenStack Spacing="3" Class="p-1 overflow-y-scroll d-flex h-100 w-100">
+        <SirenStack Row="true" Spacing="3" Class="w-100" AlignItems="AlignItems.Center">
+            <SirenText Typo="Typo.body1">Binary Attachments</SirenText>
+            <SirenSpacer/>
+            <SirenIconButton OnClick="@AddFile"
+                             Icon="@SirenIcons.Add"
+                             Tooltip="Add File Attachment"
+                             Class="scale-75"
+                             Size="Size.Medium"
+                             Variant="Variant.Text"
+                             Color="Color.Primary"/>
+        </SirenStack>
+
+        @if (attachments.Any())
+        {
+            <MudDataGrid T="BinaryAttachment"
+                        Items="@attachments"
+                        Context="context"
+                        Class="w-100"
+                        Bordered="false"
+                        Elevation="0"
+                        RowClass="text-truncate hover-error-zone"
+                        Style="overflow:hidden;"
+                        Dense="true"
+                        Hover="true">
+                <Columns>
+                    <MudBlazor.PropertyColumn Property="x => x.FileName" Title="File Name" />
+                    <MudBlazor.PropertyColumn Property="x => x.ContentType" Title="Content Type" />
+                    <MudBlazor.TemplateColumn Title="Size">
+                        <CellTemplate>
+                            <SirenText Typo="Typo.body2">@FormatFileSize(context.Item.Size)</SirenText>
+                        </CellTemplate>
+                    </MudBlazor.TemplateColumn>
+                    <MudBlazor.TemplateColumn>
+                        <CellTemplate>
+                            <SirenSpacer/>
+                            <SirenIconButton OnClick="@(() => RemoveAttachment(context.Item))"
+                                             Icon="@SirenIcons.Delete"
+                                             Class="hover-visible hover-visible-error scale-75"
+                                             Tooltip="@($"Remove `{context.Item.FileName}`")"
+                                             Size="Size.Small"
+                                             Variant="Variant.Text"
+                                             Color="Color.Transparent"/>
+                        </CellTemplate>
+                    </MudBlazor.TemplateColumn>
+                </Columns>
+            </MudDataGrid>
+        }
+        else
+        {
+            <SirenStack Spacing="3" Class="w-100 h-100 d-flex" AlignItems="AlignItems.Center" Justify="Justify.Center">
+                <SirenIcon Icon="@SirenIcons.Request" Size="Size.Large" Color="Color.Inherit" />
+                <SirenText Typo="Typo.h6">No Attachments</SirenText>
+                <SirenText Typo="Typo.body2" Class="mud-text-secondary">Click the + button to add file attachments</SirenText>
+            </SirenStack>
+        }
+    </SirenStack>
+</SirenStack>
+
+@code {
+    [Parameter]
+    public SirenNetworkRequest NetworkRequest { get; set; } = default!;
+
+    [Inject]
+    public IFileOpenService FileOpenService { get; set; } = default!;
+
+    [Inject]
+    public ISnackbar Snackbar { get; set; } = default!;
+
+    [Inject]
+    public ILogger<BinaryAttachmentPanel> Logger { get; set; } = default!;
+
+    private List<BinaryAttachment> attachments = new();
+
+    protected override void OnInitialized()
+    {
+        if (NetworkRequest?.Request?.BinaryAttachments != null)
+        {
+            attachments = NetworkRequest.Request.BinaryAttachments.ToList();
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (NetworkRequest?.Request?.BinaryAttachments != null)
+        {
+            attachments = NetworkRequest.Request.BinaryAttachments.ToList();
+        }
+    }
+
+    private async Task AddFile()
+    {
+        try
+        {
+            var filePaths = await FileOpenService.OpenFileAsync("Select File", "*");
+
+            var filePath = filePaths.FirstOrDefault();
+
+            if (!string.IsNullOrEmpty(filePath) && File.Exists(filePath))
+            {
+                var fileInfo = new FileInfo(filePath);
+                var fileData = await File.ReadAllBytesAsync(filePath);
+                var contentType = GetContentType(fileInfo.Extension);
+
+                var attachment = new BinaryAttachment
+                {
+                    FileName = fileInfo.Name,
+                    ContentType = contentType,
+                    Data = fileData,
+                    DataBase64 = Convert.ToBase64String(fileData),
+                    Size = fileInfo.Length
+                };
+
+                attachments.Add(attachment);
+                SyncToNetworkRequest();
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error adding file attachment");
+            Snackbar.AddSirenError("Error adding file attachment");
+        }
+    }
+
+    private void RemoveAttachment(BinaryAttachment attachment)
+    {
+        attachments.Remove(attachment);
+        SyncToNetworkRequest();
+        StateHasChanged();
+    }
+
+    private void SyncToNetworkRequest()
+    {
+        if (NetworkRequest?.Request != null)
+        {
+            NetworkRequest.Request.BinaryAttachments = attachments.ToList();
+        }
+    }
+
+    private string FormatFileSize(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB" };
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len = len / 1024;
+        }
+        return $"{len:0.##} {sizes[order]}";
+    }
+
+    private string GetContentType(string extension)
+    {
+        return extension.ToLowerInvariant() switch
+        {
+            ".json" => "application/json",
+            ".xml" => "application/xml",
+            ".txt" => "text/plain",
+            ".html" => "text/html",
+            ".css" => "text/css",
+            ".js" => "application/javascript",
+            ".png" => "image/png",
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".gif" => "image/gif",
+            ".svg" => "image/svg+xml",
+            ".pdf" => "application/pdf",
+            ".zip" => "application/zip",
+            ".csv" => "text/csv",
+            _ => "application/octet-stream"
+        };
+    }
+}
+

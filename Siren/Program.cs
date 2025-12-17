@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Mythetech.Components.Desktop.Photino;
 using Photino.Blazor;
 using Siren.Collections;
 using Siren.Components;
@@ -23,6 +24,8 @@ namespace Siren
 
             appBuilder.Services.AddHttpClient();
 
+            appBuilder.Services.AddPhotinoServices();
+
             // register root component and selector
             appBuilder.RootComponents.Add<Components.App>("app");
 
@@ -37,7 +40,9 @@ namespace Siren
                 .SetFullScreen(false)
                 .SetLogVerbosity(10)
                 .SetTitle("Siren");
-
+            
+            app.RegisterProvider(app.Services);
+            
             AppDomain.CurrentDomain.UnhandledException += (sender, error) =>
             {
                 app.MainWindow.ShowMessage("Fatal exception", error.ExceptionObject.ToString());
