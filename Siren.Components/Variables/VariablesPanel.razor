@@ -1,16 +1,14 @@
 ﻿@using Siren.Components.Shared.Notifications
 @using MudBlazor
+@implements IDisposable
 
-<SirenStack Spacing="3" Class="w-100">
+<SirenStack Spacing="9" Class="w-100">
     <SirenStack Row="true" Spacing="3" Class="w-100 px-3" AlignItems="AlignItems.Center">
         <SirenIcon Icon="@SirenIcons.Environment" />
         <SirenText Typo="Typo.body1">Active</SirenText>
         <SirenSpacer />
-        <MudSelect T="string" 
-                   Value="@AppState.ActiveEnvironment" 
-                   ValueChanged="@((string? env) => AppState.ActiveEnvironment = env)"
-                   Dense="true"
-                   Style="min-width: 150px;">
+        <MudSelect T="string" Value="@AppState.ActiveEnvironment"
+            ValueChanged="@((string? env) => AppState.ActiveEnvironment = env)" Dense="true" Style="min-width: 150px;">
             <MudSelectItem Value="@((string?)null)">None</MudSelectItem>
             @foreach (var env in Environments)
             {
@@ -19,126 +17,125 @@
         </MudSelect>
     </SirenStack>
 
-@if (Environments.Count < 2 && Environments.First().Variables.Count == 0)
-{
-    <SirenStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="w-100">
-        <SirenIcon Icon="@SirenIcons.Empty" Style="font-size:4em;" Color="Color.Primary" />
-        <SirenText>No Variables</SirenText>
-        <SirenIconButton Variant="Variant.Filled" OnClick="@(() => AddVariable(Variables.VariableGroups.SystemGroup, "Key", "Value"))">
-            Add Variable
-        </SirenIconButton>
-    </SirenStack>
-}
+    @if (Environments.Count < 2 && Environments.First().Variables.Count == 0)
+    {
+        <SirenStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="w-100">
+            <SirenIcon Icon="@SirenIcons.Empty" Style="font-size:4em;" Color="Color.Primary" />
+            <SirenText>No Variables</SirenText>
+            <SirenIconButton Variant="Variant.Filled"
+                OnClick="@(() => AddVariable(Variables.VariableGroups.SystemGroup, "Key", "Value"))">
+                Add Variable
+            </SirenIconButton>
+        </SirenStack>
+    }
     else
     {
         @foreach (var environment in Environments)
         {
-            <MudTreeView Dense="true"
-                         AutoExpand="true"
-                         ExpandOnClick="true"
-                         Context="context"
-                         Class="w-100"
-                         Color="@Color.Primary"
-                         T="Variable">
+            <MudTreeView Dense="true" AutoExpand="true" ExpandOnClick="true" Context="context" Class="w-100"
+                Color="@Color.Primary" T="Variable">
                 <MudTreeViewItem Expanded="true">
                     <BodyContent>
-                        <SirenStack Row="true" Spacing="3" Style="width:300px;">
-
-                            <SirenText>@environment.Name</SirenText>
-                            <SirenSpacer/>
+                        <SirenStack Row="true" Spacing="3" Class="w-100">
+                            <SirenText
+                                Color="@(environment.Name.Equals(AppState.ActiveEnvironment) ? Color.Primary : Color.Default)">
+                                @environment.Name</SirenText>
+                            <SirenSpacer />
                             <SirenChip T="string" Color="Color.Primary">@environment.Variables.Count.ToString()</SirenChip>
                             <SirenIconButton OnClick="@(() => AddVariable(environment.Name, "Key", "Value"))"
-                                             Icon="@SirenIcons.Add"
-                                             Tooltip="@($"Add Variable")"
-                                             Class="scale-75"
-                                             Size="Size.Medium"/>
+                                Icon="@SirenIcons.Add" Tooltip="@($"Add Variable")" Class="scale-75" Size="Size.Medium" />
+                            <MudMenu Dense="true" ListClass="pa-1">
+                                <ActivatorContent>
+                                    <SirenIconButton Icon="@SirenIcons.MoreVert" Variant="Variant.Text" Color="Color.Inherit" />
+                                </ActivatorContent>
+                                <ChildContent>
+                                    <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Add"
+                                        OnClick="@(() => AddVariable(environment.Name, "Key", "Value"))">
+                                        Add Variable
+                                    </MudMenuItem>
+                                    <MudDivider />
+                                    <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Edit"
+                                        OnClick="@(() => RenameEnvironment(environment.Name))">
+                                        Rename Environment
+                                    </MudMenuItem>
+                                    <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Delete"
+                                        OnClick="@(() => DeleteEnvironment(environment.Name))">
+                                        Delete Environment
+                                    </MudMenuItem>
+                                </ChildContent>
+                            </MudMenu>
                         </SirenStack>
 
                     </BodyContent>
                     <ChildContent>
 
                         <SirenStack Class="w-100 rounded-0" Spacing="2">
-                            <MudDataGrid T="Variables.Variable"
-                                         Items="@environment.Variables"
-                                         Context="context"
-                                         Class="w-100 rounded-0"
-                                         Bordered="false"
-                                         Elevation="0"
-                                         RowClass="text-truncate hover-error-zone"
-                                         Style="overflow:hidden;"
-                                         EditMode="DataGridEditMode.Cell"
-                                         EditTrigger="DataGridEditTrigger.Manual"
-                                         CommittedItemChanges="UpdateVariable"
-                                         ReadOnly="false"
-                                         Dense="true"
-                                         Hover="true">
+                            <MudDataGrid T="Variables.Variable" Items="@environment.Variables" Context="context"
+                                Class="w-100 rounded-0" Bordered="false" Elevation="0" RowClass="text-truncate hover-error-zone"
+                                Style="overflow:hidden;" EditMode="DataGridEditMode.Cell"
+                                EditTrigger="DataGridEditTrigger.Manual" CommittedItemChanges="UpdateVariable" ReadOnly="false"
+                                Dense="true" Hover="true">
                                 <Columns>
                                     <MudBlazor.PropertyColumn Property="x => x.Key">
                                         <EditTemplate>
-                                            <MudTextField @bind-Value="@context.Item.Key" OnBlur="(() => UpdateVariable(context.Item))"/>
+                                            <MudTextField @bind-Value="@context.Item.Key"
+                                                OnBlur="(() => UpdateVariable(context.Item))" />
                                         </EditTemplate>
                                     </MudBlazor.PropertyColumn>
 
                                     <MudBlazor.PropertyColumn Property="x => x.Value">
                                         <CellTemplate>
-                                            <MudTextField Value="@context.Item.Value"
-                                                          ReadOnly="true"
-                                                          InputType="@(context.Item.Secret ? InputType.Password : InputType.Text)"
-                                                          Style="width: 100%;"/>
+                                            <MudTextField Value="@context.Item.Value" ReadOnly="true"
+                                                InputType="@(context.Item.Secret? InputType.Password: InputType.Text)"
+                                                Style="width: 100%;" />
                                         </CellTemplate>
                                         <EditTemplate>
                                             <MudTextField @bind-Value="@context.Item.Value"
-                                                          OnBlur="(() => UpdateVariable(context.Item))"
-                                                          InputType="@(context.Item.Secret ? InputType.Password : InputType.Text)"/>
+                                                OnBlur="(() => UpdateVariable(context.Item))"
+                                                InputType="@(context.Item.Secret? InputType.Password: InputType.Text)" />
                                         </EditTemplate>
                                     </MudBlazor.PropertyColumn>
                                     <MudBlazor.TemplateColumn Title="Secret">
                                         <CellTemplate>
-                                            <SirenSwitch Value="@context.Item.Secret"
-                                                         ValueChanged="@((bool isSecret) =>
-                                                                       {
-                                                                           context.Item.Secret = isSecret;
-                                                                           UpdateVariable(context.Item);
-                                                                       })"
-                                                         Size="Size.Small"
-                                                         Color="Color.Primary" />
+                                            <SirenSwitch Value="@context.Item.Secret" ValueChanged="@((bool isSecret) =>
+                                                                                                                                                             {
+                                                                                                                                                                 context.Item.Secret = isSecret;
+                                                                                                                                                                 UpdateVariable(context.Item);
+                                                                                                                                                             })" Size="Size.Small" Color="Color.Primary" />
                                         </CellTemplate>
                                         <EditTemplate>
-                                            <SirenSwitch Value="@context.Item.Secret"
-                                                         ValueChanged="@((bool isSecret) =>
-                                                                       {
-                                                                           context.Item.Secret = isSecret;
-                                                                           UpdateVariable(context.Item);
-                                                                       })"
-                                                         Size="Size.Small"
-                                                         Color="Color.Primary" />
+                                            <SirenSwitch Value="@context.Item.Secret" ValueChanged="@((bool isSecret) =>
+                                                                                                                                                             {
+                                                                                                                                                                 context.Item.Secret = isSecret;
+                                                                                                                                                                 UpdateVariable(context.Item);
+                                                                                                                                                             })" Size="Size.Small" Color="Color.Primary" />
                                         </EditTemplate>
                                     </MudBlazor.TemplateColumn>
                                     <MudBlazor.TemplateColumn Title="">
                                         <CellTemplate>
                                             <MudMenu ListClass="pa-1" Dense="true">
                                                 <ActivatorContent>
-                                                    <SirenIconButton Icon="@SirenIcons.MoreVert"
-                                                                    Variant="Variant.Text"
-                                                                    Color="Color.Inherit" />
+                                                    <SirenIconButton Icon="@SirenIcons.MoreVert" Variant="Variant.Text"
+                                                        Color="Color.Inherit" />
                                                 </ActivatorContent>
                                                 <ChildContent>
                                                     <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Copy" OnClick="@(async () =>
-                                                                                                {
-                                                                                                    await JsApiService.CopyToClipboardAsync(context.Item.Key);
-                                                                                                    NotifyCopied(context.Item.Key);
-                                                                                                })">
+                                                                                                                                                                                                            {
+                                                                                                                                                                                                                await JsApiService.CopyToClipboardAsync(context.Item.Key);
+                                                                                                                                                                                                                NotifyCopied(context.Item.Key);
+                                                                                                                                                                                                            })">
                                                         Copy Key
                                                     </MudMenuItem>
                                                     <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Copy" OnClick="@(async () =>
-                                                                                                {
-                                                                                                    await JsApiService.CopyToClipboardAsync(context.Item.Value);
-                                                                                                    NotifyCopied(context.Item.Value);
-                                                                                                })">
+                                                                                                                                                                                                            {
+                                                                                                                                                                                                                await JsApiService.CopyToClipboardAsync(context.Item.Value);
+                                                                                                                                                                                                                NotifyCopied(context.Item.Value);
+                                                                                                                                                                                                            })">
                                                         Copy Value
                                                     </MudMenuItem>
                                                     <MudDivider />
-                                                    <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Delete" OnClick="@(() => DeleteVariable(context.Item))">
+                                                    <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Delete"
+                                                        OnClick="@(() => DeleteVariable(context.Item))">
                                                         Delete Variable
                                                     </MudMenuItem>
                                                 </ChildContent>
@@ -147,27 +144,27 @@
                                         <EditTemplate>
                                             <MudMenu Dense="true" ListClass="pa-1">
                                                 <ActivatorContent>
-                                                    <SirenIconButton Icon="@SirenIcons.MoreVert"
-                                                                    Variant="Variant.Text"
-                                                                    Color="Color.Inherit" />
+                                                    <SirenIconButton Icon="@SirenIcons.MoreVert" Variant="Variant.Text"
+                                                        Color="Color.Inherit" />
                                                 </ActivatorContent>
                                                 <ChildContent>
                                                     <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Copy" OnClick="@(async () =>
-                                                                                                {
-                                                                                                    await JsApiService.CopyToClipboardAsync(context.Item.Key);
-                                                                                                    NotifyCopied(context.Item.Key);
-                                                                                                })">
+                                                                                                                                                                                                            {
+                                                                                                                                                                                                                await JsApiService.CopyToClipboardAsync(context.Item.Key);
+                                                                                                                                                                                                                NotifyCopied(context.Item.Key);
+                                                                                                                                                                                                            })">
                                                         Copy Key
                                                     </MudMenuItem>
                                                     <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Copy" OnClick="@(async () =>
-                                                                                                {
-                                                                                                    await JsApiService.CopyToClipboardAsync(context.Item.Value);
-                                                                                                    NotifyCopied(context.Item.Value);
-                                                                                                })">
+                                                                                                                                                                                                            {
+                                                                                                                                                                                                                await JsApiService.CopyToClipboardAsync(context.Item.Value);
+                                                                                                                                                                                                                NotifyCopied(context.Item.Value);
+                                                                                                                                                                                                            })">
                                                         Copy Value
                                                     </MudMenuItem>
                                                     <MudDivider />
-                                                    <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Delete" OnClick="@(() => DeleteVariable(context.Item))">
+                                                    <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Delete"
+                                                        OnClick="@(() => DeleteVariable(context.Item))">
                                                         Delete Variable
                                                     </MudMenuItem>
                                                 </ChildContent>
@@ -199,11 +196,20 @@
     [Inject]
     public SirenAppState AppState { get; set; } = default!;
 
+    [Inject]
+    public IDialogService DialogService { get; set; } = default!;
+
     private List<Environment> Environments = new();
 
     protected override void OnInitialized()
     {
         LoadVariables();
+        AppState.OnActiveEnvironmentChanged += HandleEnvironmentChanged;
+    }
+
+    private void HandleEnvironmentChanged(string? environment)
+    {
+        StateHasChanged();
     }
 
     private void LoadVariables()
@@ -216,7 +222,7 @@
     private void VariableUpdated(Variable v)
     {
         var originalVariable = VariableService.GetVariables().FirstOrDefault(x => x.Id == v.Id);
-        
+
         if (originalVariable == null)
         {
             VariableService.UpdateVariable(v);
@@ -225,10 +231,10 @@
             return;
         }
 
-        if (originalVariable.Key != v.Key || 
-            originalVariable.Value != v.Value || 
-            originalVariable.Secret != v.Secret || 
-            originalVariable.Group != v.Group)
+        if (originalVariable.Key != v.Key ||
+        originalVariable.Value != v.Value ||
+        originalVariable.Secret != v.Secret ||
+        originalVariable.Group != v.Group)
         {
             VariableService.UpdateVariable(v);
             LoadVariables();
@@ -282,5 +288,88 @@
         NotifyVariableDeleted(variable);
         LoadVariables();
     }
-}
 
+    private async Task RenameEnvironment(string currentName)
+    {
+        if (currentName == VariableGroups.SystemGroup)
+        {
+            Snackbar.Add("Cannot rename the Global environment", Severity.Warning);
+            return;
+        }
+
+        var parameters = new DialogParameters();
+        parameters.Add("Label", "Environment name:");
+        parameters.Add("Placeholder", currentName);
+        var options = new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "siren-dialog" };
+        var dialogRef = await DialogService.ShowAsync<InputDialog>("Rename Environment", parameters, options);
+
+        var result = await dialogRef.Result;
+
+        if (!result.Canceled && result.Data is string newName && !string.IsNullOrWhiteSpace(newName) && newName != currentName)
+        {
+            var variables = VariableService.GetVariables().Where(v => v.Group == currentName).ToList();
+
+            foreach (var variable in variables)
+            {
+                variable.Group = newName;
+                VariableService.UpdateVariable(variable);
+            }
+
+            if (AppState.ActiveEnvironment == currentName)
+            {
+                AppState.ActiveEnvironment = newName;
+            }
+
+            LoadVariables();
+            Snackbar.Add($"Renamed environment '{currentName}' to '{newName}'", Severity.Success, opts =>
+            {
+                opts.SuccessIcon = SirenIcons.Environment;
+            });
+        }
+    }
+
+    private async Task DeleteEnvironment(string environmentName)
+    {
+        if (environmentName == VariableGroups.SystemGroup)
+        {
+            Snackbar.Add("Cannot delete the Global environment", Severity.Warning);
+            return;
+        }
+
+        var variables = VariableService.GetVariables().Where(v => v.Group == environmentName).ToList();
+
+        if (variables.Count == 0)
+        {
+            LoadVariables();
+            return;
+        }
+
+        var confirmed = await DialogService.ShowMessageBox(
+        "Delete Environment",
+        $"Are you sure you want to delete the '{environmentName}' environment? This will delete all {variables.Count} variable(s) in this environment. This cannot be undone.",
+        yesText: "Delete",
+        cancelText: "Cancel");
+
+        if (confirmed == true)
+        {
+            var variableIds = variables.Select(v => v.Id).ToList();
+            VariableService.DeleteVariables(variableIds);
+
+            if (AppState.ActiveEnvironment == environmentName)
+            {
+                AppState.ActiveEnvironment = null;
+            }
+
+            LoadVariables();
+            Snackbar.Add($"Deleted environment '{environmentName}'", Severity.Success, opts =>
+            {
+                opts.SuccessIcon = SirenIcons.Environment;
+            });
+        }
+    }
+
+    public void Dispose()
+    {
+        AppState.OnActiveEnvironmentChanged -= HandleEnvironmentChanged;
+    }
+}
