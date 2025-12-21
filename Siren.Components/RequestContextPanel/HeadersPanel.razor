@@ -35,111 +35,103 @@
                     <Columns>
                         <MudBlazor.PropertyColumn Property="x => x.Key" Title="Header">
                             <EditTemplate>
-                                <SirenStack Row="true" Class="w-100 hover-zone">
-                                    <MudTextField @bind-Value="@context.Item.Key" 
-                                                  OnBlur="(() => UpdateHeader(context.Item))"
-                                                  Disabled="@context.Item.IsSystemHeader"/>
-                                    <SirenSpacer/>
-                                    <SirenIconButton OnClick="@(async () =>
-                                                              {
-                                                                  await JsApiService.CopyToClipboardAsync(context.Item.Key);
-                                                                  NotifyCopied(context.Item.Key);
-                                                              })"
-                                                     Icon="@SirenIcons.Copy"
-                                                     Class="hover-visible hover-visible-primary scale-75"
-                                                     Tooltip="@($"Copy key")"
-                                                     Size="Size.Small"
-                                                     Variant="Variant.Text"
-                                                     Color="Color.Transparent"/>
-                                </SirenStack>
+                                <MudTextField @bind-Value="@context.Item.Key" 
+                                              OnBlur="(() => UpdateHeader(context.Item))"
+                                              Disabled="@context.Item.IsSystemHeader"
+                                              Class="w-100"/>
                             </EditTemplate>
                             <CellTemplate>
-                                <SirenStack Row="true" Class="w-100 hover-zone">
-                                    <MudTextField Value="@context.Item.Key" 
-                                                  ReadOnly="@context.Item.IsSystemHeader"
-                                                  Disabled="@context.Item.IsSystemHeader"/>
-                                    <SirenSpacer/>
-                                    <SirenIconButton OnClick="@(async () =>
-                                                              {
-                                                                  await JsApiService.CopyToClipboardAsync(context.Item.Key);
-                                                                  NotifyCopied(context.Item.Key);
-                                                              })"
-                                                     Icon="@SirenIcons.Copy"
-                                                     Class="hover-visible hover-visible-primary scale-75"
-                                                     Tooltip="@($"Copy key")"
-                                                     Size="Size.Small"
-                                                     Variant="Variant.Text"
-                                                     Color="Color.Transparent"/>
-                                </SirenStack>
+                                <MudTextField Value="@context.Item.Key" 
+                                              ReadOnly="@context.Item.IsSystemHeader"
+                                              Disabled="@context.Item.IsSystemHeader"
+                                              Class="w-100"/>
                             </CellTemplate>
                         </MudBlazor.PropertyColumn>
 
                         <MudBlazor.PropertyColumn Property="x => x.Value" Title="Value">
                             <EditTemplate>
-                                <SirenStack Row="true" Class="w-100 hover-zone">
-                                    <MudTextField @bind-Value="@context.Item.Value" 
-                                                  OnBlur="(() => UpdateHeader(context.Item))"
-                                                  Disabled="@context.Item.IsSystemHeader"/>
-                                    <SirenSpacer/>
-                                    <SirenIconButton OnClick="@(async () =>
-                                                              {
-                                                                  await JsApiService.CopyToClipboardAsync(context.Item.Value);
-                                                                  NotifyCopied(context.Item.Value);
-                                                              })"
-                                                     Icon="@SirenIcons.Copy"
-                                                     Class="hover-visible hover-visible-primary scale-75"
-                                                     Tooltip="@($"Copy value")"
-                                                     Size="Size.Small"
-                                                     Variant="Variant.Text"
-                                                     Color="Color.Transparent"/>
-                                </SirenStack>
+                                <MudTextField @bind-Value="@context.Item.Value" 
+                                              OnBlur="(() => UpdateHeader(context.Item))"
+                                              Disabled="@context.Item.IsSystemHeader"
+                                              Class="w-100"/>
                             </EditTemplate>
                             <CellTemplate>
-                                <SirenStack Row="true" Class="w-100 hover-zone">
-                                    <MudTextField Value="@context.Item.Value" 
-                                                  ReadOnly="@context.Item.IsSystemHeader"
-                                                  Disabled="@context.Item.IsSystemHeader"/>
-                                    <SirenSpacer/>
-                                    <SirenIconButton OnClick="@(async () =>
-                                                              {
-                                                                  await JsApiService.CopyToClipboardAsync(context.Item.Value);
-                                                                  NotifyCopied(context.Item.Value);
-                                                              })"
-                                                     Icon="@SirenIcons.Copy"
-                                                     Class="hover-visible hover-visible-primary scale-75"
-                                                     Tooltip="@($"Copy value")"
-                                                     Size="Size.Small"
-                                                     Variant="Variant.Text"
-                                                     Color="Color.Transparent"/>
-                                </SirenStack>
+                                <MudTextField Value="@context.Item.Value" 
+                                              ReadOnly="@context.Item.IsSystemHeader"
+                                              Disabled="@context.Item.IsSystemHeader"
+                                              Class="w-100"/>
                             </CellTemplate>
                         </MudBlazor.PropertyColumn>
-                        <MudBlazor.TemplateColumn>
+                        <MudBlazor.TemplateColumn Title="">
                             <CellTemplate>
-                                <SirenSpacer/>
-                                @if (!context.Item.IsSystemHeader)
-                                {
-                                    <SirenIconButton OnClick="@(() => DeleteHeader(context.Item))"
-                                                     Icon="@SirenIcons.Delete"
-                                                     Class="hover-visible hover-visible-error scale-75"
-                                                     Tooltip="@($"Delete `{context?.Item.Key ?? "variable"}`")"
-                                                     Size="Size.Small"
-                                                     Variant="Variant.Text"
-                                                     Color="Color.Transparent"/>
-                                }
+                                <MudMenu ListClass="pa-1" Dense="true">
+                                    <ActivatorContent>
+                                        <SirenIconButton Icon="@SirenIcons.MoreVert" 
+                                                         Variant="Variant.Text"
+                                                         Color="Color.Inherit" />
+                                    </ActivatorContent>
+                                    <ChildContent>
+                                        <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Copy" 
+                                                     OnClick="@(async () =>
+                                                     {
+                                                         await JsApiService.CopyToClipboardAsync(context.Item.Key);
+                                                         NotifyCopied(context.Item.Key);
+                                                     })">
+                                            Copy Key
+                                        </MudMenuItem>
+                                        <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Copy" 
+                                                     OnClick="@(async () =>
+                                                     {
+                                                         await JsApiService.CopyToClipboardAsync(context.Item.Value);
+                                                         NotifyCopied(context.Item.Value);
+                                                     })">
+                                            Copy Value
+                                        </MudMenuItem>
+                                        @if (!context.Item.IsSystemHeader)
+                                        {
+                                            <MudDivider />
+                                            <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Delete"
+                                                         OnClick="@(() => DeleteHeader(context.Item))">
+                                                Delete Header
+                                            </MudMenuItem>
+                                        }
+                                    </ChildContent>
+                                </MudMenu>
                             </CellTemplate>
                             <EditTemplate>
-                                <SirenSpacer/>
-                                @if (!context.Item.IsSystemHeader)
-                                {
-                                    <SirenIconButton OnClick="@(() => DeleteHeader(context.Item))"
-                                                     Icon="@SirenIcons.Delete"
-                                                     Class="hover-visible hover-visible-error scale-75"
-                                                     Tooltip="@($"Delete `{context?.Item.Key ?? "variable"}`")"
-                                                     Size="Size.Small"
-                                                     Variant="Variant.Text"
-                                                     Color="Color.Transparent"/>
-                                }
+                                <MudMenu ListClass="pa-1" Dense="true">
+                                    <ActivatorContent>
+                                        <SirenIconButton Icon="@SirenIcons.MoreVert" 
+                                                         Variant="Variant.Text"
+                                                         Color="Color.Inherit" />
+                                    </ActivatorContent>
+                                    <ChildContent>
+                                        <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Copy" 
+                                                     OnClick="@(async () =>
+                                                     {
+                                                         await JsApiService.CopyToClipboardAsync(context.Item.Key);
+                                                         NotifyCopied(context.Item.Key);
+                                                     })">
+                                            Copy Key
+                                        </MudMenuItem>
+                                        <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Copy" 
+                                                     OnClick="@(async () =>
+                                                     {
+                                                         await JsApiService.CopyToClipboardAsync(context.Item.Value);
+                                                         NotifyCopied(context.Item.Value);
+                                                     })">
+                                            Copy Value
+                                        </MudMenuItem>
+                                        @if (!context.Item.IsSystemHeader)
+                                        {
+                                            <MudDivider />
+                                            <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Delete"
+                                                         OnClick="@(() => DeleteHeader(context.Item))">
+                                                Delete Header
+                                            </MudMenuItem>
+                                        }
+                                    </ChildContent>
+                                </MudMenu>
                             </EditTemplate>
                         </MudBlazor.TemplateColumn>
 
@@ -251,17 +243,20 @@
         AppState.OnAppStateChanged -= HandleAppStateChanged;
     }
 
-    private void HandleAppStateChanged(SirenAppState state)
+    private async void HandleAppStateChanged(SirenAppState state)
     {
-        if (state?.Active?.Id == NetworkRequest?.Id)
+        if (state?.Active != null)
         {
-            NetworkRequest = state.Active;
-            if (NetworkRequest?.Request?.Headers != null)
+            if (NetworkRequest == null || state.Active.Id == NetworkRequest.Id)
             {
-                requestHeaders = NetworkRequest.Request.Headers.ToViewModel();
+                NetworkRequest = state.Active;
+                if (NetworkRequest?.Request?.Headers != null)
+                {
+                    requestHeaders = NetworkRequest.Request.Headers.ToViewModel();
+                }
+                UpdateAllHeaders();
+                await InvokeAsync(StateHasChanged);
             }
-            UpdateAllHeaders();
-            InvokeAsync(StateHasChanged);
         }
     }
 
