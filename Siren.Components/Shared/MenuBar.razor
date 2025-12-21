@@ -6,6 +6,7 @@
 @using Microsoft.Extensions.Logging
 @using Siren.Components.Settings
 @using MouseEvent = MudBlazor.MouseEvent
+@implements IDisposable
 
 <SirenStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
     <MudMenu ActivationEvent="MouseEvent.MouseOver" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft" Dense="true" ListClass="pa-1">
@@ -41,9 +42,16 @@
                     <MudMenuItem Class="rounded" Icon="@SirenIcons.Export" OnClick="HandleExportToJson">Export to JSON</MudMenuItem>
             </MudMenu>
             <MudMenu Label="Variables" StartIcon="@SirenIcons.Variables" Dense="true" ListClass="pa-1">
-                    <MudMenuItem Disabled="true" Class="rounded" Icon="@SirenIcons.Add" OnClick="HandleAddGroup">Add Group</MudMenuItem>
-                    <MudMenuItem Disabled="true" Class="rounded" Icon="@SirenIcons.Add" OnClick="HandleAddGlobalVariable">Add Global Variable</MudMenuItem>
-                    <MudMenuItem Disabled="true" Class="rounded" Icon="@SirenIcons.Add" OnClick="HandleAddVariable">Add Variable</MudMenuItem>
+                    <MudMenuItem Class="rounded-lg" Icon="@SirenIcons.Add" OnClick="HandleAddEnvironment">Add Environment</MudMenuItem>
+                    <MudMenuItem Class="rounded-lg" Icon="@SirenIcons.Add" OnClick="HandleAddVariable">Add Variable</MudMenuItem>
+                    <MudDivider />
+                    <MudMenu Label="Environments" StartIcon="@SirenIcons.Environment" Dense="true" ListClass="pa-1">
+                        <MudMenuItem Class="@($"{(string.IsNullOrEmpty(AppState.ActiveEnvironment) ? "list-item-active" : "")} rounded-lg")" OnClick="@(() => AppState.ActiveEnvironment = null)">None</MudMenuItem>
+                        @foreach (var env in AvailableEnvironments)
+                        {
+                            <MudMenuItem Class="@($"{(env.Equals(AppState.ActiveEnvironment) ? "list-item-active" : "")} rounded-lg")" OnClick="@(() => AppState.ActiveEnvironment = env)">@env</MudMenuItem>
+                        }
+                    </MudMenu>
             </MudMenu>
             <MudMenuItem Class="rounded" Icon="@SirenIcons.Settings" OnClick="HandleOpenSettings">Settings</MudMenuItem>
         </ChildContent>
@@ -74,6 +82,31 @@
 
     [Inject]
     protected ILogger<MenuBar> Logger { get; set; } = default!;
+
+    private List<string> AvailableEnvironments = new();
+
+    protected override void OnInitialized()
+    {
+        LoadEnvironments();
+        AppState.OnActiveEnvironmentChanged += HandleEnvironmentChanged;
+    }
+
+    private void LoadEnvironments()
+    {
+        var environments = VariableService.GetEnvironments();
+        AvailableEnvironments = environments.Select(e => e.Name).ToList();
+        StateHasChanged();
+    }
+
+    private void HandleEnvironmentChanged(string? environment)
+    {
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        AppState.OnActiveEnvironmentChanged -= HandleEnvironmentChanged;
+    }
 
     private void HandleNewRequest()
     {
@@ -211,86 +244,60 @@
         }
     }
 
-    private async Task HandleAddGroup()
+    private async Task HandleAddEnvironment()
     {
-        /*
-        var prompt = await DialogService.ShowInputAsync(
-            "Add Variable Group",
-            "Enter group name:",
-            "New Group");
+        var parameters = new DialogParameters();
+        parameters.Add("Label", "Environment name:");
+        parameters.Add("Placeholder", "New Environment");
+        var options = new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "siren-dialog" };
+        var dialogRef = await DialogService.ShowAsync<InputDialog>("Add Environment", parameters, options);
 
-        if (!string.IsNullOrWhiteSpace(prompt))
+        var result = await dialogRef.Result;
+
+        if (!result.Canceled && result.Data is string environmentName && !string.IsNullOrWhiteSpace(environmentName))
         {
-            var variable = Variable.Create("Key", "Value", false, prompt);
+            var variable = Variable.Create("Key", "Value", false, environmentName);
             VariableService.CreateVariable(variable);
-            Snackbar.Add($"Created group '{prompt}'", Severity.Success, opts =>
+            LoadEnvironments();
+            Snackbar.Add($"Created environment '{environmentName}'", Severity.Success, opts =>
             {
-                opts.SuccessIcon = SirenIcons.Variables;
+                opts.SuccessIcon = SirenIcons.Environment;
             });
         }
-        */
-        await Task.CompletedTask;
-    }
-
-    private async Task HandleAddGlobalVariable()
-    {
-        /*
-        var keyPrompt = await DialogService.ShowInputAsync(
-            "Add Global Variable",
-            "Enter variable key:",
-            "Key");
-
-        if (string.IsNullOrWhiteSpace(keyPrompt))
-            return;
-
-        var valuePrompt = await DialogService.ShowInputAsync(
-            "Add Global Variable",
-            "Enter variable value:",
-            "Value");
-
-        if (!string.IsNullOrWhiteSpace(valuePrompt))
-        {
-            var variable = Variable.Create(keyPrompt, valuePrompt, false, VariableGroups.SystemGroup);
-            VariableService.CreateVariable(variable);
-            Snackbar.Add($"Added global variable '{keyPrompt}'", Severity.Success, opts =>
-            {
-                opts.SuccessIcon = SirenIcons.Variables;
-            });
-        }
-        */
-        await Task.CompletedTask;
     }
 
     private async Task HandleAddVariable()
     {
-        /*
-        var keyPrompt = await DialogService.ShowInputAsync(
-            "Add Variable",
-            "Enter variable key:",
-            "Key");
+        var activeEnvironment = AppState.ActiveEnvironment ?? VariableGroups.SystemGroup;
+        
+        var keyParameters = new DialogParameters();
+        keyParameters.Add("Label", "Variable key:");
+        keyParameters.Add("Placeholder", "Key");
+        var keyOptions = new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "siren-dialog" };
+        var keyDialog = await DialogService.ShowAsync<InputDialog>("Add Variable", keyParameters, keyOptions);
 
-        if (string.IsNullOrWhiteSpace(keyPrompt))
+        var keyResult = await keyDialog.Result;
+
+        if (keyResult.Canceled || !(keyResult.Data is string key) || string.IsNullOrWhiteSpace(key))
             return;
 
-        var valuePrompt = await DialogService.ShowInputAsync(
-            "Add Variable",
-            "Enter variable value:",
-            "Value");
+        var valueParameters = new DialogParameters();
+        valueParameters.Add("Label", "Variable value:");
+        valueParameters.Add("Placeholder", "Value");
+        var valueOptions = new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "siren-dialog" };
+        var valueDialog = await DialogService.ShowAsync<InputDialog>("Add Variable", valueParameters, valueOptions);
 
-        if (!string.IsNullOrWhiteSpace(valuePrompt))
+        var valueResult = await valueDialog.Result;
+
+        if (!valueResult.Canceled && valueResult.Data is string value)
         {
-            var environments = VariableService.GetEnvironments();
-            var defaultEnvironment = environments.FirstOrDefault()?.Name ?? VariableGroups.SystemGroup;
-            
-            var variable = Variable.Create(keyPrompt, valuePrompt, false, defaultGroup);
+            var variable = Variable.Create(key, value, false, activeEnvironment);
             VariableService.CreateVariable(variable);
-            Snackbar.Add($"Added variable '{keyPrompt}'", Severity.Success, opts =>
+            Snackbar.Add($"Added variable '{key}' to {activeEnvironment}", Severity.Success, opts =>
             {
                 opts.SuccessIcon = SirenIcons.Variables;
             });
         }
-        */
-        await Task.CompletedTask;
     }
 
     private async Task HandleOpenSettings()
