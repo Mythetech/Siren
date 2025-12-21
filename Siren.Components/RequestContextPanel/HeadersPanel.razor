@@ -1,5 +1,6 @@
 ﻿@using Siren.Components.Http
 @using Orientation = Microsoft.FluentUI.AspNetCore.Components.Orientation
+@implements IDisposable
 
 <SirenStack Class="w-100 h-100 d-flex">
     <SirenSplitter Orientation="Orientation.Vertical" Panel1Size="40%" Panel2Size="60%" Class="w-100">
@@ -220,11 +221,15 @@
     [Inject]
     public ISnackbar Snackbar { get; set; } = default!;
 
+    [Inject]
+    public SirenAppState AppState { get; set; } = default!;
+
     private List<DictionaryViewModel> requestHeaders = new();
     private List<DictionaryViewModel> allHeaders = new();
 
     protected override void OnInitialized()
     {
+        AppState.OnAppStateChanged += HandleAppStateChanged;
         if (NetworkRequest?.Request?.Headers != null)
         {
             requestHeaders = NetworkRequest.Request.Headers.ToViewModel();
@@ -239,6 +244,25 @@
             requestHeaders = NetworkRequest.Request.Headers.ToViewModel();
         }
         UpdateAllHeaders();
+    }
+
+    public void Dispose()
+    {
+        AppState.OnAppStateChanged -= HandleAppStateChanged;
+    }
+
+    private void HandleAppStateChanged(SirenAppState state)
+    {
+        if (state?.Active?.Id == NetworkRequest?.Id)
+        {
+            NetworkRequest = state.Active;
+            if (NetworkRequest?.Request?.Headers != null)
+            {
+                requestHeaders = NetworkRequest.Request.Headers.ToViewModel();
+            }
+            UpdateAllHeaders();
+            InvokeAsync(StateHasChanged);
+        }
     }
 
     private void UpdateAllHeaders()
