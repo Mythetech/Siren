@@ -1,0 +1,88 @@
+@using Siren.Components.Shared
+@using Siren.Components.Theme
+@implements IDisposable
+
+<MudMenu @ref="_menu" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft" Dense="true" ListClass="pa-1">
+    <ActivatorContent>
+        @if (_showTooltip)
+        {
+            <MudTooltip Text="@TooltipText" Placement="Placement.Bottom" Delay="0">
+                <SirenIconButton Icon="@SirenIcons.Environment" 
+                                Variant="Variant.Text"
+                                OnClick="@HandleIconClick" />
+            </MudTooltip>
+        }
+        else
+        {
+            <SirenIconButton Icon="@SirenIcons.Environment" 
+                            Variant="Variant.Text"
+                            OnClick="@HandleIconClick" />
+        }
+    </ActivatorContent>
+    <ChildContent>
+        <MudMenuItem Class="@($"{(string.IsNullOrEmpty(AppState.ActiveEnvironment) ? "list-item-active" : "")} rounded-lg px-2 py-0")" OnClick="@(() => SelectEnvironment(null))">None</MudMenuItem>
+        @foreach (var env in AvailableEnvironments)
+        {
+            <MudMenuItem Class="@($"{(env.Equals(AppState.ActiveEnvironment) ? "list-item-active" : "")} rounded-lg px-2 py-0 mt-1")" OnClick="@(() => SelectEnvironment(env))">@env</MudMenuItem>
+        } 
+    </ChildContent>
+</MudMenu>
+
+@code {
+    [Inject]
+    protected SirenAppState AppState { get; set; } = default!;
+
+    [Inject]
+    protected IVariableService VariableService { get; set; } = default!;
+
+    private List<string> AvailableEnvironments = new();
+    private MudMenu? _menu;
+    private bool _showTooltip = true;
+
+    private string TooltipText => string.IsNullOrEmpty(AppState.ActiveEnvironment) 
+        ? "Environment: None" 
+        : $"Environment: {AppState.ActiveEnvironment}";
+
+    protected override void OnInitialized()
+    {
+        LoadEnvironments();
+        AppState.OnActiveEnvironmentChanged += HandleEnvironmentChanged;
+    }
+
+    private void LoadEnvironments()
+    {
+        var environments = VariableService.GetEnvironments();
+        AvailableEnvironments = environments.Select(e => e.Name).ToList();
+        StateHasChanged();
+    }
+
+    private void HandleEnvironmentChanged(string? environment)
+    {
+        StateHasChanged();
+    }
+
+    private void HandleIconClick()
+    {
+        _showTooltip = false;
+        StateHasChanged();
+        Task.Delay(300).ContinueWith(_ =>
+        {
+            InvokeAsync(() =>
+            {
+                _showTooltip = true;
+                StateHasChanged();
+            });
+        });
+    }
+
+    private void SelectEnvironment(string? environment)
+    {
+        AppState.ActiveEnvironment = environment;
+    }
+
+    public void Dispose()
+    {
+        AppState.OnActiveEnvironmentChanged -= HandleEnvironmentChanged;
+    }
+}
+

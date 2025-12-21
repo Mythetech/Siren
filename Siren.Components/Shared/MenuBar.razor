@@ -129,6 +129,7 @@
         AppState.TriggerFormatRequest();
     }
 
+
     private async Task HandleClearHistory()
     {
         var options = new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "siren-dialog" };
@@ -278,8 +279,8 @@
 
         if (!string.IsNullOrWhiteSpace(valuePrompt))
         {
-            var groups = VariableService.GetVariableGroups();
-            var defaultGroup = groups.FirstOrDefault()?.Name ?? VariableGroups.SystemGroup;
+            var environments = VariableService.GetEnvironments();
+            var defaultEnvironment = environments.FirstOrDefault()?.Name ?? VariableGroups.SystemGroup;
             
             var variable = Variable.Create(keyPrompt, valuePrompt, false, defaultGroup);
             VariableService.CreateVariable(variable);

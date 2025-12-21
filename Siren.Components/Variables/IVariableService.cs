@@ -17,7 +17,7 @@ namespace Siren.Components.Variables
 
         List<Variable> GetVariables();
 
-        List<VariableGroup> GetVariableGroups();
+        List<Environment> GetEnvironments();
     }
 }
 

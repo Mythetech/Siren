@@ -666,3 +666,7 @@ button:focus {
 .mud-menu-sub-menu-activator {
     border-radius: 0.25rem;
 }
+
+.list-item-active {
+    background-color: var(--mud-palette-action-default-hover);
+}

@@ -10,7 +10,7 @@ namespace Siren.Variables
 
         private static string GetPath()
         {
-            return Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            return System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
         }
 
         private static LiteDatabase GetDatabase()

@@ -49,6 +49,8 @@ namespace Siren.Components
 
             services.AddSingleton<IVariableService, TVariablesService>();
 
+            services.AddSingleton<IVariableSubstitutionService, VariableSubstitutionService>();
+
             services.AddSingleton<ISettingsService, TSettingsService>();
 
             services.AddSingleton<RequestAuthenticationState>();

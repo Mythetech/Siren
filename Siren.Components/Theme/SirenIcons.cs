@@ -93,6 +93,7 @@ namespace Siren.Components.Theme
         public static string Headers => Round("contract_edit");
 
         public static string Recent => Round("update");
+
+        public static string Environment => Round("public");
     }
 }
-
