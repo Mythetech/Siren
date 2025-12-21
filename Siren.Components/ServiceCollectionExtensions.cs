@@ -38,6 +38,7 @@ namespace Siren.Components
             services.AddScoped<SirenAppState>();
             services.AddScoped<ICookieService, CookieService>();  
             services.AddSingleton<SettingsState>();
+            services.AddScoped<VariableState>();
 
             services.AddHttpClient();
 

@@ -185,7 +185,7 @@
 
 @code {
     [Inject]
-    public IVariableService VariableService { get; set; } = default!;
+    public VariableState VariableState { get; set; } = default!;
 
     [Inject]
     public IJsApiService JsApiService { get; set; } = default!;
@@ -205,6 +205,7 @@
     {
         LoadVariables();
         AppState.OnActiveEnvironmentChanged += HandleEnvironmentChanged;
+        VariableState.StateChanged += HandleStateChanged;
     }
 
     private void HandleEnvironmentChanged(string? environment)
@@ -212,21 +213,25 @@
         StateHasChanged();
     }
 
+    private void HandleStateChanged()
+    {
+        LoadVariables();
+    }
+
     private void LoadVariables()
     {
-        Environments = VariableService.GetEnvironments();
+        Environments = VariableState.Environments;
 
         StateHasChanged();
     }
 
     private void VariableUpdated(Variable v)
     {
-        var originalVariable = VariableService.GetVariables().FirstOrDefault(x => x.Id == v.Id);
+        var originalVariable = VariableState.Variables.FirstOrDefault(x => x.Id == v.Id);
 
         if (originalVariable == null)
         {
-            VariableService.UpdateVariable(v);
-            LoadVariables();
+            VariableState.UpdateVariable(v);
             NotifyVariableUpdated(v);
             return;
         }
@@ -236,8 +241,7 @@
         originalVariable.Secret != v.Secret ||
         originalVariable.Group != v.Group)
         {
-            VariableService.UpdateVariable(v);
-            LoadVariables();
+            VariableState.UpdateVariable(v);
             NotifyVariableUpdated(v);
         }
     }
@@ -249,8 +253,7 @@
 
         var v = Variable.Create(key, value, isSecret, group);
 
-        VariableService.CreateVariable(v);
-        LoadVariables();
+        VariableState.CreateVariable(v);
     }
 
     protected void NotifyCopied(string value)
@@ -273,8 +276,7 @@
 
     protected void RestoreVariable(Variable v)
     {
-        VariableService.CreateVariable(v);
-        LoadVariables();
+        VariableState.CreateVariable(v);
     }
 
     protected void UpdateVariable(Variable variable)
@@ -284,9 +286,8 @@
 
     protected void DeleteVariable(Variable variable)
     {
-        VariableService.DeleteVariable(variable.Id);
+        VariableState.DeleteVariable(variable.Id);
         NotifyVariableDeleted(variable);
-        LoadVariables();
     }
 
     private async Task RenameEnvironment(string currentName)
@@ -307,12 +308,12 @@
 
         if (!result.Canceled && result.Data is string newName && !string.IsNullOrWhiteSpace(newName) && newName != currentName)
         {
-            var variables = VariableService.GetVariables().Where(v => v.Group == currentName).ToList();
+            var variables = VariableState.Variables.Where(v => v.Group == currentName).ToList();
 
             foreach (var variable in variables)
             {
                 variable.Group = newName;
-                VariableService.UpdateVariable(variable);
+                VariableState.UpdateVariable(variable);
             }
 
             if (AppState.ActiveEnvironment == currentName)
@@ -320,7 +321,6 @@
                 AppState.ActiveEnvironment = newName;
             }
 
-            LoadVariables();
             Snackbar.Add($"Renamed environment '{currentName}' to '{newName}'", Severity.Success, opts =>
             {
                 opts.SuccessIcon = SirenIcons.Environment;
@@ -336,11 +336,10 @@
             return;
         }
 
-        var variables = VariableService.GetVariables().Where(v => v.Group == environmentName).ToList();
+        var variables = VariableState.Variables.Where(v => v.Group == environmentName).ToList();
 
         if (variables.Count == 0)
         {
-            LoadVariables();
             return;
         }
 
@@ -353,14 +352,13 @@
         if (confirmed == true)
         {
             var variableIds = variables.Select(v => v.Id).ToList();
-            VariableService.DeleteVariables(variableIds);
+            VariableState.DeleteVariables(variableIds);
 
             if (AppState.ActiveEnvironment == environmentName)
             {
                 AppState.ActiveEnvironment = null;
             }
 
-            LoadVariables();
             Snackbar.Add($"Deleted environment '{environmentName}'", Severity.Success, opts =>
             {
                 opts.SuccessIcon = SirenIcons.Environment;
@@ -371,5 +369,6 @@
     public void Dispose()
     {
         AppState.OnActiveEnvironmentChanged -= HandleEnvironmentChanged;
+        VariableState.StateChanged -= HandleStateChanged;
     }
 }

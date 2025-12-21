@@ -66,7 +66,7 @@
     protected ICollectionsService CollectionsService { get; set; } = default!;
 
     [Inject]
-    protected IVariableService VariableService { get; set; } = default!;
+    protected VariableState VariableState { get; set; } = default!;
 
     [Inject]
     protected IHistoryService HistoryService { get; set; } = default!;
@@ -89,12 +89,17 @@
     {
         LoadEnvironments();
         AppState.OnActiveEnvironmentChanged += HandleEnvironmentChanged;
+        VariableState.StateChanged += HandleStateChanged;
+    }
+
+    private void HandleStateChanged()
+    {
+        LoadEnvironments();
     }
 
     private void LoadEnvironments()
     {
-        var environments = VariableService.GetEnvironments();
-        AvailableEnvironments = environments.Select(e => e.Name).ToList();
+        AvailableEnvironments = VariableState.Environments.Select(e => e.Name).ToList();
         StateHasChanged();
     }
 
@@ -106,6 +111,7 @@
     public void Dispose()
     {
         AppState.OnActiveEnvironmentChanged -= HandleEnvironmentChanged;
+        VariableState.StateChanged -= HandleStateChanged;
     }
 
     private void HandleNewRequest()
@@ -257,8 +263,7 @@
         if (!result.Canceled && result.Data is string environmentName && !string.IsNullOrWhiteSpace(environmentName))
         {
             var variable = Variable.Create("Key", "Value", false, environmentName);
-            VariableService.CreateVariable(variable);
-            LoadEnvironments();
+            VariableState.CreateVariable(variable);
             Snackbar.Add($"Created environment '{environmentName}'", Severity.Success, opts =>
             {
                 opts.SuccessIcon = SirenIcons.Environment;
@@ -292,7 +297,7 @@
         if (!valueResult.Canceled && valueResult.Data is string value)
         {
             var variable = Variable.Create(key, value, false, activeEnvironment);
-            VariableService.CreateVariable(variable);
+            VariableState.CreateVariable(variable);
             Snackbar.Add($"Added variable '{key}' to {activeEnvironment}", Severity.Success, opts =>
             {
                 opts.SuccessIcon = SirenIcons.Variables;

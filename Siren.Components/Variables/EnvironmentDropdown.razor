@@ -33,7 +33,7 @@
     protected SirenAppState AppState { get; set; } = default!;
 
     [Inject]
-    protected IVariableService VariableService { get; set; } = default!;
+    protected VariableState VariableState { get; set; } = default!;
 
     private List<string> AvailableEnvironments = new();
     private MudMenu? _menu;
@@ -47,12 +47,17 @@
     {
         LoadEnvironments();
         AppState.OnActiveEnvironmentChanged += HandleEnvironmentChanged;
+        VariableState.StateChanged += HandleStateChanged;
+    }
+
+    private void HandleStateChanged()
+    {
+        LoadEnvironments();
     }
 
     private void LoadEnvironments()
     {
-        var environments = VariableService.GetEnvironments();
-        AvailableEnvironments = environments.Select(e => e.Name).ToList();
+        AvailableEnvironments = VariableState.Environments.Select(e => e.Name).ToList();
         StateHasChanged();
     }
 
@@ -83,6 +88,7 @@
     public void Dispose()
     {
         AppState.OnActiveEnvironmentChanged -= HandleEnvironmentChanged;
+        VariableState.StateChanged -= HandleStateChanged;
     }
 }
 
