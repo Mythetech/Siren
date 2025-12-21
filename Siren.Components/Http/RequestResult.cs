@@ -17,6 +17,8 @@ namespace Siren.Components.Http
 
         public Dictionary<string, string> Headers { get; set; } = new();
 
+        public Dictionary<string, string> ActualRequestHeaders { get; set; } = new();
+
         public List<Cookie>? Cookies { get; set; }
 
         public HttpContent? ResponseContent { get; set; }
@@ -35,6 +37,7 @@ namespace Siren.Components.Http
                 RequestSize = RequestSize,
                 ResponseSize = ResponseSize,
                 Headers = new Dictionary<string, string>(Headers),
+                ActualRequestHeaders = new Dictionary<string, string>(ActualRequestHeaders),
                 Cookies = Cookies != null ? [..Cookies] : null,
                 ResponseContent = ResponseContent,
                 Error = Error,

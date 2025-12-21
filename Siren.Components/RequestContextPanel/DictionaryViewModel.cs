@@ -8,6 +8,8 @@ namespace Siren.Components.RequestContextPanel
         public string? Key { get; set; }
 
         public string? Value { get; set; }
+
+        public bool IsSystemHeader { get; set; }
     }
 
     public static class DictionaryViewModelExtensions

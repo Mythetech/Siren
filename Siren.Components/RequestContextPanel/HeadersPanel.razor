@@ -18,7 +18,7 @@
                 </SirenStack>
 
                 <MudDataGrid T="DictionaryViewModel"
-                             Items="@requestHeaders"
+                             Items="@allHeaders"
                              Context="context"
                              Class="w-100"
                              Bordered="false"
@@ -35,7 +35,9 @@
                         <MudBlazor.PropertyColumn Property="x => x.Key" Title="Header">
                             <EditTemplate>
                                 <SirenStack Row="true" Class="w-100 hover-zone">
-                                    <MudTextField @bind-Value="@context.Item.Key" OnBlur="(() => UpdateHeader(context.Item))"/>
+                                    <MudTextField @bind-Value="@context.Item.Key" 
+                                                  OnBlur="(() => UpdateHeader(context.Item))"
+                                                  Disabled="@context.Item.IsSystemHeader"/>
                                     <SirenSpacer/>
                                     <SirenIconButton OnClick="@(async () =>
                                                               {
@@ -50,12 +52,33 @@
                                                      Color="Color.Transparent"/>
                                 </SirenStack>
                             </EditTemplate>
+                            <CellTemplate>
+                                <SirenStack Row="true" Class="w-100 hover-zone">
+                                    <MudTextField Value="@context.Item.Key" 
+                                                  ReadOnly="@context.Item.IsSystemHeader"
+                                                  Disabled="@context.Item.IsSystemHeader"/>
+                                    <SirenSpacer/>
+                                    <SirenIconButton OnClick="@(async () =>
+                                                              {
+                                                                  await JsApiService.CopyToClipboardAsync(context.Item.Key);
+                                                                  NotifyCopied(context.Item.Key);
+                                                              })"
+                                                     Icon="@SirenIcons.Copy"
+                                                     Class="hover-visible hover-visible-primary scale-75"
+                                                     Tooltip="@($"Copy key")"
+                                                     Size="Size.Small"
+                                                     Variant="Variant.Text"
+                                                     Color="Color.Transparent"/>
+                                </SirenStack>
+                            </CellTemplate>
                         </MudBlazor.PropertyColumn>
 
                         <MudBlazor.PropertyColumn Property="x => x.Value" Title="Value">
                             <EditTemplate>
                                 <SirenStack Row="true" Class="w-100 hover-zone">
-                                    <MudTextField @bind-Value="@context.Item.Value" OnBlur="(() => UpdateHeader(context.Item))"/>
+                                    <MudTextField @bind-Value="@context.Item.Value" 
+                                                  OnBlur="(() => UpdateHeader(context.Item))"
+                                                  Disabled="@context.Item.IsSystemHeader"/>
                                     <SirenSpacer/>
                                     <SirenIconButton OnClick="@(async () =>
                                                               {
@@ -70,28 +93,52 @@
                                                      Color="Color.Transparent"/>
                                 </SirenStack>
                             </EditTemplate>
+                            <CellTemplate>
+                                <SirenStack Row="true" Class="w-100 hover-zone">
+                                    <MudTextField Value="@context.Item.Value" 
+                                                  ReadOnly="@context.Item.IsSystemHeader"
+                                                  Disabled="@context.Item.IsSystemHeader"/>
+                                    <SirenSpacer/>
+                                    <SirenIconButton OnClick="@(async () =>
+                                                              {
+                                                                  await JsApiService.CopyToClipboardAsync(context.Item.Value);
+                                                                  NotifyCopied(context.Item.Value);
+                                                              })"
+                                                     Icon="@SirenIcons.Copy"
+                                                     Class="hover-visible hover-visible-primary scale-75"
+                                                     Tooltip="@($"Copy value")"
+                                                     Size="Size.Small"
+                                                     Variant="Variant.Text"
+                                                     Color="Color.Transparent"/>
+                                </SirenStack>
+                            </CellTemplate>
                         </MudBlazor.PropertyColumn>
                         <MudBlazor.TemplateColumn>
                             <CellTemplate>
                                 <SirenSpacer/>
-                                <SirenIconButton OnClick="@(() => DeleteHeader(context.Item))"
-                                                 Icon="@SirenIcons.Delete"
-                                                 Class="hover-visible hover-visible-error scale-75"
-                                                 Tooltip="@($"Delete `{context?.Item.Key ?? "variable"}`")"
-                                                 Size="Size.Small"
-                                                 Variant="Variant.Text"
-                                                 Color="Color.Transparent"/>
-
+                                @if (!context.Item.IsSystemHeader)
+                                {
+                                    <SirenIconButton OnClick="@(() => DeleteHeader(context.Item))"
+                                                     Icon="@SirenIcons.Delete"
+                                                     Class="hover-visible hover-visible-error scale-75"
+                                                     Tooltip="@($"Delete `{context?.Item.Key ?? "variable"}`")"
+                                                     Size="Size.Small"
+                                                     Variant="Variant.Text"
+                                                     Color="Color.Transparent"/>
+                                }
                             </CellTemplate>
                             <EditTemplate>
                                 <SirenSpacer/>
-                                <SirenIconButton OnClick="@(() => DeleteHeader(context.Item))"
-                                                 Icon="@SirenIcons.Delete"
-                                                 Class="hover-visible hover-visible-error scale-75"
-                                                 Tooltip="@($"Delete `{context?.Item.Key ?? "variable"}`")"
-                                                 Size="Size.Small"
-                                                 Variant="Variant.Text"
-                                                 Color="Color.Transparent"/>
+                                @if (!context.Item.IsSystemHeader)
+                                {
+                                    <SirenIconButton OnClick="@(() => DeleteHeader(context.Item))"
+                                                     Icon="@SirenIcons.Delete"
+                                                     Class="hover-visible hover-visible-error scale-75"
+                                                     Tooltip="@($"Delete `{context?.Item.Key ?? "variable"}`")"
+                                                     Size="Size.Small"
+                                                     Variant="Variant.Text"
+                                                     Color="Color.Transparent"/>
+                                }
                             </EditTemplate>
                         </MudBlazor.TemplateColumn>
 
@@ -174,6 +221,7 @@
     public ISnackbar Snackbar { get; set; } = default!;
 
     private List<DictionaryViewModel> requestHeaders = new();
+    private List<DictionaryViewModel> allHeaders = new();
 
     protected override void OnInitialized()
     {
@@ -181,12 +229,52 @@
         {
             requestHeaders = NetworkRequest.Request.Headers.ToViewModel();
         }
+        UpdateAllHeaders();
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (NetworkRequest?.Request?.Headers != null)
+        {
+            requestHeaders = NetworkRequest.Request.Headers.ToViewModel();
+        }
+        UpdateAllHeaders();
+    }
+
+    private void UpdateAllHeaders()
+    {
+        allHeaders.Clear();
+        
+        var userHeaderKeys = new HashSet<string>(
+            requestHeaders.Where(h => !string.IsNullOrWhiteSpace(h.Key))
+                          .Select(h => h.Key!.ToLowerInvariant()),
+            StringComparer.OrdinalIgnoreCase);
+
+        foreach (var header in requestHeaders)
+        {
+            allHeaders.Add(header);
+        }
+
+        if (NetworkRequest?.Response?.ActualRequestHeaders != null)
+        {
+            var systemHeadersDict = NetworkRequest.Response.ActualRequestHeaders
+                .Where(h => !userHeaderKeys.Contains(h.Key.ToLowerInvariant()))
+                .ToDictionary(h => h.Key, h => h.Value);
+
+            foreach (var systemHeader in systemHeadersDict.ToViewModel())
+            {
+                systemHeader.IsSystemHeader = true;
+                allHeaders.Add(systemHeader);
+            }
+        }
     }
 
     private void AddRequestHeader(string key, string value)
     {
         requestHeaders.Add(new() { Key = key, Value = value });
         SyncToNetworkRequest();
+        UpdateAllHeaders();
+        StateHasChanged();
     }
 
     protected void NotifyCopied(string value)
@@ -196,20 +284,28 @@
 
     protected void UpdateHeader(DictionaryViewModel m)
     {
+        if (m.IsSystemHeader)
+            return;
+
         var header = requestHeaders.Find(x => x.Id.Equals(m.Id));
         if (header != null)
         {
             header.Key = m.Key;
             header.Value = m.Value;
             SyncToNetworkRequest();
+            UpdateAllHeaders();
         }
         StateHasChanged();
     }
 
     protected void DeleteHeader(DictionaryViewModel m)
     {
+        if (m.IsSystemHeader)
+            return;
+
         requestHeaders.Remove(m);
         SyncToNetworkRequest();
+        UpdateAllHeaders();
         StateHasChanged();
     }
 

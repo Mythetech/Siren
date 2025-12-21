@@ -49,9 +49,12 @@ namespace Siren.Components.Services
                     httpRequestMessage.Headers.Add(header.Key, header.Value);
                 }
             }
-            
+
+            AddSystemHeadersToRequest(httpRequestMessage);
             AddCookiesToRequest(httpRequestMessage);
             AddAuthenticationToRequest(httpRequestMessage);
+
+            var actualRequestHeaders = CaptureActualRequestHeaders(httpRequestMessage, client);
 
             var stopwatch = Stopwatch.StartNew();
             HttpResponseMessage? response;
@@ -69,12 +72,13 @@ namespace Siren.Components.Services
                 {
                     Error = ex,
                     Duration = stopwatch.Elapsed,
+                    ActualRequestHeaders = actualRequestHeaders
                 };
 
                 return result;
             }
             stopwatch.Stop();
-            
+
             string sc = "";
             if (response != null)
             {
@@ -88,7 +92,8 @@ namespace Siren.Components.Services
                 Cookies = _cookieService.ParseCookies(response),
                 Duration = stopwatch.Elapsed,
                 ResponseContent = response.Content,
-                Headers = response.Headers.ToDictionary(h => h.Key, h => h.Value.FirstOrDefault())
+                Headers = response.Headers.ToDictionary(h => h.Key, h => h.Value.FirstOrDefault()),
+                ActualRequestHeaders = actualRequestHeaders
             };
 
             if (response?.Content != null)
@@ -145,8 +150,8 @@ namespace Siren.Components.Services
 
         private void AddCookiesToRequest(HttpRequestMessage request)
         {
-            var requestUri = request.RequestUri; 
-            
+            var requestUri = request.RequestUri;
+
             var applicableCookies = _cookieService.GetCookies().Where(c =>
                 (string.IsNullOrEmpty(c.Domain) || c.Domain == requestUri.Host) &&
                 (string.IsNullOrEmpty(c.Path) || requestUri.AbsolutePath.StartsWith(c.Path)) &&
@@ -170,24 +175,68 @@ namespace Siren.Components.Services
                         request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
                     }
                     break;
-                    
+
                 case AuthenticationType.Basic:
-                    if (_authState.AuthParams.TryGetValue("username", out var username) && 
+                    if (_authState.AuthParams.TryGetValue("username", out var username) &&
                         _authState.AuthParams.TryGetValue("password", out var password))
                     {
                         var credentials = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes($"{username}:{password}"));
                         request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", credentials);
                     }
                     break;
-                    
+
                 case AuthenticationType.ApiKey:
-                    if (_authState.AuthParams.TryGetValue("apiKeyName", out var keyName) && 
+                    if (_authState.AuthParams.TryGetValue("apiKeyName", out var keyName) &&
                         _authState.AuthParams.TryGetValue("apiKeyValue", out var keyValue))
                     {
                         request.Headers.Add(keyName, keyValue);
                     }
                     break;
             }
+        }
+
+        private void AddSystemHeadersToRequest(HttpRequestMessage request)
+        {
+            if (_settings.SendRequestsWithSystemToken)
+            {
+                request.Headers.Add("x-siren-request-id", Guid.NewGuid().ToString());
+            }
+        }
+
+        private Dictionary<string, string> CaptureActualRequestHeaders(HttpRequestMessage request, HttpClient client)
+        {
+            var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var header in request.Headers)
+            {
+                headers[header.Key] = string.Join(", ", header.Value);
+            }
+
+            if (request.Content != null)
+            {
+                foreach (var header in request.Content.Headers)
+                {
+                    headers[header.Key] = string.Join(", ", header.Value);
+                }
+            }
+
+            if (request.Headers.Authorization != null && !headers.ContainsKey("Authorization"))
+            {
+                headers["Authorization"] = request.Headers.Authorization.ToString();
+            }
+
+            if (client.DefaultRequestHeaders != null)
+            {
+                foreach (var header in client.DefaultRequestHeaders)
+                {
+                    if (!headers.ContainsKey(header.Key))
+                    {
+                        headers[header.Key] = string.Join(", ", header.Value);
+                    }
+                }
+            }
+
+            return headers;
         }
     }
 }
