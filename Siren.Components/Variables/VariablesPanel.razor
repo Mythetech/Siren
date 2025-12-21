@@ -2,7 +2,7 @@
 @using MudBlazor
 
 <SirenStack Spacing="3" Class="w-100">
-    <SirenStack Row="true" Spacing="3" Class="w-100 px-2" AlignItems="AlignItems.Center">
+    <SirenStack Row="true" Spacing="3" Class="w-100 px-3" AlignItems="AlignItems.Center">
         <SirenIcon Icon="@SirenIcons.Environment" />
         <SirenText Typo="Typo.body1">Active</SirenText>
         <SirenSpacer />
@@ -75,63 +75,21 @@
                                 <Columns>
                                     <MudBlazor.PropertyColumn Property="x => x.Key">
                                         <EditTemplate>
-                                            <SirenStack Row="true" Class="w-100 hover-zone">
-                                                <MudTextField @bind-Value="@context.Item.Key" OnBlur="(() => UpdateVariable(context.Item))"/>
-                                                <SirenSpacer/>
-                                                <SirenIconButton OnClick="@(async () =>
-                                                                          {
-                                                                              await JsApiService.CopyToClipboardAsync(context.Item.Key);
-                                                                              NotifyCopied(context.Item.Key);
-                                                                          })"
-                                                                 Icon="@SirenIcons.Copy"
-                                                                 Class="hover-visible hover-visible-primary scale-75"
-                                                                 Tooltip="@($"Copy key")"
-                                                                 Size="Size.Small"
-                                                                 Variant="Variant.Text"
-                                                                 Color="Color.Transparent"/>
-                                            </SirenStack>
+                                            <MudTextField @bind-Value="@context.Item.Key" OnBlur="(() => UpdateVariable(context.Item))"/>
                                         </EditTemplate>
                                     </MudBlazor.PropertyColumn>
 
                                     <MudBlazor.PropertyColumn Property="x => x.Value">
                                         <CellTemplate>
-                                            <SirenStack Row="true" Class="w-100 hover-zone">
-                                                <MudTextField Value="@context.Item.Value"
-                                                              ReadOnly="true"
-                                                              InputType="@(context.Item.Secret ? InputType.Password : InputType.Text)"
-                                                              Style="width: 100%;"/>
-                                                <SirenSpacer/>
-                                                <SirenIconButton OnClick="@(async () =>
-                                                                          {
-                                                                              await JsApiService.CopyToClipboardAsync(context.Item.Value);
-                                                                              NotifyCopied(context.Item.Value);
-                                                                          })"
-                                                                 Icon="@SirenIcons.Copy"
-                                                                 Class="hover-visible hover-visible-primary scale-75"
-                                                                 Tooltip="@($"Copy value")"
-                                                                 Size="Size.Small"
-                                                                 Variant="Variant.Text"
-                                                                 Color="Color.Transparent"/>
-                                            </SirenStack>
+                                            <MudTextField Value="@context.Item.Value"
+                                                          ReadOnly="true"
+                                                          InputType="@(context.Item.Secret ? InputType.Password : InputType.Text)"
+                                                          Style="width: 100%;"/>
                                         </CellTemplate>
                                         <EditTemplate>
-                                            <SirenStack Row="true" Class="w-100 hover-zone">
-                                                <MudTextField @bind-Value="@context.Item.Value"
-                                                              OnBlur="(() => UpdateVariable(context.Item))"
-                                                              InputType="@(context.Item.Secret ? InputType.Password : InputType.Text)"/>
-                                                <SirenSpacer/>
-                                                <SirenIconButton OnClick="@(async () =>
-                                                                          {
-                                                                              await JsApiService.CopyToClipboardAsync(context.Item.Value);
-                                                                              NotifyCopied(context.Item.Value);
-                                                                          })"
-                                                                 Icon="@SirenIcons.Copy"
-                                                                 Class="hover-visible hover-visible-primary scale-75"
-                                                                 Tooltip="@($"Copy value")"
-                                                                 Size="Size.Small"
-                                                                 Variant="Variant.Text"
-                                                                 Color="Color.Transparent"/>
-                                            </SirenStack>
+                                            <MudTextField @bind-Value="@context.Item.Value"
+                                                          OnBlur="(() => UpdateVariable(context.Item))"
+                                                          InputType="@(context.Item.Secret ? InputType.Password : InputType.Text)"/>
                                         </EditTemplate>
                                     </MudBlazor.PropertyColumn>
                                     <MudBlazor.TemplateColumn Title="Secret">
@@ -156,27 +114,64 @@
                                                          Color="Color.Primary" />
                                         </EditTemplate>
                                     </MudBlazor.TemplateColumn>
-                                    <MudBlazor.TemplateColumn>
+                                    <MudBlazor.TemplateColumn Title="">
                                         <CellTemplate>
-                                            <SirenSpacer/>
-                                            <SirenIconButton OnClick="@(() => DeleteVariable(context.Item))"
-                                                             Icon="@SirenIcons.Delete"
-                                                             Class="hover-visible hover-visible-error scale-75"
-                                                             Tooltip="@($"Delete `{context?.Item.Key ?? "variable"}`")"
-                                                             Size="Size.Small"
-                                                             Variant="Variant.Text"
-                                                             Color="Color.Transparent"/>
-
+                                            <MudMenu ListClass="pa-1" Dense="true">
+                                                <ActivatorContent>
+                                                    <SirenIconButton Icon="@SirenIcons.MoreVert"
+                                                                    Variant="Variant.Text"
+                                                                    Color="Color.Inherit" />
+                                                </ActivatorContent>
+                                                <ChildContent>
+                                                    <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Copy" OnClick="@(async () =>
+                                                                                                {
+                                                                                                    await JsApiService.CopyToClipboardAsync(context.Item.Key);
+                                                                                                    NotifyCopied(context.Item.Key);
+                                                                                                })">
+                                                        Copy Key
+                                                    </MudMenuItem>
+                                                    <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Copy" OnClick="@(async () =>
+                                                                                                {
+                                                                                                    await JsApiService.CopyToClipboardAsync(context.Item.Value);
+                                                                                                    NotifyCopied(context.Item.Value);
+                                                                                                })">
+                                                        Copy Value
+                                                    </MudMenuItem>
+                                                    <MudDivider />
+                                                    <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Delete" OnClick="@(() => DeleteVariable(context.Item))">
+                                                        Delete Variable
+                                                    </MudMenuItem>
+                                                </ChildContent>
+                                            </MudMenu>
                                         </CellTemplate>
                                         <EditTemplate>
-                                            <SirenSpacer/>
-                                            <SirenIconButton OnClick="@(() => DeleteVariable(context.Item))"
-                                                             Icon="@SirenIcons.Delete"
-                                                             Class="hover-visible hover-visible-error scale-75"
-                                                             Tooltip="@($"Delete `{context?.Item.Key ?? "variable"}`")"
-                                                             Size="Size.Small"
-                                                             Variant="Variant.Text"
-                                                             Color="Color.Transparent"/>
+                                            <MudMenu Dense="true" ListClass="pa-1">
+                                                <ActivatorContent>
+                                                    <SirenIconButton Icon="@SirenIcons.MoreVert"
+                                                                    Variant="Variant.Text"
+                                                                    Color="Color.Inherit" />
+                                                </ActivatorContent>
+                                                <ChildContent>
+                                                    <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Copy" OnClick="@(async () =>
+                                                                                                {
+                                                                                                    await JsApiService.CopyToClipboardAsync(context.Item.Key);
+                                                                                                    NotifyCopied(context.Item.Key);
+                                                                                                })">
+                                                        Copy Key
+                                                    </MudMenuItem>
+                                                    <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Copy" OnClick="@(async () =>
+                                                                                                {
+                                                                                                    await JsApiService.CopyToClipboardAsync(context.Item.Value);
+                                                                                                    NotifyCopied(context.Item.Value);
+                                                                                                })">
+                                                        Copy Value
+                                                    </MudMenuItem>
+                                                    <MudDivider />
+                                                    <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Delete" OnClick="@(() => DeleteVariable(context.Item))">
+                                                        Delete Variable
+                                                    </MudMenuItem>
+                                                </ChildContent>
+                                            </MudMenu>
                                         </EditTemplate>
                                     </MudBlazor.TemplateColumn>
 
