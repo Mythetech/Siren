@@ -72,6 +72,20 @@ namespace Siren.Components
 
         public event Action<SirenNetworkRequest?>? OnActiveNetworkRequestChanged;
 
+        public event Action<string?>? OnActiveEnvironmentChanged;
+
+        private string? _activeEnvironment;
+
+        public string? ActiveEnvironment
+        {
+            get => _activeEnvironment;
+            set
+            {
+                _activeEnvironment = value;
+                ActiveEnvironmentChanged();
+            }
+        }
+
         private void AppBarChanged() => OnChange?.Invoke();
 
         private void IsDarkModeChanged() => OnDarkModeChanged?.Invoke(IsDarkMode);
@@ -85,6 +99,12 @@ namespace Siren.Components
         private void ActiveNetworkRequestChanged()
         {
             OnActiveNetworkRequestChanged?.Invoke(Active);
+            AppStateChanged();
+        }
+
+        private void ActiveEnvironmentChanged()
+        {
+            OnActiveEnvironmentChanged?.Invoke(ActiveEnvironment);
             AppStateChanged();
         }
 

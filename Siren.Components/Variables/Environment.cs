@@ -1,7 +1,7 @@
 ﻿using System;
 namespace Siren.Components.Variables
 {
-    public class VariableGroup
+    public class Environment
     {
         public string Name { get; set; } = "";
 

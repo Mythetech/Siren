@@ -25,29 +25,29 @@ namespace Siren.Variables
             VariableRepository.DeleteVariables(ids);
         }
 
-        public List<VariableGroup> GetVariableGroups()
+        public List<Siren.Components.Variables.Environment> GetEnvironments()
         {
             var variables = GetVariables();
 
-            var groups = variables
+            var environments = variables
                 .GroupBy(v => v.Group)
-                .Select(g => new VariableGroup
+                .Select(g => new Siren.Components.Variables.Environment
                 {
                     Name = g.Key,
                     Variables = g.ToList()
                 })
                 .ToList();
 
-            if (groups.Count == 0)
+            if (environments.Count == 0)
             {
-                groups.Add(new VariableGroup
+                environments.Add(new Siren.Components.Variables.Environment
                 {
                     Name = VariableGroups.SystemGroup,
                     Variables = new List<Variable>()
                 });
             }
 
-            return groups;
+            return environments;
         }
 
         public List<Variable> GetVariables()
