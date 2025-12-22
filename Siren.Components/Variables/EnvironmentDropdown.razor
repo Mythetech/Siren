@@ -1,12 +1,13 @@
 @using Siren.Components.Shared
 @using Siren.Components.Theme
+@using MouseEvent = MudBlazor.MouseEvent
 @implements IDisposable
 
-<MudMenu @ref="_menu" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft" Dense="true" ListClass="pa-1">
+<MudMenu @ref="_menu" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft" Dense="true" ListClass="pa-1" ActivationEvent="MouseEvent.MouseOver">
     <ActivatorContent>
         @if (_showTooltip)
         {
-            <MudTooltip Text="@TooltipText" Placement="Placement.Bottom" Delay="0">
+            <MudTooltip Text="@TooltipText" Placement="Placement.Right" Delay="0">
                 <SirenIconButton Icon="@SirenIcons.Environment" 
                                 Variant="Variant.Text"
                                 OnClick="@HandleIconClick" />
@@ -39,9 +40,11 @@
     private MudMenu? _menu;
     private bool _showTooltip = true;
 
-    private string TooltipText => string.IsNullOrEmpty(AppState.ActiveEnvironment) 
+    private string TooltipText => "Environment";
+        /*
+        string.IsNullOrEmpty(AppState.ActiveEnvironment) 
         ? "Environment: None" 
-        : $"Environment: {AppState.ActiveEnvironment}";
+        : $"Environment: {AppState.ActiveEnvironment}";*/
 
     protected override void OnInitialized()
     {

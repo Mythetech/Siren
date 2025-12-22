@@ -9,31 +9,37 @@
     <SirenIconButton Class="m-1 p-1" Icon="app-icon" OnClick="@OpenAboutSiren" />
 
     @*Side bar Panel*@
-    <ContextPanelItem Active="@(_activeItem?.Title == "History")" @ref="@_contextPanelItems["History"]" Title="History" Icon="@SirenIcons.History" ContextPanelItemClicked="HandleContextPanelItemClicked">
+    <ContextPanelItem Active="@(_activeItem?.Title == "History")" @ref="@_contextPanelItems["History"]" Title="History"
+        Icon="@SirenIcons.History" ContextPanelItemClicked="HandleContextPanelItemClicked">
         <PanelContent>
             <HistoryPanel IsDarkMode="@IsDarkMode" />
         </PanelContent>
     </ContextPanelItem>
-    <ContextPanelItem Active="@(_activeItem?.Title == "Collections")" @ref="@_contextPanelItems["Collections"]" Title="Collections" Icon="@SirenIcons.Collections" ContextPanelItemClicked="HandleContextPanelItemClicked">
+    <ContextPanelItem Active="@(_activeItem?.Title == "Collections")" @ref="@_contextPanelItems["Collections"]"
+        Title="Collections" Icon="@SirenIcons.Collections" ContextPanelItemClicked="HandleContextPanelItemClicked">
         <PanelContent>
             <CollectionsPanel />
         </PanelContent>
     </ContextPanelItem>
-    <ContextPanelItem Active="@(_activeItem?.Title == "Variables")" @ref="@_contextPanelItems[" Variables"]" Title="Variables" Icon="@SirenIcons.Variables" ContextPanelItemClicked="HandleContextPanelItemClicked">
+    <ContextPanelItem Active="@(_activeItem?.Title == "Variables")" @ref="@_contextPanelItems[" Variables"]"
+        Title="Variables" Icon="@SirenIcons.Variables" ContextPanelItemClicked="HandleContextPanelItemClicked">
         <PanelContent>
             <VariablesPanel />
         </PanelContent>
     </ContextPanelItem>
     <MudSpacer />
-    
+
+    <EnvironmentDropdown />
     <MudMenu ActivationEvent="MouseEvent.MouseOver" AnchorOrigin="Origin.TopRight">
         <ActivatorContent>
             <MudTooltip Text="Color Mode">
-                <MudIconButton  Icon="@(AppState.IsDarkMode ? SirenIcons.DarkMode : SirenIcons.LightMode)" Color="Color.Primary" Variant="Variant.Text" OnClick="@DarkModeToggled"/>
+                <MudIconButton Icon="@(AppState.IsDarkMode? SirenIcons.DarkMode: SirenIcons.LightMode)"
+                    Color="Color.Primary" Variant="Variant.Text" OnClick="@DarkModeToggled" />
             </MudTooltip>
         </ActivatorContent>
         <ChildContent>
-            <MudToggleGroup T="string" Size="Size.Small" Value="@SelectedColorMode" ValueChanged="HandleColorModeChanged" Style="align-items: center">
+            <MudToggleGroup T="string" Size="Size.Small" Value="@SelectedColorMode"
+                ValueChanged="HandleColorModeChanged" Style="align-items: center">
                 <ToggleIcon Value="light" Icon="@SirenIcons.LightMode" Text="Light Mode" />
                 <ToggleIcon Value="dark" Icon="@SirenIcons.DarkMode" Text="Dark Mode" />
                 <ToggleIcon Value="system" Icon="@SirenIcons.Round("laptop")" Text="System Default" />
@@ -44,11 +50,14 @@
         <MudIconButton Color="Color.Primary" Icon="@SirenIcons.Settings" OnClick="OpenSettingsDialog" />
     </MudTooltip>
 
-    <MudIconButton Icon="@(AppState.SideBarOpen ? SirenIcons.CollapseLeft : SirenIcons.ExpandRight)" Color="Color.Inherit" OnClick="@DrawerToggled" />
+    <MudIconButton Icon="@(AppState.SideBarOpen? SirenIcons.CollapseLeft: SirenIcons.ExpandRight)"
+        Color="Color.Inherit" OnClick="@DrawerToggled" />
 </SirenStack>
 
 <MudStack Class="p-0 mud-width-full" Style="@($"{(!AppState.SideBarOpen ? "width:0px;" : "")}")">
-    <MudPaper Class="h-100 w-100" Style="@($"max-width:calc(var(--mud-drawer-width-left) - var(--mud-drawer-width-mini-left));max-height:100dvh")" Square="true">
+    <MudPaper Class="h-100 w-100"
+        Style="@($"max-width:calc(var(--mud-drawer-width-left) - var(--mud-drawer-width-mini-left));max-height:100dvh")"
+        Square="true">
         <SirenStack Spacing="3" Class="w-100">
             @if (_activeItem != null)
             {
@@ -56,7 +65,8 @@
                     <SirenIcon Icon="@_activeItem.Icon" Color="Color.Primary" />
                     <SirenText Typo="Typo.h6">@_activeItem.Title</SirenText>
                     <SirenSpacer />
-                    <SirenIconButton Tooltip="Close" Icon="@SirenIcons.Close" Variant="Variant.Text" OnClick="@CloseContextPanel" />
+                    <SirenIconButton Tooltip="Close" Icon="@SirenIcons.Close" Variant="Variant.Text"
+                        OnClick="@CloseContextPanel" />
                 </SirenStack>
                 @_activeItem.PanelContent
             }
@@ -103,16 +113,16 @@
     {
         if (!AppState.IsDarkMode && s.Equals("light", StringComparison.OrdinalIgnoreCase))
             return;
-        
+
         if (s.Equals("light", StringComparison.OrdinalIgnoreCase))
         {
-            AppState.IsDarkMode = false;            
+            AppState.IsDarkMode = false;
         }
         else
         {
             AppState.IsDarkMode = true;
         }
-        
+
         StateHasChanged();
     }
 
@@ -163,7 +173,12 @@
 
     protected async Task OpenSettingsDialog()
     {
-        var options = new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "siren-dialog", MaxWidth = MaxWidth.Medium };
+        var options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            BackgroundClass = "siren-dialog",
+            MaxWidth = MaxWidth.Medium
+        };
 
         var dialog = await DialogService.ShowAsync<SettingsDialog>("Settings", options);
         var result = await dialog.Result;
@@ -171,10 +186,14 @@
 
     protected async Task OpenAboutSiren()
     {
-        var options = new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "siren-dialog", MaxWidth = MaxWidth.Small };
+        var options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            BackgroundClass = "siren-dialog",
+            MaxWidth = MaxWidth.Small
+        };
 
         var dialog = await DialogService.ShowAsync<AboutSiren>("About", options);
         var result = await dialog.Result;
     }
 }
-
