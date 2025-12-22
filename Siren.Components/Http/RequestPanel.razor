@@ -7,22 +7,18 @@
 <SirenStack Spacing="3" Class="h-100">
     <SirenStack Row="true" Spacing="3" Class="w-100" AlignItems="AlignItems.Center">
         <MudPaper Width="100%" Outlined="false" Class="d-flex px-4 pt-8 pb-3" Elevation="0">
-            <SirenStack Row="true" Class="w-100 http-request-group" Style="border-bottom: solid 1px var(--http-request-dropdown-color); border-top: solid 1px var(--http-request-dropdown-color); border-right: solid 1px var(--http-request-dropdown-color); ">
+            <SirenStack Row="true" Class="w-100 http-request-group"
+                Style="border-bottom: solid 1px var(--http-request-dropdown-color); border-top: solid 1px var(--http-request-dropdown-color); border-right: solid 1px var(--http-request-dropdown-color); ">
                 <HttpRequestMethodDropdown @ref="_httpMethodDropdown" SelectedMethodChanged="UpdateHttpMethod" />
-                <MudTextField 
-                    Variant="Variant.Text" 
-                    Underline="false" 
+                <MudTextField Variant="Variant.Text" Underline="false"
                     Style="border-left:solid 1px var(--mud-palette-tertiary);border-right:none;border-top-right-radius:0px;border-bottom-right-radius:0px;padding-left:0.5em;"
-                    T="string" 
-                    Placeholder="Enter Request URL... e.g., `https://api.example.com/v1/resource`"
-                    Value="@AppState?.Active?.Request?.RequestUri"
-                    Class="http-request-input"
-                    @ref="_requestUriInput"
-                    ValueChanged="UpdateRequestUri"
-                    />
+                    T="string" Placeholder="Enter Request URL... e.g., `https://api.example.com/v1/resource`"
+                    Value="@AppState?.Active?.Request?.RequestUri" Class="http-request-input" @ref="_requestUriInput"
+                    ValueChanged="UpdateRequestUri" />
 
-                <MudButton OnClick="@OnSendClicked" Variant="Variant.Text" Color="@(Loading ? Color.Dark : Color.Primary)" Class="send-request-button">
-                    @(Loading ? "Cancel" : "Send" )
+                <MudButton OnClick="@OnSendClicked" Variant="Variant.Text"
+                    Color="@(Loading? Color.Dark: Color.Primary)" Class="send-request-button">
+                    @(Loading ? "Cancel" : "Send")
                 </MudButton>
             </SirenStack>
         </MudPaper>
@@ -31,17 +27,28 @@
         <SirenIcon Color="@Color.Inherit" Icon="@SirenIcons.Request" />
         <SirenText Typo="Typo.h6" Color="Color.Inherit">Request</SirenText>
         <SirenText Typo="Typo.body1">Body</SirenText>
-        <MudToggleGroup @bind-Value="@requestPayload" T="string" Outlined="true" Size="Size.Small" CheckMark="false" Class="pa-1 gap-4 rounded-xl" Color="Color.Primary" Style="height:2rem;">
-            <MudToggleItem Class="rounded-xl" Value="@("none")" Style="height:1.375rem;"/>
-            <MudToggleItem Class="rounded-xl" Value="@("form-data")" Style="height:1.375rem;"/>
-            <MudToggleItem Class="rounded-xl" Value="@("raw")" Style="height:1.375rem;"/>
-            <MudToggleItem Class="rounded-xl" Value="@("binary")" Style="height: 1.375rem;"/>
+        <MudToggleGroup @bind-Value="@requestPayload" T="string" Outlined="true" Size="Size.Small" CheckMark="false"
+            Class="pa-1 gap-4 rounded-xl" Color="Color.Primary" Style="height:2rem;">
+            <MudToggleItem Class="rounded-xl" Value="@("none")" Style="height:1.375rem;" />
+            <MudToggleItem Class="rounded-xl" Value="@("form-data")" Style="height:1.375rem;" />
+            <MudToggleItem Class="rounded-xl" Value="@("raw")" Style="height:1.375rem;" />
+            <MudToggleItem Class="rounded-xl" Value="@("binary")" Style="height: 1.375rem;" />
         </MudToggleGroup>
-        <SirenSpacer/>
+        <SirenSpacer />
+        <MudTooltip Text="Variable Environment">
+            <SirenChip T="string" Color="Color.Info" Value="@(AppState?.ActiveEnvironment ?? "None")"
+                Disabled="@string.IsNullOrWhiteSpace(AppState?.ActiveEnvironment)">
+                <SirenStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                    <SirenIcon Icon="@SirenIcons.Environment" Size="Size.Small" />
+                    <SirenText Typo="Typo.body2">@(AppState?.ActiveEnvironment ?? "None")</SirenText>
+                </SirenStack>
+            </SirenChip>
+        </MudTooltip>
         @if (requestPayload == "raw")
         {
-            <SirenIconButton Icon="@SirenIcons.Format" Size="Size.Small" Tooltip="Format" OnClick="@(async () => await FormatDocumentAsync())"/>
-            <SirenIconButton Icon="@SirenIcons.Copy" Size="Size.Small" Tooltip="Copy" OnClick="Copy"/>
+            <SirenIconButton Icon="@SirenIcons.Format" Size="Size.Small" Tooltip="Format"
+                OnClick="@(async () => await FormatDocumentAsync())" />
+            <SirenIconButton Icon="@SirenIcons.Copy" Size="Size.Small" Tooltip="Copy" OnClick="Copy" />
         }
     </SirenStack>
     @if (requestPayload == "form-data")
@@ -60,7 +67,7 @@
     {
         <SirenStack Spacing="3" Class="w-100 h-100 d-flex" AlignItems="AlignItems.Center" Justify="Justify.Center">
             <SirenIcon Icon="@SirenIcons.Request" Size="Size.Large" Color="Color.Inherit" />
-            <SirenText Typo="Typo.h6" >No Request Body</SirenText>
+            <SirenText Typo="Typo.h6">No Request Body</SirenText>
             <SirenText Typo="Typo.body2" Class="mud-text-secondary">This request will be sent without a body</SirenText>
         </SirenStack>
     }
@@ -71,9 +78,9 @@
 @code {
     private string? _requestUri = default!;
     private MudTextField<string>? _requestUriInput = default!;
-    
+
     private HttpRequestMethodDropdown _httpMethodDropdown = default!;
-    
+
     [Parameter]
     public EventCallback SendClicked { get; set; } = default!;
 
@@ -135,7 +142,7 @@
                 await _editor.Editor.Trigger("messaging-editor", "editor.action.formatDocument", "");
             }
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             Logger.LogError(ex, "Error formatting document");
         }
@@ -156,7 +163,7 @@
             await _httpMethodDropdown.MethodDropdown.FocusAsync();
             return;
         }
-        
+
         await SendClicked.InvokeAsync();
     }
 
@@ -164,16 +171,18 @@
 
     public string Method => _httpMethodDropdown?.SelectedMethod ?? "";
 
-    public string Address => _requestUri ?? ""; 
+    public string Address => _requestUri ?? "";
 
     protected override void OnInitialized()
     {
         AppState.OnAppStateChanged += HandleAppStateChanged;
+        AppState.OnActiveEnvironmentChanged += HandleEnvironmentChanged;
     }
 
     public void Dispose()
     {
         AppState.OnAppStateChanged -= HandleAppStateChanged;
+        AppState.OnActiveEnvironmentChanged -= HandleEnvironmentChanged;
     }
 
     protected async void HandleAppStateChanged(SirenAppState state)
@@ -182,6 +191,11 @@
         {
             await _httpMethodDropdown.SetMethod(state?.Active?.Request?.Method?.Method!);
         }
+        StateHasChanged();
+    }
+
+    protected void HandleEnvironmentChanged(string? environment)
+    {
         StateHasChanged();
     }
 
