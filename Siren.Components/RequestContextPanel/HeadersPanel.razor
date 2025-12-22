@@ -5,7 +5,7 @@
 <SirenStack Class="w-100 h-100 d-flex">
     <SirenSplitter Orientation="Orientation.Vertical" Panel1Size="40%" Panel2Size="60%" Class="w-100">
         <Panel1>
-            <SirenStack Spacing="3" Class="p-1 overflow-y-scroll d-flex h-100 w-100">
+            <SirenStack Spacing="3" Class="p-1 overflow-auto d-flex h-100 w-100">
                 <SirenStack Row="true" Spacing="3" Class="w-100" AlignItems="AlignItems.Center">
                     <SirenText Typo="Typo.body1">Request Headers</SirenText>
                     <SirenSpacer/>
@@ -140,7 +140,7 @@
             </SirenStack>
         </Panel1>
         <Panel2>
-            <SirenStack Spacing="3" Class="p-1 overflow-y-scroll flex-grow-1 d-flex w-100 h-100">
+            <SirenStack Spacing="3" Class="p-1 overflow-auto flex-grow-1 d-flex w-100 h-100">
                 <SirenText Typo="Typo.body1">Response Headers</SirenText>
                 @if (NetworkRequest?.Response?.Headers != null)
                 {
