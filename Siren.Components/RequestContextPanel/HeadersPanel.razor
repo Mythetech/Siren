@@ -247,16 +247,13 @@
     {
         if (state?.Active != null)
         {
-            if (NetworkRequest == null || state.Active.Id == NetworkRequest.Id)
+            NetworkRequest = state.Active;
+            if (NetworkRequest?.Request?.Headers != null)
             {
-                NetworkRequest = state.Active;
-                if (NetworkRequest?.Request?.Headers != null)
-                {
-                    requestHeaders = NetworkRequest.Request.Headers.ToViewModel();
-                }
-                UpdateAllHeaders();
-                await InvokeAsync(StateHasChanged);
+                requestHeaders = NetworkRequest.Request.Headers.ToViewModel();
             }
+            UpdateAllHeaders();
+            await InvokeAsync(StateHasChanged);
         }
     }
 
