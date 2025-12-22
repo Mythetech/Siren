@@ -1,5 +1,6 @@
 ﻿@using Siren.Components.Services
 @using Siren.Components.Settings.Controls
+@using Siren.Components.Infrastructure.Keyboard
 <MudDialog Class="w-75 h-75">
     <TitleContent>
         <SirenStack Row="true">
@@ -42,6 +43,13 @@
                                    ButtonColor="Color.Error"
                                    ButtonIconColor="Color.Error"
                                    OnButtonClick="DeleteAppData" />
+            </SettingsSection>
+
+            <SettingsSection Icon="@SirenIcons.Key" Title="Keyboard Shortcuts">
+                @foreach (var shortcut in KeyboardShortcutsService.GetAllShortcuts())
+                {
+                    <KeyboardShortcutDisplay Shortcut="@shortcut" />
+                }
             </SettingsSection>
         </SirenStack>
     </DialogContent>

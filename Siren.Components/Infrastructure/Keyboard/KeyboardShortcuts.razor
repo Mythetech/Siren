@@ -15,27 +15,37 @@
     [Parameter]
     public EventCallback OnFocusUri { get; set; }
 
+    private Dictionary<FluentKeyCode, EventCallback> _shortcutHandlers = new();
+
     protected override void OnInitialized()
     {
+        var shortcuts = KeyboardShortcutsService.GetAllShortcuts();
+        
+        foreach (var shortcut in shortcuts)
+        {
+            _shortcutHandlers[shortcut.Key] = shortcut.Description switch
+            {
+                "Run active request" => OnRunRequest,
+                "New request tab" => OnNewTab,
+                "Focus URI input" => OnFocusUri,
+                _ => default
+            };
+        }
+
         KeyCodeService.RegisterListener(OnKeyDownAsync);
     }
 
     public async Task OnKeyDownAsync(FluentKeyCodeEventArgs args)
     {
-        if (args.CtrlKey || args.MetaKey)
+        var shortcut = KeyboardShortcutsService.GetAllShortcuts()
+            .FirstOrDefault(s => s.Key == args.Key && 
+                               s.RequiresCtrl == (args.CtrlKey || args.MetaKey) &&
+                               s.RequiresShift == args.ShiftKey &&
+                               s.RequiresAlt == args.AltKey);
+
+        if (shortcut != null && _shortcutHandlers.TryGetValue(shortcut.Key, out var handler))
         {
-            if (args.Key == FluentKeyCode.Enter)
-            {
-                await OnRunRequest.InvokeAsync();
-            }
-            else if (args.Key == FluentKeyCode.KeyT)
-            {
-                await OnNewTab.InvokeAsync();
-            }
-            else if (args.Key == FluentKeyCode.KeyU)
-            {
-                await OnFocusUri.InvokeAsync();
-            }
+            await handler.InvokeAsync();
         }
     }
 
