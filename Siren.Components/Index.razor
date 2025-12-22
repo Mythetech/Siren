@@ -5,6 +5,7 @@
 @using Microsoft.FluentUI.AspNetCore.Components
 @using Siren.Components.Theme
 @using Siren.Components.Shared
+@using Siren.Components.Shared.Notifications
 @using Siren.Components.Http
 @using Siren.Components.Services
 @using Siren.Components.RequestContextPanel
@@ -13,6 +14,7 @@
 @using System.Text.Json
 @using System.Text.Encodings
 @using Microsoft.JSInterop
+@using MudBlazor
 
 <MudStack Row="true" Class="w-100 h-100 ml-1" Spacing="0">
     <FluentMultiSplitter BarSize="1" @ref="_primarySplitter" OnResize="@SplitterResized" OnCollapse="@((args) => HandleCollapse(args))" OnExpand="HandleExpand" Height="100%" Width="@(sidePanelClosed ? "97%" :"100%")" Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Horizontal" Style="overflow-x:clip;">
@@ -63,6 +65,9 @@
 
     [Inject]
     protected IVariableSubstitutionService VariableSubstitutionService { get; set; } = default!;
+
+    [Inject]
+    protected ISnackbar Snackbar { get; set; } = default!;
     
     private IJSObjectReference _module;
 
@@ -190,6 +195,20 @@
 
     protected async Task HandleSendClicked()
     {
+        if (string.IsNullOrWhiteSpace(AppState?.Active?.Request?.RequestUri))
+        {
+            Snackbar.AddSirenError("Request URL Required");
+            await _requestPanel.FocusUriInputAsync();
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(AppState?.Active?.Request?.Method?.Method))
+        {
+            Snackbar.AddSirenError("HTTP Method Required");
+            await _requestPanel.FocusHttpMethodDropdownAsync();
+            return;
+        }
+
         if (_cts != null)
         {
             await _cts.CancelAsync();

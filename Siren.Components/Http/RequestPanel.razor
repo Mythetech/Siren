@@ -116,6 +116,14 @@
         }
     }
 
+    public async Task FocusHttpMethodDropdownAsync()
+    {
+        if (_httpMethodDropdown?.MethodDropdown != null)
+        {
+            await _httpMethodDropdown.MethodDropdown.FocusAsync();
+        }
+    }
+
     private SirenEditor _editor = default;
 
     private string requestPayload = "raw";
@@ -150,20 +158,6 @@
 
     public async Task OnSendClicked()
     {
-        if (string.IsNullOrWhiteSpace(AppState?.Active?.Request?.RequestUri))
-        {
-            Snackbar.AddSirenError("Request URL Required");
-            await _requestUriInput!.FocusAsync();
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(_httpMethodDropdown?.MethodDropdown?.Value))
-        {
-            Snackbar.AddSirenError("HTTP Method Required");
-            await _httpMethodDropdown.MethodDropdown.FocusAsync();
-            return;
-        }
-
         await SendClicked.InvokeAsync();
     }
 
