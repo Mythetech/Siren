@@ -5,12 +5,14 @@
 @using Siren.Components.Http
 @using Siren.Components.Shared
 @using Siren.Components.Variables
+@using Microsoft.FluentUI.AspNetCore.Components
 @implements IDisposable
 
 <MudThemeProvider @ref="_theme" @bind-IsDarkMode="@AppState.IsDarkMode" Theme="@Theme" />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
+<FluentKeyCodeProvider PreventDefault="true" />
 
 <MudLayout>
     <MudAppBar Class="pl-4" Style="border-bottom-left-radius:3em;box-shadow:1px 1px 4px 0px var(--mud-palette-primary);border-bottom-right-radius:1.5em;">

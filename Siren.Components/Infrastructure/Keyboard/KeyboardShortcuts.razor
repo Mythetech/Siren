@@ -1,0 +1,48 @@
+@using Microsoft.FluentUI.AspNetCore.Components
+@using FluentKeyCode = Microsoft.FluentUI.AspNetCore.Components.KeyCode
+@implements IAsyncDisposable
+
+@code {
+    [Inject]
+    private IKeyCodeService KeyCodeService { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnRunRequest { get; set; }
+
+    [Parameter]
+    public EventCallback OnNewTab { get; set; }
+
+    [Parameter]
+    public EventCallback OnFocusUri { get; set; }
+
+    protected override void OnInitialized()
+    {
+        KeyCodeService.RegisterListener(OnKeyDownAsync);
+    }
+
+    public async Task OnKeyDownAsync(FluentKeyCodeEventArgs args)
+    {
+        if (args.CtrlKey || args.MetaKey)
+        {
+            if (args.Key == FluentKeyCode.Enter)
+            {
+                await OnRunRequest.InvokeAsync();
+            }
+            else if (args.Key == FluentKeyCode.KeyT)
+            {
+                await OnNewTab.InvokeAsync();
+            }
+            else if (args.Key == FluentKeyCode.KeyU)
+            {
+                await OnFocusUri.InvokeAsync();
+            }
+        }
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        KeyCodeService.UnregisterListener(OnKeyDownAsync);
+        return ValueTask.CompletedTask;
+    }
+}
+

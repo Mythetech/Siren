@@ -101,6 +101,14 @@
         return requestPayload;
     }
 
+    public async Task FocusUriInputAsync()
+    {
+        if (_requestUriInput != null)
+        {
+            await _requestUriInput.FocusAsync();
+        }
+    }
+
     private SirenEditor _editor = default;
 
     private string requestPayload = "raw";

@@ -8,6 +8,7 @@
 @using Siren.Components.Http
 @using Siren.Components.Services
 @using Siren.Components.RequestContextPanel
+@using Siren.Components.Infrastructure.Keyboard
 @using Microsoft.FluentUI.AspNetCore
 @using System.Text.Json
 @using System.Text.Encodings
@@ -45,6 +46,7 @@
             <SirenIconButton Tooltip="Cookies" Icon="@SirenIcons.Cookies" OnClick="@(() => ToggleSidePanel("Cookies"))" />
         </MudStack>
     }
+    <KeyboardShortcuts OnRunRequest="HandleSendClicked" OnNewTab="HandleNewTab" OnFocusUri="HandleFocusUri" />
 </MudStack>
 
 @code {
@@ -163,6 +165,27 @@
     protected void SplitterResized(FluentMultiSplitterResizeEventArgs args)
     {
         Logger.LogDebug("Splitter resized to {NewSize}", args.NewSize);
+    }
+
+    protected async Task HandleNewTab()
+    {
+        var networkRequest = new SirenNetworkRequest()
+        {
+            Name = "New Request",
+            Request = new(),
+        };
+
+        AppState.AddNetworkRequest(networkRequest);
+        AppState.SetActive(networkRequest.Id);
+        StateHasChanged();
+    }
+
+    protected async Task HandleFocusUri()
+    {
+        if (_requestPanel != null)
+        {
+            await _requestPanel.FocusUriInputAsync();
+        }
     }
 
     protected async Task HandleSendClicked()
