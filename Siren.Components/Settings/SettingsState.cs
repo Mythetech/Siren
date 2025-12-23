@@ -13,7 +13,8 @@ namespace Siren.Components.Settings
         int RequestTimeout,
         bool SendRequestsWithSystemToken,
         bool SaveHttpContent,
-        TimeDisplayOptions TimeDisplay
+        TimeDisplayOptions TimeDisplay,
+        string DefaultUserAgent
     );
 
     public class SettingsState
@@ -75,6 +76,20 @@ namespace Siren.Components.Settings
             }
         }
 
+        private string _defaultUserAgent = "siren/0.1";
+        
+        public string DefaultUserAgent
+        {
+            get => _defaultUserAgent;
+            set
+            {
+                if (_defaultUserAgent == value) return;
+                
+                _defaultUserAgent = value;
+                NotifyChangeSubscribersAsync();
+            }
+        }
+
         /// <summary>
         /// Creates a snapshot of the current settings state for later restoration.
         /// </summary>
@@ -85,7 +100,8 @@ namespace Siren.Components.Settings
                 RequestTimeout,
                 SendRequestsWithSystemToken,
                 SaveHttpContent,
-                TimeDisplay
+                TimeDisplay,
+                DefaultUserAgent
             );
         }
 
@@ -99,6 +115,7 @@ namespace Siren.Components.Settings
             _sendRequestsWithSystemToken = snapshot.SendRequestsWithSystemToken;
             _saveHttpContent = snapshot.SaveHttpContent;
             _timeDisplay = snapshot.TimeDisplay;
+            _defaultUserAgent = snapshot.DefaultUserAgent;
             NotifyChangeSubscribersAsync();
         }
 

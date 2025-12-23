@@ -1,0 +1,40 @@
+@typeparam T
+
+<MudToggleGroup Value="@Value"
+                ValueChanged="@ValueChanged"
+                T="T"
+                Outlined="true"
+                Size="Size.Small"
+                CheckMark="false"
+                Class="pa-1 gap-4 rounded-xl"
+                Color="Color.Primary"
+                Style="height:2rem;">
+    @foreach (var item in Items)
+    {
+        <MudToggleItem Class="rounded-xl" Value="@item" Text="@GetDisplayText(item)" Style="height:1.375rem;" />
+    }
+</MudToggleGroup>
+
+@code {
+    [Parameter]
+    public T? Value { get; set; }
+
+    [Parameter]
+    public EventCallback<T?> ValueChanged { get; set; }
+
+    [Parameter]
+    public IEnumerable<T> Items { get; set; } = Enumerable.Empty<T>();
+
+    [Parameter]
+    public Func<T, string>? DisplayTextSelector { get; set; }
+
+    private string GetDisplayText(T item)
+    {
+        if (DisplayTextSelector != null)
+        {
+            return DisplayTextSelector(item);
+        }
+        return item?.ToString()?.ToLowerInvariant() ?? "";
+    }
+}
+

@@ -201,6 +201,12 @@ namespace Siren.Components.Services
             {
                 request.Headers.Add("x-siren-request-id", Guid.NewGuid().ToString());
             }
+
+            bool hasCustomUserAgent = request.Headers.Contains("User-Agent");
+            if (!hasCustomUserAgent && !string.IsNullOrWhiteSpace(_settings.DefaultUserAgent))
+            {
+                request.Headers.Add("User-Agent", _settings.DefaultUserAgent);
+            }
         }
 
         private Dictionary<string, string> CaptureActualRequestHeaders(HttpRequestMessage request, HttpClient client)

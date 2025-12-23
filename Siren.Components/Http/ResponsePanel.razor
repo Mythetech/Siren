@@ -1,37 +1,68 @@
 ﻿@using Siren.Components.Settings
+@using Siren.Components.Http.Models
 @implements IDisposable
 
 <SirenStack Class="h-100">
     <SirenStack Row="true" Spacing="6" Class="w-100 mt-2 px-4" AlignItems="AlignItems.Center">
-        <SirenIcon Icon="@SirenIcons.Response" Color="Color.Inherit" />
+        <SirenIcon Icon="@SirenIcons.Response" Color="Color.Inherit"/>
         <SirenText Typo="Typo.h6" Color="Color.Inherit">Response</SirenText>
-        Body
+        <SirenText Typo="Typo.body1">Body</SirenText>
+        <SirenToggleGroup T="ResponseViewType"
+                          Value="@_currentViewType"
+                          ValueChanged="@HandleViewTypeChanged"
+                          Items="@_viewTypes"
+                          DisplayTextSelector="@(v => v.ToString().ToLowerInvariant())"/>
         <SirenSpacer/>
         @if (AppState?.Active?.Response?.HttpStatusCode != null)
         {
-            <HttpStatusCodeChip IsDarkMode="@AppState.IsDarkMode" StatusCode="@(AppState?.Active?.Response?.HttpStatusCode ?? System.Net.HttpStatusCode.InternalServerError)"/>
+            <HttpStatusCodeChip IsDarkMode="@AppState.IsDarkMode"
+                                StatusCode="@(AppState?.Active?.Response?.HttpStatusCode ?? System.Net.HttpStatusCode.InternalServerError)"/>
         }
-        <SirenChip T="string" Color="Color.Info">@(Settings.TimeDisplay == TimeDisplayOptions.Milliseconds ? $"{AppState?.Active?.Response?.Duration.TotalMilliseconds}ms" : $"{AppState?.Active?.Response?.Duration.TotalMilliseconds / 1000.00}s")</SirenChip>
-        <SirenChip T="string" Color="Color.Inherit" Style="color:#2f4f4f;background-color:#2f4f4f66">@($"{AppState?.Active?.Response?.ResponseSize?.Body + AppState?.Active?.Response?.ResponseSize?.Headers}")B</SirenChip>
-        <SirenIconButton Icon="@SirenIcons.Format" Size="Size.Small" Tooltip="Format" OnClick="@(async () => await FormatDocumentAsync())"/>
+        <SirenChip T="string"
+                   Color="Color.Info">@(Settings.TimeDisplay == TimeDisplayOptions.Milliseconds ? $"{AppState?.Active?.Response?.Duration.TotalMilliseconds}ms" : $"{AppState?.Active?.Response?.Duration.TotalMilliseconds / 1000.00}s")</SirenChip>
+        <SirenChip T="string" Color="Color.Inherit"
+                   Style="color:#2f4f4f;background-color:#2f4f4f66">@($"{AppState?.Active?.Response?.ResponseSize?.Body + AppState?.Active?.Response?.ResponseSize?.Headers}")B
+        </SirenChip>
+        @if (_currentViewType == ResponseViewType.Json)
+        {
+            <SirenIconButton Icon="@SirenIcons.Format" Size="Size.Small" Tooltip="Format"
+                             OnClick="@(async () => await FormatDocumentAsync())"/>
+        }
         <SirenIconButton Icon="@SirenIcons.Copy" Size="Size.Small" Tooltip="Copy" OnClick="Copy"/>
     </SirenStack>
-    <SirenEditor @ref="_editor" EditorId="siren-response-editor" />
+
+    @if (_currentViewType == ResponseViewType.Json)
+    {
+        <SirenEditor @ref="_editor" EditorId="siren-response-editor"/>
+    }
+    else if (_currentViewType == ResponseViewType.Text)
+    {
+        <MudPaper Class="pa-4 overflow-auto"
+                  Style="height: 100%; font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; white-space: pre-wrap; word-break: break-word;"
+                  Elevation="0">
+            @(_responseText ?? "")
+        </MudPaper>
+    }
+    else if (_currentViewType == ResponseViewType.Html)
+    {
+        <HtmlViewer HtmlContent="@_responseText" BaseUrl="@(AppState?.Active?.Request?.RequestUri)"/>
+    }
 </SirenStack>
 
 @code {
-    [Inject]
-    SirenAppState AppState { get; set; } = default!;
+    [Inject] SirenAppState AppState { get; set; } = default!;
 
-    [Inject]
-    IJsApiService JsApiService { get; set; } = default!;
+    [Inject] IJsApiService JsApiService { get; set; } = default!;
 
-    [Inject]
-    ISnackbar Snackbar { get; set; } = default!;
+    [Inject] ISnackbar Snackbar { get; set; } = default!;
 
     [Inject] SettingsState Settings { get; set; } = default!;
 
     public SirenEditor _editor { get; set; } = default!;
+
+    private ResponseViewType _currentViewType = ResponseViewType.Json;
+    private readonly ResponseViewType[] _viewTypes = Enum.GetValues<ResponseViewType>();
+    private string? _responseText;
 
     protected override void OnInitialized()
     {
@@ -50,27 +81,51 @@
         StateHasChanged();
     }
 
-    public async void HandleAppStateChanged(SirenAppState state)
+    private async Task HandleViewTypeChanged(ResponseViewType newViewType)
     {
-        if (state?.Active?.Response != null)
+        _currentViewType = newViewType;
+        StateHasChanged();
+
+        if (_currentViewType == ResponseViewType.Json && _editor?.Editor != null)
         {
+            await Task.Yield();
             try
             {
-                await _editor.Editor.SetValue(state.Active.DisplayText);
+                await _editor.Editor.SetValue(_responseText ?? "");
                 await FormatDocumentAsync();
             }
             catch
             {
             }
         }
-        else
+    }
+
+    public async void HandleAppStateChanged(SirenAppState state)
+    {
+        _responseText = state?.Active?.DisplayText ?? "";
+
+        if (_currentViewType == ResponseViewType.Json)
         {
-            try
+            if (state?.Active?.Response != null)
             {
-                await _editor.Editor.SetValue("");
+                try
+                {
+                    await _editor.Editor.SetValue(state.Active.DisplayText);
+                    await FormatDocumentAsync();
+                }
+                catch
+                {
+                }
             }
-            catch 
+            else
             {
+                try
+                {
+                    await _editor.Editor.SetValue("");
+                }
+                catch
+                {
+                }
             }
         }
 
@@ -79,23 +134,31 @@
 
     public async void Copy()
     {
-        if (_editor == null)
-            return;
+        string value = _responseText ?? "";
 
-        string value = await _editor.Editor?.GetValue();
+        if (_currentViewType == ResponseViewType.Json && _editor?.Editor != null)
+        {
+            try
+            {
+                value = await _editor.Editor.GetValue() ?? "";
+            }
+            catch
+            {
+            }
+        }
 
         if (!string.IsNullOrWhiteSpace(value))
             await JsApiService.CopyToClipboardAsync(value);
 
         Snackbar.Add($"Copied response body to clipboard", Severity.Info);
     }
-    
+
     private async Task FormatDocumentAsync()
     {
         try
         {
             await _editor.ToggleReadonly();
-            
+
             await _editor.Editor.Trigger("siren-response-editor", "editor.action.formatDocument", "");
 
             await _editor.ToggleReadonly();
@@ -104,4 +167,5 @@
         {
         }
     }
+
 }
