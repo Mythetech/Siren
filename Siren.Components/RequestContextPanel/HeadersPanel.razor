@@ -64,6 +64,22 @@
                                               Class="w-100"/>
                             </CellTemplate>
                         </MudBlazor.PropertyColumn>
+                        <MudBlazor.TemplateColumn Title="Enabled">
+                            <CellTemplate>
+                                <SirenSwitch Value="@context.Item.Enabled" 
+                                             ValueChanged="@((bool value) => ToggleHeaderEnabled(context.Item, value))"
+                                             Disabled="@context.Item.IsSystemHeader"
+                                             Size="Size.Small"
+                                             Color="Color.Primary"/>
+                            </CellTemplate>
+                            <EditTemplate>
+                                <SirenSwitch Value="@context.Item.Enabled" 
+                                             ValueChanged="@((bool value) => ToggleHeaderEnabled(context.Item, value))"
+                                             Disabled="@context.Item.IsSystemHeader"
+                                             Size="Size.Small"
+                                             Color="Color.Primary"/>
+                            </EditTemplate>
+                        </MudBlazor.TemplateColumn>
                         <MudBlazor.TemplateColumn Title="">
                             <CellTemplate>
                                 <MudMenu ListClass="pa-1" Dense="true">
@@ -230,19 +246,13 @@
     protected override void OnInitialized()
     {
         AppState.OnAppStateChanged += HandleAppStateChanged;
-        if (NetworkRequest?.Request?.Headers != null)
-        {
-            requestHeaders = NetworkRequest.Request.Headers.ToViewModel();
-        }
+        LoadOrMergeHeaders();
         UpdateAllHeaders();
     }
 
     protected override void OnParametersSet()
     {
-        if (NetworkRequest?.Request?.Headers != null)
-        {
-            requestHeaders = NetworkRequest.Request.Headers.ToViewModel();
-        }
+        LoadOrMergeHeaders();
         UpdateAllHeaders();
     }
 
@@ -256,13 +266,47 @@
         if (state?.Active != null)
         {
             NetworkRequest = state.Active;
-            if (NetworkRequest?.Request?.Headers != null)
-            {
-                requestHeaders = NetworkRequest.Request.Headers.ToViewModel();
-            }
+            LoadOrMergeHeaders();
             UpdateAllHeaders();
             await InvokeAsync(StateHasChanged);
         }
+    }
+
+    private void LoadOrMergeHeaders()
+    {
+        if (NetworkRequest?.Request?.Headers == null)
+        {
+            return;
+        }
+
+        var newHeaders = NetworkRequest.Request.Headers.ToViewModel();
+        var existingHeadersByKey = requestHeaders
+            .Where(h => !string.IsNullOrWhiteSpace(h.Key))
+            .ToDictionary(h => h.Key!.ToLowerInvariant(), h => h, StringComparer.OrdinalIgnoreCase);
+
+        var mergedHeaders = new List<HeaderModel>();
+
+        foreach (var newHeader in newHeaders)
+        {
+            var keyLower = newHeader.Key?.ToLowerInvariant();
+            if (keyLower != null && existingHeadersByKey.TryGetValue(keyLower, out var existingHeader))
+            {
+                existingHeader.Value = newHeader.Value;
+                mergedHeaders.Add(existingHeader);
+                existingHeadersByKey.Remove(keyLower);
+            }
+            else
+            {
+                mergedHeaders.Add(newHeader);
+            }
+        }
+
+        foreach (var remainingHeader in existingHeadersByKey.Values)
+        {
+            mergedHeaders.Add(remainingHeader);
+        }
+
+        requestHeaders = mergedHeaders;
     }
 
     private void UpdateAllHeaders()
@@ -294,6 +338,7 @@
                     IsSystemHeader = systemHeader.IsSystemHeader,
                     Key = systemHeader.Key,
                     Value = systemHeader.Value,
+                    Enabled = true,
                 });
             }
         }
@@ -322,6 +367,22 @@
         {
             header.Key = m.Key;
             header.Value = m.Value;
+            header.Enabled = m.Enabled;
+            SyncToNetworkRequest();
+            UpdateAllHeaders();
+        }
+        StateHasChanged();
+    }
+
+    protected void ToggleHeaderEnabled(HeaderModel m, bool enabled)
+    {
+        if (m.IsSystemHeader)
+            return;
+
+        var header = requestHeaders.Find(x => x.Id.Equals(m.Id));
+        if (header != null)
+        {
+            header.Enabled = enabled;
             SyncToNetworkRequest();
             UpdateAllHeaders();
         }
@@ -344,7 +405,7 @@
         if (NetworkRequest?.Request != null)
         {
             NetworkRequest.Request.Headers = requestHeaders
-                .Where(x => !string.IsNullOrWhiteSpace(x.Key))
+                .Where(x => !string.IsNullOrWhiteSpace(x.Key) && x.Enabled)
                 .Select(x => new KeyValuePair<string, string>(x.Key!, x.Value ?? ""))
                 .ToList();
         }

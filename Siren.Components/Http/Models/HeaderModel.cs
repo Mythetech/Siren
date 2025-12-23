@@ -10,6 +10,8 @@ namespace Siren.Components.Http.Models
         public string? Value { get; set; }
 
         public bool IsSystemHeader { get; set; }
+
+        public bool Enabled { get; set; } = true;
     }
 
     public static class HeaderModelExtensions
@@ -20,6 +22,7 @@ namespace Siren.Components.Http.Models
             {
                 Key = x.Key,
                 Value = x.Value,
+                Enabled = true,
             }).ToList();
         }
 
@@ -29,6 +32,7 @@ namespace Siren.Components.Http.Models
             {
                 Key = x.Key,
                 Value = x.Value,
+                Enabled = true,
             }).ToList();
         }
 
