@@ -1,0 +1,85 @@
+@using Siren.Components.Collections
+@using Mythetech.Components.Infrastructure.MessageBus
+@using Siren.Components.Shared.Notifications.Commands
+@using MudBlazor
+
+<MudDialog Style="min-width:33vw;">
+    <DialogContent>
+        <SirenStack Class="w-100">
+            @if (Collection?.Name != null && Collection?.Requests != null)
+            {
+                <SirenText Class="mb-2">@Collection.Name</SirenText>
+                @foreach (var req in Collection.Requests)
+                {
+                    <SirenStack Spacing="3" Row="true" Class="w-100" Style="@($"background-color:{GetBackgroundColor(req.Method.Method)}")">
+                        <Siren.Components.Http.HttpMethodChip Method="@req.Method" />
+                        <SirenText>@(!string.IsNullOrWhiteSpace(req.DisplayUri) ? req.DisplayUri : req.RequestUri)</SirenText>
+                    </SirenStack>
+                }
+            }
+            @if (importError)
+            {
+                <SirenText Class="text-error">Failed to import collection. Please check the file format.</SirenText>
+            }
+        </SirenStack>
+    </DialogContent>
+    <DialogActions>
+        <SirenButton Variant="Variant.Text" OnClick="Cancel">Cancel</SirenButton>
+        @if (Collection?.Name != null && !importError)
+        {
+            <SirenButton Variant="Variant.Filled" OnClick="Submit">Save</SirenButton>
+        }
+    </DialogActions>
+</MudDialog>
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; }
+
+    [Parameter]
+    public Collection Collection { get; set; } = new();
+
+    [Inject]
+    private ICollectionsService CollectionsService { get; set; } = default!;
+
+    [Inject]
+    private IMessageBus MessageBus { get; set; } = default!;
+
+    private bool importError = false;
+
+    private async Task Submit()
+    {
+        if (Collection?.Name != null)
+        {
+            CollectionsService.CreateCollection(Collection.Name, Collection.Requests?.ToArray());
+            await MessageBus.PublishAsync(new AddNotification($"Imported collection '{Collection.Name}'", Severity.Success));
+        }
+        MudDialog.Close(DialogResult.Ok(Collection));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    string GetColor(string method)
+    {
+        return method.ToUpper() switch
+        {
+            "GET" => HttpMethodColors.Get,
+            "POST" => HttpMethodColors.Post,
+            "PUT" => HttpMethodColors.Put,
+            "DELETE" => HttpMethodColors.Delete,
+            "PATCH" => HttpMethodColors.Patch,
+            "OPTIONS" => HttpMethodColors.Options,
+            "HEAD" => HttpMethodColors.Head,
+            _ => HttpMethodColors.Default,
+        };
+    }
+
+    string GetBackgroundColor(string method, double opacity = 0.1)
+    {
+        var hexColor = GetColor(method).TrimStart('#');
+        var r = int.Parse(hexColor.Substring(0, 2), System.Globalization.NumberStyles.HexNumber);
+        var g = int.Parse(hexColor.Substring(2, 2), System.Globalization.NumberStyles.HexNumber);
+        var b = int.Parse(hexColor.Substring(4, 2), System.Globalization.NumberStyles.HexNumber);
+        return $"rgba({r}, {g}, {b}, {opacity})";
+    }
+}
+

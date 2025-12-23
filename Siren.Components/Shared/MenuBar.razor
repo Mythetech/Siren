@@ -57,8 +57,11 @@
             <MudMenu Label="Collections" StartIcon="@SirenIcons.Collections" Dense="true" ListClass="pa-1">
                 <MudMenuItem Class="rounded" Icon="@SirenIcons.AddCollection" OnClick="HandleCreateCollection">Create
                     new</MudMenuItem>
-                <MudMenuItem Class="rounded" Icon="@SirenIcons.UrlImport" OnClick="HandleImportFromOpenApi">Import from
-                    OpenAPI</MudMenuItem>
+                <MudMenu Label="Import from" StartIcon="@SirenIcons.UrlImport" Dense="true" ListClass="pa-1">
+                    <MudMenuItem Class="rounded" Icon="@SirenIcons.UrlImport" OnClick="HandleImportFromOpenApi">OpenAPI</MudMenuItem>
+                    <MudMenuItem Class="rounded" Icon="@SirenIcons.UrlImport" OnClick="HandleImportPostmanCollection">Postman Collection</MudMenuItem>
+                    <MudMenuItem Class="rounded" Icon="@SirenIcons.UrlImport" OnClick="HandleImportBrunoCollection">Bruno Collection</MudMenuItem>
+                </MudMenu>
                 <MudMenuItem Class="rounded" Icon="@SirenIcons.Export" OnClick="HandleExportToJson">Export to JSON
                 </MudMenuItem>
             </MudMenu>
@@ -304,6 +307,16 @@
                 opts.SuccessIcon = SirenIcons.UrlImport;
             });
         }
+    }
+
+    private async Task HandleImportPostmanCollection()
+    {
+        await MessageBus.PublishAsync(new Siren.Components.Collections.Commands.ImportPostmanCollection());
+    }
+
+    private async Task HandleImportBrunoCollection()
+    {
+        await MessageBus.PublishAsync(new Siren.Components.Collections.Commands.ImportBrunoCollection());
     }
 
     private async Task HandleExportToJson()
