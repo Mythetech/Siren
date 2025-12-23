@@ -1,0 +1,15 @@
+@using Siren.Components.Shared.Notifications.Commands
+
+@inherits Mythetech.Components.Infrastructure.MessageBus.ComponentConsumer<AddNotification>
+
+@code {
+    [Inject]
+    protected ISnackbar Snackbar { get; set; }
+
+    protected override Task Consume(AddNotification message, CancellationToken cancellationToken)
+    {
+        Snackbar.AddSirenNotification(message.Message, message.Severity);
+        return Task.CompletedTask;
+    }
+
+}

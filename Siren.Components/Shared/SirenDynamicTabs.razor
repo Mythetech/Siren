@@ -148,6 +148,11 @@
         }
     }
 
+    public void ItemStateChanged()
+    {
+        _stateHasChanged = true;
+    }
+
     async Task AddTabCallback()
     {
         if (Items == null)

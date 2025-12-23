@@ -1,0 +1,10 @@
+@using Siren.Components.Infrastructure.Commands
+@inherits Mythetech.Components.Infrastructure.MessageBus.ComponentConsumer<Siren.Components.Infrastructure.Commands.CopyToClipboard>
+@inject IJsApiService JsApiService
+
+@code {
+    protected override async Task Consume(CopyToClipboard message, CancellationToken cancellationToken)
+    {
+        await JsApiService.CopyToClipboardAsync(message.Text);
+    }
+}

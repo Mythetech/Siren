@@ -68,6 +68,7 @@
 
     [Inject]
     protected ISnackbar Snackbar { get; set; } = default!;
+
     
     private IJSObjectReference _module;
 
@@ -121,6 +122,8 @@
     {
         AppState.OnActiveNetworkRequestChanged += HandleNetworkRequestChanged;
         AppState.OnFormatRequest += HandleFormatRequest;
+        AppState.OnImportRequestBody += HandleImportRequestBody;
+        AppState.OnRequestBodyContent += HandleRequestBodyContent;
         if (AppState.Active == null)
         {
             var r = new SirenNetworkRequest()
@@ -135,6 +138,25 @@
             AppState.AddNetworkRequest(r);
 
             AppState.SetActive(r);
+        }
+    }
+
+    private async Task<(string? body, string bodyType)> HandleRequestBodyContent()
+    {
+        if (_requestPanel != null)
+        {
+            var bodyType = _requestPanel.GetBodyType();
+            var body = await _requestPanel.GetBodyContentAsync();
+            return (body, bodyType);
+        }
+        return (null, "none");
+    }
+
+    private async void HandleImportRequestBody(string? body, string bodyType)
+    {
+        if (_requestPanel != null)
+        {
+            await _requestPanel.SetBodyContentAsync(body ?? "", bodyType);
         }
     }
 
@@ -163,6 +185,8 @@
     {
         AppState.OnActiveNetworkRequestChanged -= HandleNetworkRequestChanged;
         AppState.OnFormatRequest -= HandleFormatRequest;
+        AppState.OnImportRequestBody -= HandleImportRequestBody;
+        AppState.OnRequestBodyContent -= HandleRequestBodyContent;
     }
 
     private bool _containerResizing = false;
