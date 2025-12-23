@@ -1,57 +1,83 @@
 @using Siren.Components.Http
+@using Siren.Components.Http.Commands
 @using Siren.Components.Collections
 @using Siren.Components.Variables
 @using Siren.Components.History
+@using Mythetech.Components.Infrastructure
 @using System.Text.Json
 @using Microsoft.Extensions.Logging
+@using Mythetech.Components.Infrastructure.MessageBus
 @using Siren.Components.Settings
 @using MouseEvent = MudBlazor.MouseEvent
 @implements IDisposable
 
 <SirenStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
-    <MudMenu ActivationEvent="MouseEvent.MouseOver" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft" Dense="true" ListClass="pa-1">
+    <MudMenu ActivationEvent="MouseEvent.MouseOver" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft"
+        Dense="true" ListClass="pa-1">
         <ActivatorContent>
-            <MudButton Size="Size.Small" Variant="Variant.Text" Color="Color.Inherit" Class="text-transform-none">File</MudButton>
+            <MudButton Size="Size.Small" Variant="Variant.Text" Color="Color.Inherit" Class="text-transform-none">File
+            </MudButton>
         </ActivatorContent>
         <ChildContent>
             <MudMenuItem Class="rounded" Icon="@SirenIcons.Add" OnClick="HandleNewRequest">New Request</MudMenuItem>
-            <MudMenuItem Disabled="true" Class="rounded" Icon="@SirenIcons.AddToCollection" OnClick="HandleSaveRequest">Save Request</MudMenuItem>
+            <MudMenuItem Class="rounded" Icon="@SirenIcons.Export" OnClick="HandleSaveRequestToFile">Save Request
+            </MudMenuItem>
+            <MudMenuItem Class="rounded" Icon="@SirenIcons.UrlImport" OnClick="HandleImportRequest">Import Request
+            </MudMenuItem>
+            <MudDivider />
+            <MudMenuItem Class="rounded" Icon="@SirenIcons.Export" OnClick="@(async () => await HandleSaveResponse())"
+                Disabled="@(AppState.Active?.Response == null)">Save Response</MudMenuItem>
         </ChildContent>
     </MudMenu>
 
-    <MudMenu ActivationEvent="MouseEvent.MouseOver" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft" Dense="true" ListClass="pa-1">
+    <MudMenu ActivationEvent="MouseEvent.MouseOver" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft"
+        Dense="true" ListClass="pa-1">
         <ActivatorContent>
-            <MudButton Size="Size.Small" Variant="Variant.Text" Color="Color.Inherit" Class="text-transform-none">Edit</MudButton>
+            <MudButton Size="Size.Small" Variant="Variant.Text" Color="Color.Inherit" Class="text-transform-none">Edit
+            </MudButton>
         </ActivatorContent>
         <ChildContent>
-            <MudMenuItem Class="rounded" Icon="@SirenIcons.FormatIndent" OnClick="HandleFormatRequest">Format Request</MudMenuItem>
+            <MudMenuItem Class="rounded" Icon="@SirenIcons.FormatIndent" OnClick="HandleFormatRequest">Format Request
+            </MudMenuItem>
         </ChildContent>
     </MudMenu>
 
-    <MudMenu ActivationEvent="MouseEvent.MouseOver" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft" Dense="true" ListClass="pa-1 max-w-160">
+    <MudMenu ActivationEvent="MouseEvent.MouseOver" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft"
+        Dense="true" ListClass="pa-1 max-w-160">
         <ActivatorContent>
-            <MudButton Size="Size.Small" Variant="Variant.Text" Color="Color.Inherit" Class="text-transform-none">Tools</MudButton>
+            <MudButton Size="Size.Small" Variant="Variant.Text" Color="Color.Inherit" Class="text-transform-none">Tools
+            </MudButton>
         </ActivatorContent>
         <ChildContent>
             <MudMenu Label="History" StartIcon="@SirenIcons.History" Dense="true" ListClass="pa-1">
-                    <MudMenuItem Class="rounded" Icon="@SirenIcons.DeleteHistory" OnClick="HandleClearHistory">Clear</MudMenuItem>
+                <MudMenuItem Class="rounded" Icon="@SirenIcons.DeleteHistory" OnClick="HandleClearHistory">Clear
+                </MudMenuItem>
             </MudMenu>
             <MudMenu Label="Collections" StartIcon="@SirenIcons.Collections" Dense="true" ListClass="pa-1">
-                    <MudMenuItem Class="rounded" Icon="@SirenIcons.AddCollection" OnClick="HandleCreateCollection">Create new</MudMenuItem>
-                    <MudMenuItem Class="rounded" Icon="@SirenIcons.UrlImport" OnClick="HandleImportFromOpenApi">Import from OpenAPI</MudMenuItem>
-                    <MudMenuItem Class="rounded" Icon="@SirenIcons.Export" OnClick="HandleExportToJson">Export to JSON</MudMenuItem>
+                <MudMenuItem Class="rounded" Icon="@SirenIcons.AddCollection" OnClick="HandleCreateCollection">Create
+                    new</MudMenuItem>
+                <MudMenuItem Class="rounded" Icon="@SirenIcons.UrlImport" OnClick="HandleImportFromOpenApi">Import from
+                    OpenAPI</MudMenuItem>
+                <MudMenuItem Class="rounded" Icon="@SirenIcons.Export" OnClick="HandleExportToJson">Export to JSON
+                </MudMenuItem>
             </MudMenu>
             <MudMenu Label="Variables" StartIcon="@SirenIcons.Variables" Dense="true" ListClass="pa-1">
-                    <MudMenuItem Class="rounded-lg" Icon="@SirenIcons.Add" OnClick="HandleAddEnvironment">Add Environment</MudMenuItem>
-                    <MudMenuItem Class="rounded-lg" Icon="@SirenIcons.Add" OnClick="HandleAddVariable">Add Variable</MudMenuItem>
-                    <MudDivider />
-                    <MudMenu Label="Environments" StartIcon="@SirenIcons.Environment" Dense="true" ListClass="pa-1">
-                        <MudMenuItem Class="@($"{(string.IsNullOrEmpty(AppState.ActiveEnvironment) ? "list-item-active" : "")} rounded-lg")" OnClick="@(() => AppState.ActiveEnvironment = null)">None</MudMenuItem>
-                        @foreach (var env in AvailableEnvironments)
-                        {
-                            <MudMenuItem Class="@($"{(env.Equals(AppState.ActiveEnvironment) ? "list-item-active" : "")} rounded-lg")" OnClick="@(() => AppState.ActiveEnvironment = env)">@env</MudMenuItem>
-                        }
-                    </MudMenu>
+                <MudMenuItem Class="rounded-lg" Icon="@SirenIcons.Add" OnClick="HandleAddEnvironment">Add Environment
+                </MudMenuItem>
+                <MudMenuItem Class="rounded-lg" Icon="@SirenIcons.Add" OnClick="HandleAddVariable">Add Variable
+                </MudMenuItem>
+                <MudDivider />
+                <MudMenu Label="Environments" StartIcon="@SirenIcons.Environment" Dense="true" ListClass="pa-1">
+                    <MudMenuItem
+                        Class="@($"{(string.IsNullOrEmpty(AppState.ActiveEnvironment) ? "list-item-active" : "")} rounded-lg")"
+                        OnClick="@(() => AppState.ActiveEnvironment = null)">None</MudMenuItem>
+                    @foreach (var env in AvailableEnvironments)
+                    {
+                        <MudMenuItem
+                            Class="@($"{(env.Equals(AppState.ActiveEnvironment) ? "list-item-active" : "")} rounded-lg")"
+                            OnClick="@(() => AppState.ActiveEnvironment = env)">@env</MudMenuItem>
+                    }
+                </MudMenu>
             </MudMenu>
             <MudMenuItem Class="rounded" Icon="@SirenIcons.Settings" OnClick="HandleOpenSettings">Settings</MudMenuItem>
         </ChildContent>
@@ -82,6 +108,9 @@
 
     [Inject]
     protected ILogger<MenuBar> Logger { get; set; } = default!;
+
+    [Inject]
+    protected IMessageBus MessageBus { get; set; } = default!;
 
     private List<string> AvailableEnvironments = new();
 
@@ -126,7 +155,7 @@
         AppState.SetActive(networkRequest.Id);
     }
 
-    private async Task HandleSaveRequest()
+    private async Task HandleSaveRequestToFile()
     {
         if (AppState.Active?.Request == null)
         {
@@ -134,33 +163,89 @@
             return;
         }
 
-        var options = new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "siren-dialog" };
-        var dialogRef = await DialogService.ShowAsync<UpsertRequestDialog>("Save Request", options);
+        var request = AppState.Active.Request;
+        var (body, bodyType) = await AppState.RequestBodyContentAsync();
 
-        var result = await dialogRef.Result;
+        string finalBodyType;
+        string? finalBody = null;
 
-        if (!result.Canceled && result.Data is HttpRequest request)
+        if (!string.IsNullOrEmpty(bodyType) && bodyType != "none")
         {
-            var collections = CollectionsService.GetCollections();
-            
-            if (collections.Count == 0)
+            finalBodyType = bodyType;
+            finalBody = body;
+        }
+        else if (request.BinaryAttachments != null && request.BinaryAttachments.Any())
+        {
+            finalBodyType = "binary";
+        }
+        else if (request.FormData != null && request.FormData.Any())
+        {
+            finalBodyType = "form-data";
+        }
+        else if (request.Content != null)
+        {
+            finalBodyType = "raw";
+            try
             {
-                var newCollection = CollectionsService.CreateCollection("My Collection", new[] { request });
-                Snackbar.Add("Created collection and saved request", Severity.Success, opts =>
+                if (request.Content is StringContent stringContent)
                 {
-                    opts.SuccessIcon = SirenIcons.Collection;
-                });
+                    finalBody = await stringContent.ReadAsStringAsync();
+                }
             }
-            else
+            catch
             {
-                var firstCollection = collections.First();
-                CollectionsService.AddRequestToCollection(firstCollection.Id, request);
-                Snackbar.Add("Request saved to collection", Severity.Success, opts =>
-                {
-                    opts.SuccessIcon = SirenIcons.CollectionItemAdded;
-                });
             }
         }
+        else
+        {
+            finalBodyType = "none";
+        }
+
+        var command = new SaveRequest(
+        Method: request.Method?.Method ?? "GET",
+        RequestUri: request.RequestUri,
+        DisplayUri: request.DisplayUri,
+        QueryParameters: request.QueryParameters,
+        Headers: request.Headers,
+        FormData: request.FormData,
+        ContentType: request.ContentType,
+        Body: finalBody,
+        BodyType: finalBodyType,
+        Timeout: request.Timeout,
+        RetryAttempts: request.RetryAttempts,
+        Id: request.Id
+        );
+
+        await MessageBus.PublishAsync(command);
+    }
+
+    private async Task HandleImportRequest()
+    {
+        await MessageBus.PublishAsync(new ImportRequest());
+    }
+
+    private async Task HandleSaveResponse()
+    {
+        if (AppState.Active?.Response == null)
+        {
+            Snackbar.Add("No response to save", Severity.Warning);
+            return;
+        }
+
+        var response = AppState.Active.Response;
+        var command = new SaveResponse(
+        HttpStatusCode: response.HttpStatusCode,
+        StatusCode: response.StatusCode,
+        Duration: response.Duration,
+        RequestSize: response.RequestSize,
+        ResponseSize: response.ResponseSize,
+        Headers: response.Headers,
+        ActualRequestHeaders: response.ActualRequestHeaders,
+        ResponseText: response.ResponseText,
+        Timestamp: DateTimeOffset.UtcNow
+        );
+
+        await MessageBus.PublishAsync(command);
     }
 
     private void HandleFormatRequest()
@@ -225,7 +310,7 @@
         try
         {
             var collections = CollectionsService.GetCollections();
-            
+
             if (collections.Count == 0)
             {
                 Snackbar.Add("No collections to export", Severity.Warning);
@@ -274,7 +359,7 @@
     private async Task HandleAddVariable()
     {
         var activeEnvironment = AppState.ActiveEnvironment ?? VariableGroups.SystemGroup;
-        
+
         var keyParameters = new DialogParameters();
         keyParameters.Add("Label", "Variable key:");
         keyParameters.Add("Placeholder", "Key");
@@ -307,8 +392,13 @@
 
     private async Task HandleOpenSettings()
     {
-        var options = new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "siren-dialog", MaxWidth = MaxWidth.Medium};
+        var options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            BackgroundClass = "siren-dialog",
+            MaxWidth =
+        MaxWidth.Medium
+        };
         await DialogService.ShowAsync<SettingsDialog>("Settings", options);
     }
 }
-

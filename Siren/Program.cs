@@ -1,5 +1,7 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.DependencyInjection;
 using Mythetech.Components.Desktop.Photino;
+using Mythetech.Components.Infrastructure.MessageBus;
 using Photino.Blazor;
 using Siren.Collections;
 using Siren.Components;
@@ -30,8 +32,12 @@ namespace Siren
             appBuilder.RootComponents.Add<Components.App>("app");
 
             appBuilder.Services.AddSirenComponents<HistoryService, CollectionsService, VariablesService, SettingsService>();
+
+            appBuilder.Services.AddMessageBus(typeof(App).Assembly);
             
             var app = appBuilder.Build();
+
+            app.Services.UseMessageBus(typeof(App).Assembly);
 
             // customize window
             app.MainWindow

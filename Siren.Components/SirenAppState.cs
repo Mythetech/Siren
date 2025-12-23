@@ -179,6 +179,24 @@ namespace Siren.Components
         {
             OnFormatRequest?.Invoke();
         }
+
+        public event Action<string?, string>? OnImportRequestBody;
+
+        public void ImportRequestBody(string? body, string bodyType)
+        {
+            OnImportRequestBody?.Invoke(body, bodyType);
+        }
+
+        public event Func<Task<(string? body, string bodyType)>>? OnRequestBodyContent;
+
+        public async Task<(string? body, string bodyType)> RequestBodyContentAsync()
+        {
+            if (OnRequestBodyContent != null)
+            {
+                return await OnRequestBodyContent.Invoke();
+            }
+            return (null, "none");
+        }
     }
 }
 

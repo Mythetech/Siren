@@ -6,12 +6,18 @@
 @using Siren.Components.Shared
 @using Siren.Components.Variables
 @using Microsoft.FluentUI.AspNetCore.Components
+@using Siren.Components.Shared.Notifications
+@using Siren.Components.Shared.Dialogs.Consumers
+@using Siren.Components.Infrastructure
 @implements IDisposable
 
 <MudThemeProvider @ref="_theme" @bind-IsDarkMode="@AppState.IsDarkMode" Theme="@Theme" />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
+<GlobalCommandSnackbarProvider />
+<DialogCommandProvider />
+<JsApiCommandProvider />
 <FluentKeyCodeProvider />
 
 <MudLayout>

@@ -74,23 +74,35 @@
         StateHasChanged();
     }
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         AppState.OnNetworkRequestsChanged += HandleNetworkRequestsChanged;
         AppState.OnNetworkRequestIndexChanged += HandleNetworkRequestIndexChanged;
+        AppState.OnActiveNetworkRequestChanged += HandleActiveNetworkRequestChanged;
         AppState.OnAppStateChanged += HandleAppStateChanged;
     }
 
     public void Dispose()
     {
         AppState.OnNetworkRequestsChanged -= StateHasChanged;
+        AppState.OnNetworkRequestIndexChanged -= HandleNetworkRequestIndexChanged;
         AppState.OnAppStateChanged -= HandleAppStateChanged;
-
+        AppState.OnActiveNetworkRequestChanged -= HandleActiveNetworkRequestChanged;
     }
 
     public void HandleAppStateChanged(SirenAppState state)
     {
         AppState = state;
+        StateHasChanged();
+    }
+    
+    protected void HandleActiveNetworkRequestChanged(SirenNetworkRequest? request)
+    {
+        if (request == null) return;
+
+        if (_tabs.Items.Any(x => x.Id.Equals(request.Id))) return;
+        
+        _tabs.AddTab(request.Id, request.Name);
         StateHasChanged();
     }
 

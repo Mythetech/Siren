@@ -108,6 +108,42 @@
         return requestPayload;
     }
 
+    public async Task<string> GetBodyContentAsync()
+    {
+        if (requestPayload == "raw" && _editor != null)
+        {
+            try
+            {
+                return await _editor.Editor.GetValue() ?? "";
+            }
+            catch
+            {
+                return "";
+            }
+        }
+        return "";
+    }
+
+    public async Task SetBodyContentAsync(string content, string? bodyType = null)
+    {
+        if (!string.IsNullOrEmpty(bodyType))
+        {
+            requestPayload = bodyType;
+            StateHasChanged();
+        }
+
+        if (_editor != null && requestPayload == "raw")
+        {
+            try
+            {
+                await _editor.Editor.SetValue(content ?? "");
+            }
+            catch
+            {
+            }
+        }
+    }
+
     public async Task FocusUriInputAsync()
     {
         if (_requestUriInput != null)
