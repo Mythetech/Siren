@@ -9,6 +9,7 @@ using Siren.Components.RequestContextPanel.Authentication;
 using Siren.Components.Services;
 using Siren.Components.Settings;
 using Siren.Components.History;
+using Siren.Components.Http.Models;
 
 namespace Siren.Test.Integration;
 

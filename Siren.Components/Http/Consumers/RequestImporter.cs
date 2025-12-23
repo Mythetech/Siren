@@ -4,6 +4,7 @@ using MudBlazor;
 using Mythetech.Components.Infrastructure;
 using Mythetech.Components.Infrastructure.MessageBus;
 using Siren.Components.Http.Commands;
+using Siren.Components.Http.Models;
 using Siren.Components.Shared.Notifications.Commands;
 
 namespace Siren.Components.Http.Consumers
@@ -105,7 +106,8 @@ namespace Siren.Components.Http.Consumers
                 RequestUri = command.RequestUri,
                 DisplayUri = command.DisplayUri,
                 QueryParameters = command.QueryParameters,
-                Headers = command.Headers ?? new Dictionary<string, string>(),
+                Headers = command.Headers?.Select(h => new KeyValuePair<string, string>(h.Key, h.Value)).ToList() 
+                    ?? new List<KeyValuePair<string, string>>(),
                 FormData = command.FormData ?? new Dictionary<string, string>(),
                 ContentType = command.ContentType,
                 Timeout = command.Timeout,

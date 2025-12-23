@@ -1,6 +1,6 @@
-﻿using LiteDB;
+using LiteDB;
 
-namespace Siren.Components.Http
+namespace Siren.Components.Http.Models
 {
     public class HttpRequest
     {
@@ -12,7 +12,7 @@ namespace Siren.Components.Http
 
         public Dictionary<string, string>? QueryParameters { get; set; }
 
-        public Dictionary<string, string> Headers { get; set; } = new();
+        public List<KeyValuePair<string, string>> Headers { get; set; } = new();
 
         public Dictionary<string, string> FormData { get; set; } = new();
 
@@ -37,7 +37,7 @@ namespace Siren.Components.Http
                 RequestUri = RequestUri,
                 DisplayUri = DisplayUri,
                 QueryParameters = QueryParameters?.ToDictionary(entry => entry.Key, entry => entry.Value),
-                Headers = new Dictionary<string, string>(Headers),
+                Headers = new List<KeyValuePair<string, string>>(Headers),
                 FormData = new Dictionary<string, string>(FormData),
                 BinaryAttachments = BinaryAttachments?.Select(a => a.Copy()).ToList() ?? new List<BinaryAttachment>(),
                 Content = Content, 

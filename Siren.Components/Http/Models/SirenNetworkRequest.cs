@@ -1,5 +1,5 @@
-﻿using System;
-namespace Siren.Components.Http
+using System;
+namespace Siren.Components.Http.Models
 {
     public class SirenNetworkRequest
     {

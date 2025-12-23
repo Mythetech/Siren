@@ -1,6 +1,6 @@
 using LiteDB;
 
-namespace Siren.Components.Http
+namespace Siren.Components.Http.Models
 {
     public class BinaryAttachment
     {

@@ -1,5 +1,5 @@
 ﻿using System;
-using Siren.Components.Http;
+using Siren.Components.Http.Models;
 
 namespace Siren.Components.Collections
 {

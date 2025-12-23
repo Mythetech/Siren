@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Net;
 using Microsoft.Extensions.Logging;
 using Siren.Components.History;
-using Siren.Components.Http;
+using Siren.Components.Http.Models;
 using Siren.Components.Settings;
 using Siren.Components.RequestContextPanel.Authentication;
 namespace Siren.Components.Services

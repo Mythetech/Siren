@@ -1,7 +1,7 @@
-﻿using System;
+using System;
 using System.Net;
 
-namespace Siren.Components.Http
+namespace Siren.Components.Http.Models
 {
     public class RequestResult
     {

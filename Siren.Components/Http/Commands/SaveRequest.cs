@@ -5,7 +5,7 @@ namespace Siren.Components.Http.Commands
         string RequestUri,
         string DisplayUri,
         Dictionary<string, string>? QueryParameters,
-        Dictionary<string, string> Headers,
+        List<KeyValuePair<string, string>> Headers,
         Dictionary<string, string> FormData,
         string ContentType,
         string? Body,

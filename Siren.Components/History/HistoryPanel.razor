@@ -1,6 +1,6 @@
 ﻿@using Siren.Components.History
 @using System.Net
-@using Siren.Components.Http
+@using Siren.Components.Http.Models
 
 <MudTable OnRowMouseEnter="@((args) => _hoveredRecord = args.Item)" OnRowMouseLeave="@(() => _hoveredRecord = null)"
           Virtualize="true"
@@ -148,7 +148,7 @@
 
     protected void LoadHistoryRecord(HistoryRecord record)
     {
-        var n = new Http.SirenNetworkRequest()
+        var n = new SirenNetworkRequest()
         {
             Request = record?.Request?.Copy(),
             Name = record?.RequestUri ?? "",
