@@ -24,6 +24,10 @@
                 <BooleanSettingItem Text="Save http response content"
                                           Label="This allows requests to be restored from history, but takes more space on disk."
                                           @bind-Value="@Settings.SaveHttpContent"/>
+
+                <StringSettingItem Text="Default User-Agent"
+                                   Label="Sent with requests unless a custom User-Agent header is specified"
+                                   @bind-Value="@Settings.DefaultUserAgent" />
             </SettingsSection>
 
             <SettingsSection Icon="@SirenIcons.Response" Title="Response">
