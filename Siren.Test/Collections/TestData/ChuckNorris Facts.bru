@@ -1,0 +1,41 @@
+meta {
+  name: ChuckNorris Facts
+  type: http
+  seq: 1
+}
+
+get {
+  url: https://api.chucknorris.io/jokes/random
+  body: none
+  auth: none
+}
+
+assert {
+  res.body.value: isString
+  res.body.id: matches ^[\w\d\-]*$
+  res.status: eq 200
+  res.body.updated_at: matches ^\d{4}\-\d{2}\-\d{2} \d{2}:\d{2}:\d{2}.\d{1,6}$
+}
+
+tests {
+  const moment = require('moment');
+  const _response = res.getBody();
+  
+  test("Response Value should be a String", function() {
+    expect(_response.value).to.be.a("string")
+  });
+  
+  test("Response Id should be valid (RegEx)", function() {
+    expect(_response.id).to.match(/^[\w\d\-]*$/)
+  });
+  
+  test("Response Status should be 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response Updated At is a Valid Date", function() {
+    var date = moment(_response.updated_at);
+    expect(date.isValid()).to.equal(true);
+  });
+  
+}
