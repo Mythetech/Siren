@@ -5,20 +5,17 @@
 
 <MudMenu @ref="_menu" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft" Dense="true" ListClass="pa-1" ActivationEvent="MouseEvent.MouseOver">
     <ActivatorContent>
-        @if (_showTooltip)
-        {
-            <MudTooltip Text="@TooltipText" Placement="Placement.Right" Delay="0">
-                <SirenIconButton Icon="@SirenIcons.Environment" 
-                                Variant="Variant.Text"
-                                OnClick="@HandleIconClick" />
-            </MudTooltip>
-        }
-        else
-        {
-            <SirenIconButton Icon="@SirenIcons.Environment" 
-                            Variant="Variant.Text"
-                            OnClick="@HandleIconClick" />
-        }
+        <MudTooltip Text="Variable Environment" Placement="Placement.Right" Delay="0">
+            <SirenChip T="string" 
+                       Color="@(string.IsNullOrWhiteSpace(AppState.ActiveEnvironment) ? Color.Warning : Color.Info)" 
+                       Value="@(AppState.ActiveEnvironment ?? "None")"
+                       Style="cursor: pointer;">
+                <SirenStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                    <SirenIcon Icon="@SirenIcons.Environment" Size="Size.Small" />
+                    <SirenText Typo="Typo.body2">@(AppState.ActiveEnvironment ?? "None")</SirenText>
+                </SirenStack>
+            </SirenChip>
+        </MudTooltip>
     </ActivatorContent>
     <ChildContent>
         <MudMenuItem Class="@($"{(string.IsNullOrEmpty(AppState.ActiveEnvironment) ? "list-item-active" : "")} rounded-lg px-2 py-0")" OnClick="@(() => SelectEnvironment(null))">None</MudMenuItem>
@@ -38,13 +35,6 @@
 
     private List<string> AvailableEnvironments = new();
     private MudMenu? _menu;
-    private bool _showTooltip = true;
-
-    private string TooltipText => "Environment";
-        /*
-        string.IsNullOrEmpty(AppState.ActiveEnvironment) 
-        ? "Environment: None" 
-        : $"Environment: {AppState.ActiveEnvironment}";*/
 
     protected override void OnInitialized()
     {
@@ -67,20 +57,6 @@
     private void HandleEnvironmentChanged(string? environment)
     {
         StateHasChanged();
-    }
-
-    private void HandleIconClick()
-    {
-        _showTooltip = false;
-        StateHasChanged();
-        Task.Delay(300).ContinueWith(_ =>
-        {
-            InvokeAsync(() =>
-            {
-                _showTooltip = true;
-                StateHasChanged();
-            });
-        });
     }
 
     private void SelectEnvironment(string? environment)

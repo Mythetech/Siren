@@ -3,6 +3,7 @@
 @using Siren.Components.RequestContextPanel
 @using Siren.Components.Http
 @using Siren.Components.Http.Models
+@using Siren.Components.Variables
 @implements IDisposable
 
 <SirenStack Spacing="3" Class="h-100">
@@ -36,15 +37,7 @@
             <MudToggleItem Class="rounded-xl" Value="@("binary")" Style="height: 1.375rem;" />
         </MudToggleGroup>
         <SirenSpacer />
-        <MudTooltip Text="Variable Environment">
-            <SirenChip T="string" Color="Color.Info" Value="@(AppState?.ActiveEnvironment ?? "None")"
-                Disabled="@string.IsNullOrWhiteSpace(AppState?.ActiveEnvironment)">
-                <SirenStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
-                    <SirenIcon Icon="@SirenIcons.Environment" Size="Size.Small" />
-                    <SirenText Typo="Typo.body2">@(AppState?.ActiveEnvironment ?? "None")</SirenText>
-                </SirenStack>
-            </SirenChip>
-        </MudTooltip>
+        <EnvironmentDropdown />
         @if (requestPayload == "raw")
         {
             <SirenIconButton Icon="@SirenIcons.Format" Size="Size.Small" Tooltip="Format"
