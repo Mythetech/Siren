@@ -341,7 +341,9 @@
             Headers = substitutedHeaders,
             FormData = active.Request?.FormData != null ? new Dictionary<string, string>(active.Request.FormData) : new Dictionary<string, string>(),
             BinaryAttachments = active.Request?.BinaryAttachments != null ? active.Request.BinaryAttachments.Select(a => a.Copy()).ToList() : new List<BinaryAttachment>(),
-            Content = content
+            Content = content,
+            BodyType = active.Request?.BodyType ?? RequestBodyType.Raw,
+            RawBody = active.Request?.RawBody ?? ""
         };
 
         bool valid = ValidateRequest(req);

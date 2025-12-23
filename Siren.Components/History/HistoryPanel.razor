@@ -3,23 +3,14 @@
 @using Siren.Components.Http.Models
 
 <MudTable OnRowMouseEnter="@((args) => _hoveredRecord = args.Item)" OnRowMouseLeave="@(() => _hoveredRecord = null)"
-          Virtualize="true"
-          T="HistoryRecord"
-          Height="86dvh"
-          Items="@HistoryRecords"
-          Dense="true"
-          Bordered="false"
-          MultiSelection="false"
-          SelectOnRowClick="false"
-          Elevation="0"
-          Class="w-100 siren-table"
-          Striped="false"
-          Hover="true"
-          Filter="HistoryFilter">
+    Virtualize="true" T="HistoryRecord" Height="86dvh" Items="@HistoryRecords" Dense="true" Bordered="false"
+    MultiSelection="false" SelectOnRowClick="false" Elevation="0" Class="w-100 siren-table" Striped="false" Hover="true"
+    Filter="HistoryFilter">
     <ToolBarContent>
         <MudTextField @bind-Value="_searchString" Placeholder="Filter" Adornment="Adornment.Start" Immediate="true"
-                      AdornmentIcon="@Icons.Material.Outlined.FilterList" IconSize="Size.Medium" Class="mt-0"></MudTextField>
-        <SirenIconButton Tooltip="Delete History" Variant="Variant.Text" Color="Color.Error" OnClick="PromptDeleteHistory" Icon="@SirenIcons.DeleteHistory" />
+            AdornmentIcon="@Icons.Material.Outlined.FilterList" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+        <SirenIconButton Tooltip="Delete History" Variant="Variant.Text" Color="Color.Error"
+            OnClick="PromptDeleteHistory" Icon="@SirenIcons.DeleteHistory" />
     </ToolBarContent>
     <RowTemplate>
 
@@ -31,7 +22,8 @@
             <TimeDisplayIcon Timestamp="@(context.Timestamp)"></TimeDisplayIcon>
         </MudTd>
 
-        <MudTd Class="text-nowrap px-1" Style="max-width:175px;overflow:clip;text-overflow:ellipsis;cursor:copy;" @onclick="@(async() => await Copy(context.RequestUri))">
+        <MudTd Class="text-nowrap px-1" Style="max-width:175px;overflow:clip;text-overflow:ellipsis;cursor:copy;"
+            @onclick="@(async () => await Copy(context.RequestUri))">
             <MudTooltip>
                 <TooltipContent>
                     <SirenStack Spacing="1" AlignItems="AlignItems.Center" Justify="Justify.Center" Class="w-100">
@@ -52,7 +44,9 @@
         </MudTd>
 
         <MudTd Class="px-0 pr-2">
-            <SirenIconButton Disabled="@(!HasHistoryData(context))" Class="scale-75" Tooltip="@(HasHistoryData(context) ? "Load request" : "No data")" Size="@Size.Small" OnClick="@(() => LoadHistoryRecord(context))" Icon="@SirenIcons.LoadNewTab" />
+            <SirenIconButton Disabled="@(!HasHistoryData(context))" Class="scale-75"
+                Tooltip="@(HasHistoryData(context) ? "Load request" : "No data")" Size="@Size.Small"
+                OnClick="@(() => LoadHistoryRecord(context))" Icon="@SirenIcons.LoadNewTab" />
         </MudTd>
     </RowTemplate>
 </MudTable>
@@ -157,8 +151,6 @@
         };
 
         AppState.AddNetworkRequest(n);
-
-        AppState.SetActive(n);
 
         StateHasChanged();
     }

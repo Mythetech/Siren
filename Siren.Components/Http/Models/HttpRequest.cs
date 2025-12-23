@@ -29,6 +29,10 @@ namespace Siren.Components.Http.Models
 
         public Guid Id { get; set; } = Guid.NewGuid();
 
+        public RequestBodyType BodyType { get; set; } = RequestBodyType.Raw;
+
+        public string RawBody { get; set; } = "";
+
         public HttpRequest Copy()
         {
             return new HttpRequest
@@ -44,7 +48,9 @@ namespace Siren.Components.Http.Models
                 ContentType = ContentType,
                 Timeout = Timeout,
                 RetryAttempts = RetryAttempts,
-                Id = Guid.NewGuid() 
+                Id = Guid.NewGuid(),
+                BodyType = BodyType,
+                RawBody = RawBody
             };
         }
     }
