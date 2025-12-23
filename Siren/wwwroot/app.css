@@ -668,5 +668,5 @@ button:focus {
 }
 
 .list-item-active {
-    background-color: var(--mud-palette-action-default-hover);
+    background-color: rgba(var(--mud-palette-primary-rgb), 0.6);
 }
