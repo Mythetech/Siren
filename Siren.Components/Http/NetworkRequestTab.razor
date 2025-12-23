@@ -1,4 +1,5 @@
-﻿<MudPaper Elevation="0" Outlined="false" Square="true" MaxWidth="160px" Class="bg-transparent d-flex" Style="align-items: center;">
+﻿@using Siren.Components.Http.Models
+<MudPaper Elevation="0" Outlined="false" Square="true" MaxWidth="160px" Class="bg-transparent d-flex" Style="align-items: center;">
     @if (Request?.Request?.Method != null)
     {
         <HttpMethodChip Method="@Request?.Request?.Method" />

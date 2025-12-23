@@ -1,4 +1,5 @@
 ﻿@using Siren.Components.Http
+@using Siren.Components.Http.Models
 @using Orientation = Microsoft.FluentUI.AspNetCore.Components.Orientation
 @implements IDisposable
 
@@ -18,7 +19,7 @@
                                      Color="Color.Primary"/>
                 </SirenStack>
 
-                <MudDataGrid T="DictionaryViewModel"
+                <MudDataGrid T="HeaderModel"
                              Items="@allHeaders"
                              Context="context"
                              Class="w-100"
@@ -31,7 +32,8 @@
                              CommittedItemChanges="UpdateHeader"
                              ReadOnly="false"
                              Dense="true"
-                             Hover="true">
+                             Hover="true"
+                             RowKeySelector="x => x.Id">
                     <Columns>
                         <MudBlazor.PropertyColumn Property="x => x.Key" Title="Header">
                             <EditTemplate>
@@ -154,7 +156,8 @@
                                  Style="overflow:hidden;"
                                  ReadOnly="true"
                                  Dense="true"
-                                 Hover="true">
+                                 Hover="true"
+                                 RowKeySelector="x => x.Id">
                         <Columns>
                             <MudBlazor.PropertyColumn Property="x => x.Key" Title="Header">
                                 <CellTemplate>
@@ -221,8 +224,8 @@
     [Inject]
     public SirenAppState AppState { get; set; } = default!;
 
-    private List<DictionaryViewModel> requestHeaders = new();
-    private List<DictionaryViewModel> allHeaders = new();
+    private List<HeaderModel> requestHeaders = new();
+    private List<HeaderModel> allHeaders = new();
 
     protected override void OnInitialized()
     {
@@ -285,7 +288,13 @@
             foreach (var systemHeader in systemHeadersDict.ToViewModel())
             {
                 systemHeader.IsSystemHeader = true;
-                allHeaders.Add(systemHeader);
+                allHeaders.Add(new()
+                {
+                    Id = systemHeader.Id,
+                    IsSystemHeader = systemHeader.IsSystemHeader,
+                    Key = systemHeader.Key,
+                    Value = systemHeader.Value,
+                });
             }
         }
     }
@@ -303,7 +312,7 @@
         Snackbar.Add($"Copied `{value}` to clipboard", Severity.Info);
     }
 
-    protected void UpdateHeader(DictionaryViewModel m)
+    protected void UpdateHeader(HeaderModel m)
     {
         if (m.IsSystemHeader)
             return;
@@ -319,7 +328,7 @@
         StateHasChanged();
     }
 
-    protected void DeleteHeader(DictionaryViewModel m)
+    protected void DeleteHeader(HeaderModel m)
     {
         if (m.IsSystemHeader)
             return;
@@ -334,7 +343,10 @@
     {
         if (NetworkRequest?.Request != null)
         {
-            NetworkRequest.Request.Headers = requestHeaders.ToSafeDictionary();
+            NetworkRequest.Request.Headers = requestHeaders
+                .Where(x => !string.IsNullOrWhiteSpace(x.Key))
+                .Select(x => new KeyValuePair<string, string>(x.Key!, x.Value ?? ""))
+                .ToList();
         }
     }
 

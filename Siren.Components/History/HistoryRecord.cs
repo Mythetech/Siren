@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Net;
-using Siren.Components.Http;
+using Siren.Components.Http.Models;
 
 namespace Siren.Components.History
 {

@@ -9,6 +9,7 @@ using NSubstitute;
 using Siren.Components;
 using Siren.Components.History;
 using Siren.Components.Http;
+using Siren.Components.Http.Models;
 
 namespace Siren.Test.Components
 {

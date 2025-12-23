@@ -3,6 +3,7 @@ using LiteDB;
 using Microsoft.Extensions.Logging;
 using Siren.Components.Collections;
 using Siren.Components.Http;
+using Siren.Components.Http.Models;
 
 namespace Siren.Collections
 {

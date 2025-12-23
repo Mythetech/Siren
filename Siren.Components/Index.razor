@@ -7,6 +7,7 @@
 @using Siren.Components.Shared
 @using Siren.Components.Shared.Notifications
 @using Siren.Components.Http
+@using Siren.Components.Http.Models
 @using Siren.Components.Services
 @using Siren.Components.RequestContextPanel
 @using Siren.Components.Infrastructure.Keyboard
@@ -274,9 +275,14 @@
         }
         else if (bodyType == "raw")
         {
-            if (active.Request?.Headers != null && active.Request.Headers.TryGetValue("Content-Type", out var headerContentType))
+            if (active.Request?.Headers != null)
             {
-                contentType = headerContentType;
+                var contentTypeHeader = active.Request.Headers.FirstOrDefault(h => 
+                    string.Equals(h.Key, "Content-Type", StringComparison.OrdinalIgnoreCase));
+                if (contentTypeHeader.Key != null)
+                {
+                    contentType = contentTypeHeader.Value;
+                }
             }
             var payload = await _requestPanel.GetPayload();
             var substitutedPayload = VariableSubstitutionService.SubstituteVariables(payload, activeEnvironment);
@@ -316,14 +322,14 @@
         }
 
         var requestUri = VariableSubstitutionService.SubstituteVariables(active.Request?.RequestUri ?? "", activeEnvironment);
-        var substitutedHeaders = new Dictionary<string, string>();
+        var substitutedHeaders = new List<KeyValuePair<string, string>>();
         if (active.Request?.Headers != null)
         {
             foreach (var header in active.Request.Headers)
             {
                 var substitutedKey = VariableSubstitutionService.SubstituteVariables(header.Key, activeEnvironment);
                 var substitutedValue = VariableSubstitutionService.SubstituteVariables(header.Value, activeEnvironment);
-                substitutedHeaders[substitutedKey] = substitutedValue;
+                substitutedHeaders.Add(new KeyValuePair<string, string>(substitutedKey, substitutedValue));
             }
         }
 

@@ -1,4 +1,4 @@
-﻿@using Siren.Components.Http
+﻿@using Siren.Components.Http.Models
 
 <SirenStack Row="true" Spacing="3" Class="w-100 px-4">
     <SirenClearableTextField Input="@_searchString"
@@ -94,7 +94,7 @@ else
 
     private string? _searchString = "";
 
-    protected void LoadRequest(Http.HttpRequest req)
+    protected void LoadRequest(HttpRequest req)
     {
         var active = AppState?.Active;
 
@@ -116,7 +116,7 @@ else
         StateHasChanged();
     }
 
-    private List<Http.HttpRequest> FilterRequests(IEnumerable<Http.HttpRequest> requests)
+    private List<HttpRequest> FilterRequests(IEnumerable<HttpRequest> requests)
     {
         if (string.IsNullOrWhiteSpace(_searchString))
             return requests.ToList();
