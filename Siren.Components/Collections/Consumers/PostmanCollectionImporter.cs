@@ -142,6 +142,36 @@ namespace Siren.Components.Collections.Consumers
                 }
             }
 
+            var bodyType = RequestBodyType.None;
+            var rawBody = "";
+            var formData = new Dictionary<string, string>();
+            var contentType = "application/json";
+
+            if (request.Body != null)
+            {
+                if (request.Body.Mode == "raw" && request.Body.Raw != null)
+                {
+                    bodyType = RequestBodyType.Raw;
+                    rawBody = request.Body.Raw;
+                }
+                else if (request.Body.Mode == "urlencoded" && request.Body.Urlencoded != null)
+                {
+                    bodyType = RequestBodyType.FormData;
+                    formData = request.Body.Urlencoded
+                        .Where(u => u.Key != null && u.Value != null)
+                        .ToDictionary(u => u.Key!, u => u.Value!);
+                    contentType = "application/x-www-form-urlencoded";
+                }
+                else if (request.Body.Mode == "formdata" && request.Body.Formdata != null)
+                {
+                    bodyType = RequestBodyType.FormData;
+                    formData = request.Body.Formdata
+                        .Where(f => f.Key != null && f.Value != null && f.Type == "text")
+                        .ToDictionary(f => f.Key!, f => f.Value!);
+                    contentType = "multipart/form-data";
+                }
+            }
+
             var httpRequest = new HttpRequest
             {
                 Method = method,
@@ -149,29 +179,15 @@ namespace Siren.Components.Collections.Consumers
                 DisplayUri = displayUri,
                 Headers = request.Header?.Select(h => new KeyValuePair<string, string>(h.Key ?? "", h.Value ?? "")).ToList()
                     ?? new List<KeyValuePair<string, string>>(),
-                ContentType = "application/json"
+                ContentType = contentType,
+                FormData = formData,
+                BodyType = bodyType,
+                RawBody = rawBody
             };
 
-            if (request.Body != null)
+            if (bodyType == RequestBodyType.Raw && !string.IsNullOrEmpty(rawBody))
             {
-                if (request.Body.Mode == "raw" && request.Body.Raw != null)
-                {
-                    httpRequest.Content = new StringContent(request.Body.Raw, System.Text.Encoding.UTF8, httpRequest.ContentType);
-                }
-                else if (request.Body.Mode == "urlencoded" && request.Body.Urlencoded != null)
-                {
-                    httpRequest.FormData = request.Body.Urlencoded
-                        .Where(u => u.Key != null && u.Value != null)
-                        .ToDictionary(u => u.Key!, u => u.Value!);
-                    httpRequest.ContentType = "application/x-www-form-urlencoded";
-                }
-                else if (request.Body.Mode == "formdata" && request.Body.Formdata != null)
-                {
-                    httpRequest.FormData = request.Body.Formdata
-                        .Where(f => f.Key != null && f.Value != null && f.Type == "text")
-                        .ToDictionary(f => f.Key!, f => f.Value!);
-                    httpRequest.ContentType = "multipart/form-data";
-                }
+                httpRequest.Content = new StringContent(rawBody, System.Text.Encoding.UTF8, contentType);
             }
 
             return httpRequest;

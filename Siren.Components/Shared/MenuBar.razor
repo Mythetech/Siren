@@ -168,42 +168,21 @@
         }
 
         var request = AppState.Active.Request;
-        var (body, bodyType) = await AppState.RequestBodyContentAsync();
+        
+        var (editorBody, _) = await AppState.RequestBodyContentAsync();
+        if (request.BodyType == RequestBodyType.Raw && !string.IsNullOrEmpty(editorBody))
+        {
+            request.RawBody = editorBody;
+        }
 
-        string finalBodyType;
-        string? finalBody = null;
-
-        if (!string.IsNullOrEmpty(bodyType) && bodyType != "none")
+        var bodyTypeString = request.BodyType switch
         {
-            finalBodyType = bodyType;
-            finalBody = body;
-        }
-        else if (request.BinaryAttachments != null && request.BinaryAttachments.Any())
-        {
-            finalBodyType = "binary";
-        }
-        else if (request.FormData != null && request.FormData.Any())
-        {
-            finalBodyType = "form-data";
-        }
-        else if (request.Content != null)
-        {
-            finalBodyType = "raw";
-            try
-            {
-                if (request.Content is StringContent stringContent)
-                {
-                    finalBody = await stringContent.ReadAsStringAsync();
-                }
-            }
-            catch
-            {
-            }
-        }
-        else
-        {
-            finalBodyType = "none";
-        }
+            RequestBodyType.None => "none",
+            RequestBodyType.Raw => "raw",
+            RequestBodyType.FormData => "form-data",
+            RequestBodyType.Binary => "binary",
+            _ => "raw"
+        };
 
         var command = new SaveRequest(
         Method: request.Method?.Method ?? "GET",
@@ -213,8 +192,8 @@
         Headers: request.Headers,
         FormData: request.FormData,
         ContentType: request.ContentType,
-        Body: finalBody,
-        BodyType: finalBodyType,
+        Body: request.RawBody,
+        BodyType: bodyTypeString,
         Timeout: request.Timeout,
         RetryAttempts: request.RetryAttempts,
         Id: request.Id

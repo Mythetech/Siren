@@ -304,6 +304,19 @@ namespace Siren.Components.Collections.Consumers
                 displayUri = requestUri;
             }
 
+            var bodyType = RequestBodyType.None;
+            var rawBody = "";
+
+            if (request.Body != null && !string.IsNullOrEmpty(request.Body.Text) && request.Body.Text != "none")
+            {
+                bodyType = RequestBodyType.Raw;
+                rawBody = request.Body.Text;
+            }
+            else if (request.Body?.Mode == "formdata" || (request.Body?.Params != null && request.Body.Params.Any()))
+            {
+                bodyType = RequestBodyType.FormData;
+            }
+
             var httpRequest = new HttpRequest
             {
                 Method = method,
@@ -311,12 +324,14 @@ namespace Siren.Components.Collections.Consumers
                 DisplayUri = displayUri,
                 Headers = request.Headers?.Select(h => new KeyValuePair<string, string>(h.Name ?? "", h.Value ?? "")).ToList()
                     ?? new List<KeyValuePair<string, string>>(),
-                ContentType = "application/json"
+                ContentType = "application/json",
+                BodyType = bodyType,
+                RawBody = rawBody
             };
 
-            if (request.Body != null && request.Body.Text != null && request.Body.Text != "none")
+            if (bodyType == RequestBodyType.Raw && !string.IsNullOrEmpty(rawBody))
             {
-                httpRequest.Content = new StringContent(request.Body.Text, System.Text.Encoding.UTF8, httpRequest.ContentType);
+                httpRequest.Content = new StringContent(rawBody, System.Text.Encoding.UTF8, httpRequest.ContentType);
             }
 
             return httpRequest;

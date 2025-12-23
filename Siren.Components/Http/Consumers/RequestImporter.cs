@@ -100,6 +100,15 @@ namespace Siren.Components.Http.Consumers
 
         private HttpRequest ConvertFromCommand(SaveRequest command)
         {
+            var bodyType = command.BodyType switch
+            {
+                "none" => RequestBodyType.None,
+                "raw" => RequestBodyType.Raw,
+                "form-data" => RequestBodyType.FormData,
+                "binary" => RequestBodyType.Binary,
+                _ => RequestBodyType.Raw
+            };
+
             var request = new HttpRequest
             {
                 Method = new HttpMethod(command.Method),
@@ -112,10 +121,12 @@ namespace Siren.Components.Http.Consumers
                 ContentType = command.ContentType,
                 Timeout = command.Timeout,
                 RetryAttempts = command.RetryAttempts,
-                Id = command.Id != Guid.Empty ? command.Id : Guid.NewGuid()
+                Id = command.Id != Guid.Empty ? command.Id : Guid.NewGuid(),
+                BodyType = bodyType,
+                RawBody = command.Body ?? ""
             };
 
-            if (command.BodyType == "raw" && !string.IsNullOrEmpty(command.Body))
+            if (bodyType == RequestBodyType.Raw && !string.IsNullOrEmpty(command.Body))
             {
                 request.Content = new StringContent(command.Body, System.Text.Encoding.UTF8, command.ContentType);
             }
