@@ -1,0 +1,98 @@
+@inherits SirenBaseComponent
+@using Color = MudBlazor.Color
+
+<div class="@GetBadgeClass()" 
+     style="@GetBadgeStyle()"
+     onclick="@OnClick"
+     onkeydown="@(OnClick.HasDelegate && !Disabled ? HandleKeyDown : null)"
+     role="@(OnClick.HasDelegate ? "button" : null)"
+     tabindex="@(OnClick.HasDelegate && !Disabled ? 0 : null)">
+    @if (!string.IsNullOrWhiteSpace(Icon))
+    {
+        <SirenIcon Icon="@Icon" Color="Color.Inherit" Size="@IconSize" />
+    }
+    @if (ChildContent != null)
+    {
+        <span>@ChildContent</span>
+    }
+    else if (!string.IsNullOrWhiteSpace(Text))
+    {
+        <span>@Text</span>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    [Parameter]
+    public string? Text { get; set; }
+
+    [Parameter]
+    public Color Color { get; set; } = Color.Primary;
+
+    [Parameter]
+    public Size Size { get; set; } = Size.Small;
+
+    [Parameter]
+    public Variant Variant { get; set; } = Variant.Filled;
+
+    [Parameter]
+    public string? Icon { get; set; }
+
+    [Parameter]
+    public Size IconSize { get; set; } = Size.Small;
+
+    [Parameter]
+    public EventCallback OnClick { get; set; }
+
+    [Parameter]
+    public bool Disabled { get; set; } = false;
+
+    private string GetBadgeClass()
+    {
+        var classes = new List<string> { "siren-badge" };
+        
+        classes.Add($"siren-badge--{Color.ToString().ToLower()}");
+        classes.Add($"siren-badge--{Size.ToString().ToLower()}");
+        classes.Add($"siren-badge--{Variant.ToString().ToLower()}");
+        
+        if (OnClick.HasDelegate)
+        {
+            classes.Add("siren-badge--clickable");
+        }
+        
+        if (Disabled)
+        {
+            classes.Add("siren-badge--disabled");
+        }
+        
+        if (!string.IsNullOrWhiteSpace(Class))
+        {
+            classes.Add(Class);
+        }
+        
+        return string.Join(" ", classes);
+    }
+
+    private string GetBadgeStyle()
+    {
+        var styles = new List<string>();
+        
+        if (!string.IsNullOrWhiteSpace(Style))
+        {
+            styles.Add(Style);
+        }
+        
+        return string.Join("; ", styles);
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if ((e.Key == "Enter" || e.Key == " ") && OnClick.HasDelegate && !Disabled)
+        {
+            await OnClick.InvokeAsync();
+        }
+    }
+}
+

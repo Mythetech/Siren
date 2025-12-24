@@ -681,7 +681,7 @@ button:focus {
     justify-content: center;
     gap: 6px;
     padding: 4px 10px;
-    border-radius: 6px;
+    border-radius: 18px;
     font-size: 12px;
     font-weight: 500;
     cursor: pointer;
