@@ -107,8 +107,6 @@ jobs:
       id: get_version
       run: echo "VERSION=0.0.${{ github.run_number }}" >> $GITHUB_OUTPUT
       shell: bash
-    - name: Setup GitHub Package Authentication
-      run: dotnet nuget add source --username USERNAME --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/mythetech/index.json"
     - name: Create Azure Trusted Signing Metadata
       if: matrix.os == 'windows-latest'
       run: |
