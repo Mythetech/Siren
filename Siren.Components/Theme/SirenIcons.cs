@@ -97,5 +97,7 @@ namespace Siren.Components.Theme
         public static string Environment => Round("public");
 
         public static string MoreVert => Round("more_vert");
+
+        public static string Network => Round("network_check");
     }
 }

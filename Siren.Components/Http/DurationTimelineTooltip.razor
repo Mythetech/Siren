@@ -1,0 +1,117 @@
+@using Siren.Components.Http.Models
+@using Siren.Components.Settings
+@using Siren.Components.Theme
+@using System.Linq
+
+<MudTooltip Arrow="true" Placement="Placement.Bottom">
+    <ChildContent>
+        <div class="siren-metric-chip siren-metric-chip--timing">
+            <SirenIcon Icon="@SirenIcons.Time" Color="Color.Inherit" Size="Size.Small"/>
+            <span>@DisplayText</span>
+        </div>
+    </ChildContent>
+    <TooltipContent>
+        <div class="siren-tooltip-panel siren-tooltip-panel--timeline">
+            <div class="siren-tooltip-header">
+                <SirenIcon Icon="@SirenIcons.Time" Color="Color.Warning" Size="Size.Small"/>
+                <span>Request Timeline</span>
+            </div>
+            
+            @if (Timeline != null)
+            {
+                <div class="siren-timeline-chart">
+                    @{ if (Timeline == null) return;
+
+                       var phases = GetTimelinePhases();
+                       var total = Timeline.TotalDuration.TotalMilliseconds;
+                       if (total <= 0) total = 1;
+
+                       foreach (var phase in phases)
+                       {
+                           var widthPercent = Math.Max(2, (phase.Duration.TotalMilliseconds / total) * 100);
+                           var showLabel = widthPercent > 12;
+                           var shortName = GetShortName(phase.Name);
+            
+                           <div class="siren-timeline-segment" 
+                                style="width: @(widthPercent.ToString("F1"))%; background: @phase.Color;"
+                                title="@phase.Name: @FormatTime(phase.Duration)">
+                               @if (showLabel)
+                               {
+                                   @shortName
+                               }
+                           </div>
+                       } }
+                </div>
+                
+                <div class="siren-timeline-breakdown">
+                    @foreach (var phase in GetTimelinePhases())
+                    {
+                        <div class="siren-timeline-row">
+                            <div class="siren-timeline-indicator" style="background: @phase.Color;"></div>
+                            <span class="siren-timeline-label">@phase.Name</span>
+                            <span class="siren-timeline-value">@FormatTime(phase.Duration)</span>
+                        </div>
+                    }
+                    
+                    <div class="siren-timeline-total">
+                        <span class="siren-timeline-label">Total</span>
+                        <span class="siren-timeline-value siren-timeline-value--total">@FormatTime(Timeline.TotalDuration)</span>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="siren-timeline-empty">
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary">Timeline data not available</MudText>
+                </div>
+            }
+        </div>
+    </TooltipContent>
+</MudTooltip>
+
+@code {
+    [Parameter]
+    public RequestTimeline? Timeline { get; set; }
+
+    [Parameter]
+    public string DisplayText { get; set; } = "";
+
+    [Inject]
+    SettingsState Settings { get; set; } = default!;
+
+    private string FormatTime(TimeSpan duration)
+    {
+        return FormattingUtils.FormatTime(duration, Settings.TimeDisplay);
+    }
+
+    private List<(string Name, TimeSpan Duration, string Color)> GetTimelinePhases()
+    {
+        if (Timeline == null) return new();
+
+        var phases = new List<(string, TimeSpan?, string)>
+        {
+            ("DNS Lookup", Timeline.DnsLookup, "#4caf50"),
+            ("TCP Connection", Timeline.TcpConnection, "#2196f3"),
+            ("TLS Handshake", Timeline.TlsHandshake, "#9c27b0"),
+            ("Request Sent", Timeline.RequestSent, "#00bcd4"),
+            ("Waiting for Response", Timeline.WaitingForResponse, "#f44336"),
+            ("Content Download", Timeline.ContentDownload, "#ff9800")
+        };
+
+        return phases
+            .Where(p => p.Item2.HasValue)
+            .Select(p => (p.Item1, p.Item2!.Value, p.Item3))
+            .ToList();
+    }
+
+    private string GetShortName(string name) => name switch
+    {
+        "DNS Lookup" => "DNS",
+        "TCP Connection" => "TCP",
+        "TLS Handshake" => "TLS",
+        "Request Sent" => "Send",
+        "Waiting for Response" => "Wait",
+        "Content Download" => "Download",
+        _ => name
+    };
+}

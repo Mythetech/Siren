@@ -1,0 +1,108 @@
+@using Siren.Components.Http.Models
+@using Siren.Components.Theme
+
+<MudTooltip Arrow="true" Placement="Placement.Bottom">
+    <ChildContent>
+        <div class="siren-metric-chip siren-metric-chip--network">
+            <SirenIcon Icon="@SirenIcons.Network" Color="Color.Inherit" Size="Size.Small"/>
+        </div>
+    </ChildContent>
+    <TooltipContent>
+        @if (NetworkInfo != null)
+        {
+            <div class="siren-tooltip-panel">
+                <div class="siren-tooltip-header">
+                    <SirenIcon Icon="@SirenIcons.Network" Color="Color.Primary" Size="Size.Small"/>
+                    <span>Network</span>
+                </div>
+                
+                <div class="siren-tooltip-grid">
+                    @if (!string.IsNullOrEmpty(NetworkInfo.LocalAddress))
+                    {
+                        <div class="siren-tooltip-row">
+                            <span class="siren-tooltip-label">Local Address</span>
+                            <span class="siren-tooltip-value siren-tooltip-value--mono">@NetworkInfo.LocalAddress</span>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(NetworkInfo.RemoteAddress))
+                    {
+                        <div class="siren-tooltip-row">
+                            <span class="siren-tooltip-label">Remote Address</span>
+                            <span class="siren-tooltip-value siren-tooltip-value--mono">@NetworkInfo.RemoteAddress</span>
+                        </div>
+                    }
+                </div>
+                
+                @if (HasTlsInfo())
+                {
+                    <div class="siren-tooltip-section">
+                        <div class="siren-tooltip-section-header">
+                            <SirenIcon Icon="@SirenIcons.Auth" Color="Color.Success" Size="Size.Small"/>
+                            <span>TLS / Certificate</span>
+                        </div>
+                        <div class="siren-tooltip-grid">
+                            @if (!string.IsNullOrEmpty(NetworkInfo.TlsProtocol))
+                            {
+                                <div class="siren-tooltip-row">
+                                    <span class="siren-tooltip-label">Protocol</span>
+                                    <span class="siren-tooltip-value siren-tooltip-badge siren-tooltip-badge--success">@NetworkInfo.TlsProtocol</span>
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(NetworkInfo.CipherName))
+                            {
+                                <div class="siren-tooltip-row">
+                                    <span class="siren-tooltip-label">Cipher</span>
+                                    <span class="siren-tooltip-value siren-tooltip-value--mono siren-tooltip-value--wrap">@NetworkInfo.CipherName</span>
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(NetworkInfo.CertificateCommonName))
+                            {
+                                <div class="siren-tooltip-row">
+                                    <span class="siren-tooltip-label">Certificate</span>
+                                    <span class="siren-tooltip-value">@NetworkInfo.CertificateCommonName</span>
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(NetworkInfo.CertificateIssuer))
+                            {
+                                <div class="siren-tooltip-row">
+                                    <span class="siren-tooltip-label">Issuer</span>
+                                    <span class="siren-tooltip-value">@NetworkInfo.CertificateIssuer</span>
+                                </div>
+                            }
+                            @if (NetworkInfo.CertificateValidUntil.HasValue)
+                            {
+                                <div class="siren-tooltip-row">
+                                    <span class="siren-tooltip-label">Valid Until</span>
+                                    <span class="siren-tooltip-value @GetValidityClass()">
+                                        @NetworkInfo.CertificateValidUntil.Value.ToString("MMM d, yyyy")
+                                    </span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </TooltipContent>
+</MudTooltip>
+
+@code {
+    [Parameter]
+    public NetworkInfo? NetworkInfo { get; set; }
+    
+    private bool HasTlsInfo() => 
+        !string.IsNullOrEmpty(NetworkInfo?.TlsProtocol) ||
+        !string.IsNullOrEmpty(NetworkInfo?.CipherName) ||
+        !string.IsNullOrEmpty(NetworkInfo?.CertificateCommonName);
+    
+    private string GetValidityClass()
+    {
+        if (NetworkInfo?.CertificateValidUntil == null) return "";
+        
+        var daysUntilExpiry = (NetworkInfo.CertificateValidUntil.Value - DateTime.Now).TotalDays;
+        
+        if (daysUntilExpiry < 0) return "siren-tooltip-value--expired";
+        if (daysUntilExpiry < 30) return "siren-tooltip-value--expiring";
+        return "siren-tooltip-value--valid";
+    }
+}

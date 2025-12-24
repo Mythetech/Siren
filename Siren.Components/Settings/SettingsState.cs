@@ -9,11 +9,19 @@ namespace Siren.Components.Settings
         Seconds
     }
 
+    public enum SizeDisplayOptions
+    {
+        Bytes,
+        Kilobytes,
+        Megabytes
+    }
+
     public record SettingsStateSnapshot(
         int RequestTimeout,
         bool SendRequestsWithSystemToken,
         bool SaveHttpContent,
         TimeDisplayOptions TimeDisplay,
+        SizeDisplayOptions SizeDisplay,
         string DefaultUserAgent
     );
 
@@ -90,6 +98,20 @@ namespace Siren.Components.Settings
             }
         }
 
+        private SizeDisplayOptions _sizeDisplay = SizeDisplayOptions.Bytes;
+        
+        public SizeDisplayOptions SizeDisplay
+        {
+            get => _sizeDisplay;
+            set
+            {
+                if (_sizeDisplay == value) return;
+                
+                _sizeDisplay = value;
+                NotifyChangeSubscribersAsync();
+            }
+        }
+
         /// <summary>
         /// Creates a snapshot of the current settings state for later restoration.
         /// </summary>
@@ -101,6 +123,7 @@ namespace Siren.Components.Settings
                 SendRequestsWithSystemToken,
                 SaveHttpContent,
                 TimeDisplay,
+                SizeDisplay,
                 DefaultUserAgent
             );
         }
@@ -115,6 +138,7 @@ namespace Siren.Components.Settings
             _sendRequestsWithSystemToken = snapshot.SendRequestsWithSystemToken;
             _saveHttpContent = snapshot.SaveHttpContent;
             _timeDisplay = snapshot.TimeDisplay;
+            _sizeDisplay = snapshot.SizeDisplay;
             _defaultUserAgent = snapshot.DefaultUserAgent;
             NotifyChangeSubscribersAsync();
         }
