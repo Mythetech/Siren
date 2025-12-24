@@ -119,25 +119,14 @@ jobs:
         }
         $metadata | ConvertTo-Json | Out-File -FilePath azure-signing-metadata.json -Encoding utf8
       shell: pwsh
-    - name: Create Azure Credentials JSON
-      if: matrix.os == 'windows-latest'
-      id: azure_creds
-      run: |
-        $creds = @{
-          clientId = "${{ secrets.AZURE_CLIENT_ID }}"
-          clientSecret = "${{ secrets.AZURE_CLIENT_SECRET }}"
-          subscriptionId = "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
-          tenantId = "${{ secrets.AZURE_TENANT_ID }}"
-        }
-        $credsJson = $creds | ConvertTo-Json -Compress
-        echo "creds=$credsJson" >> $env:GITHUB_OUTPUT
-      shell: pwsh
-    - name: Authenticate with Azure
+    - name: Azure login
       if: matrix.os == 'windows-latest'
       uses: azure/login@v2
       with:
-        creds: ${{ steps.azure_creds.outputs.creds }}
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
         allow-no-subscriptions: true
+      env:
+        AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
     - name: Publish
       run: dotnet publish Siren/Siren.csproj -c Release -r ${{ matrix.rid }} --self-contained -p:PublishSingleFile=true -p:PublishTrimmed=false -o publish/${{ matrix.rid }}
         
