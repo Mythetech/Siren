@@ -84,6 +84,10 @@ jobs:
             icon: Siren/wwwroot/logo.icns
     
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     
     steps:
     - name: Checkout
@@ -130,9 +134,9 @@ jobs:
     - name: Create Velopack Release
       run: |
         if [ "${{ matrix.os }}" == "windows-latest" ]; then
-          vpk pack -u "Mythetech.Siren" -v ${{ steps.get_version.outputs.VERSION }} -o "releases/${{ matrix.platform }}" -p "publish/${{ matrix.rid }}" --icon ${{ matrix.icon }} --azureTrustedSignFile azure-signing-metadata.json
+          vpk pack -u "Siren" -v ${{ steps.get_version.outputs.VERSION }} -o "releases/${{ matrix.platform }}" -p "publish/${{ matrix.rid }}" --icon ${{ matrix.icon }} --azureTrustedSignFile azure-signing-metadata.json
         else
-          vpk pack -u "Mythetech.Siren" -v ${{ steps.get_version.outputs.VERSION }} -o "releases/${{ matrix.platform }}" -p "publish/${{ matrix.rid }}" --icon ${{ matrix.icon }}
+          vpk pack -u "Siren" -v ${{ steps.get_version.outputs.VERSION }} -o "releases/${{ matrix.platform }}" -p "publish/${{ matrix.rid }}" --icon ${{ matrix.icon }}
         fi
       shell: bash
       
