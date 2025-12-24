@@ -670,3 +670,514 @@ button:focus {
 .list-item-active {
     background-color: rgba(var(--mud-palette-primary-rgb), 0.6);
 }
+
+/* ============================================
+   Siren Metric Chips & Tooltip Styling
+   ============================================ */
+
+.siren-metric-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border: 1px solid transparent;
+}
+
+.siren-metric-chip--network {
+    background: linear-gradient(135deg, rgba(0, 119, 182, 0.15) 0%, rgba(0, 119, 182, 0.08) 100%);
+    color: var(--mud-palette-info);
+    border-color: rgba(0, 119, 182, 0.25);
+}
+
+.siren-metric-chip--network:hover {
+    background: linear-gradient(135deg, rgba(0, 119, 182, 0.25) 0%, rgba(0, 119, 182, 0.15) 100%);
+    border-color: rgba(0, 119, 182, 0.4);
+}
+
+.siren-metric-chip--timing {
+    background: linear-gradient(135deg, rgba(255, 152, 0, 0.15) 0%, rgba(255, 152, 0, 0.08) 100%);
+    color: var(--mud-palette-warning);
+    border-color: rgba(255, 152, 0, 0.25);
+}
+
+.siren-metric-chip--timing:hover {
+    background: linear-gradient(135deg, rgba(255, 152, 0, 0.25) 0%, rgba(255, 152, 0, 0.15) 100%);
+    border-color: rgba(255, 152, 0, 0.4);
+}
+
+.siren-metric-chip--size {
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.15) 0%, rgba(76, 175, 80, 0.08) 100%);
+    color: var(--mud-palette-success);
+    border-color: rgba(76, 175, 80, 0.25);
+}
+
+.siren-metric-chip--size:hover {
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.25) 0%, rgba(76, 175, 80, 0.15) 100%);
+    border-color: rgba(76, 175, 80, 0.4);
+}
+
+/* Tooltip Panel Base Styles */
+.siren-tooltip-panel {
+    min-width: 280px;
+    max-width: 340px;
+    padding: 12px;
+}
+
+.siren-tooltip-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--mud-palette-text-primary);
+}
+
+.siren-tooltip-section {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.siren-tooltip-section-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--mud-palette-text-secondary);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.siren-tooltip-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.siren-tooltip-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.siren-tooltip-label {
+    font-size: 12px;
+    color: var(--mud-palette-text-secondary);
+    flex-shrink: 0;
+}
+
+.siren-tooltip-value {
+    font-size: 12px;
+    color: var(--mud-palette-text-primary);
+    text-align: right;
+}
+
+.siren-tooltip-value--mono {
+    font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+    font-size: 11px;
+}
+
+.siren-tooltip-value--wrap {
+    word-break: break-all;
+    max-width: 180px;
+}
+
+.siren-tooltip-badge {
+    display: inline-flex;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.siren-tooltip-badge--success {
+    background: rgba(76, 175, 80, 0.2);
+    color: #4caf50;
+}
+
+.siren-tooltip-value--valid {
+    color: #4caf50;
+}
+
+.siren-tooltip-value--expiring {
+    color: #ff9800;
+}
+
+.siren-tooltip-value--expired {
+    color: #f44336;
+}
+
+/* Timeline Tooltip Specific */
+.siren-tooltip-panel--timeline {
+    min-width: 300px;
+}
+
+.siren-timeline-chart {
+    display: flex;
+    height: 28px;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 16px;
+    background: rgba(255, 255, 255, 0.05);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.siren-timeline-segment {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    transition: opacity 0.15s ease;
+    position: relative;
+}
+
+.siren-timeline-segment::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.15) 0%, transparent 50%, rgba(0, 0, 0, 0.1) 100%);
+}
+
+.siren-timeline-segment:hover {
+    opacity: 0.85;
+}
+
+.siren-timeline-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.siren-timeline-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.siren-timeline-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+.siren-timeline-label {
+    font-size: 12px;
+    color: var(--mud-palette-text-secondary);
+    flex: 1;
+}
+
+.siren-timeline-value {
+    font-size: 12px;
+    font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+    color: var(--mud-palette-text-primary);
+    text-align: right;
+    min-width: 60px;
+}
+
+.siren-timeline-total {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.siren-timeline-total .siren-timeline-label {
+    font-weight: 600;
+    color: var(--mud-palette-text-primary);
+    padding-left: 20px;
+}
+
+.siren-timeline-value--total {
+    font-weight: 700;
+    color: var(--mud-palette-warning);
+}
+
+.siren-timeline-empty {
+    padding: 16px;
+    text-align: center;
+}
+
+/* Size Tooltip Specific */
+.siren-tooltip-panel--size {
+    min-width: 240px;
+}
+
+.siren-size-section {
+    padding: 0;
+}
+
+.siren-size-section--bordered {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.siren-size-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.siren-size-header-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--mud-palette-text-primary);
+}
+
+.siren-size-total {
+    font-size: 14px;
+    font-weight: 700;
+    font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+    color: #4caf50;
+}
+
+.siren-size-total--request {
+    color: var(--mud-palette-info);
+}
+
+.siren-size-bar-container {
+    margin-bottom: 10px;
+}
+
+.siren-size-bar {
+    display: flex;
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.05);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.siren-size-bar-segment {
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.siren-size-bar-segment--body {
+    background: linear-gradient(90deg, #4caf50 0%, #66bb6a 100%);
+}
+
+.siren-size-bar-segment--headers {
+    background: linear-gradient(90deg, #81c784 0%, #a5d6a7 100%);
+    opacity: 0.7;
+}
+
+.siren-size-bar-segment--request-body {
+    background: linear-gradient(90deg, #2196f3 0%, #42a5f5 100%);
+}
+
+.siren-size-bar-segment--request-headers {
+    background: linear-gradient(90deg, #64b5f6 0%, #90caf9 100%);
+    opacity: 0.7;
+}
+
+.siren-size-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.siren-size-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.siren-size-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.siren-size-indicator--body {
+    background: #4caf50;
+}
+
+.siren-size-indicator--headers {
+    background: #81c784;
+}
+
+.siren-size-indicator--request-body {
+    background: #2196f3;
+}
+
+.siren-size-indicator--request-headers {
+    background: #64b5f6;
+}
+
+.siren-size-label {
+    font-size: 11px;
+    color: var(--mud-palette-text-secondary);
+    flex: 1;
+}
+
+.siren-size-value {
+    font-size: 11px;
+    font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+    color: var(--mud-palette-text-primary);
+    text-align: right;
+    min-width: 50px;
+}
+
+/* Status Code Chip Styles */
+.siren-metric-chip--status-success {
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(76, 175, 80, 0.1) 100%);
+    color: #4caf50;
+    border-color: rgba(76, 175, 80, 0.35);
+    font-weight: 600;
+}
+
+.siren-metric-chip--status-success:hover {
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.3) 0%, rgba(76, 175, 80, 0.18) 100%);
+    border-color: rgba(76, 175, 80, 0.5);
+}
+
+.siren-metric-chip--status-redirect {
+    background: linear-gradient(135deg, rgba(33, 150, 243, 0.2) 0%, rgba(33, 150, 243, 0.1) 100%);
+    color: #2196f3;
+    border-color: rgba(33, 150, 243, 0.35);
+    font-weight: 600;
+}
+
+.siren-metric-chip--status-redirect:hover {
+    background: linear-gradient(135deg, rgba(33, 150, 243, 0.3) 0%, rgba(33, 150, 243, 0.18) 100%);
+    border-color: rgba(33, 150, 243, 0.5);
+}
+
+.siren-metric-chip--status-client-error {
+    background: linear-gradient(135deg, rgba(255, 152, 0, 0.2) 0%, rgba(255, 152, 0, 0.1) 100%);
+    color: #ff9800;
+    border-color: rgba(255, 152, 0, 0.35);
+    font-weight: 600;
+}
+
+.siren-metric-chip--status-client-error:hover {
+    background: linear-gradient(135deg, rgba(255, 152, 0, 0.3) 0%, rgba(255, 152, 0, 0.18) 100%);
+    border-color: rgba(255, 152, 0, 0.5);
+}
+
+.siren-metric-chip--status-server-error {
+    background: linear-gradient(135deg, rgba(244, 67, 54, 0.2) 0%, rgba(244, 67, 54, 0.1) 100%);
+    color: #f44336;
+    border-color: rgba(244, 67, 54, 0.35);
+    font-weight: 600;
+}
+
+.siren-metric-chip--status-server-error:hover {
+    background: linear-gradient(135deg, rgba(244, 67, 54, 0.3) 0%, rgba(244, 67, 54, 0.18) 100%);
+    border-color: rgba(244, 67, 54, 0.5);
+}
+
+.siren-metric-chip--status-cancelled,
+.siren-metric-chip--status-default {
+    background: linear-gradient(135deg, rgba(158, 158, 158, 0.2) 0%, rgba(158, 158, 158, 0.1) 100%);
+    color: #9e9e9e;
+    border-color: rgba(158, 158, 158, 0.35);
+    font-weight: 600;
+}
+
+.siren-metric-chip--status-cancelled:hover,
+.siren-metric-chip--status-default:hover {
+    background: linear-gradient(135deg, rgba(158, 158, 158, 0.3) 0%, rgba(158, 158, 158, 0.18) 100%);
+    border-color: rgba(158, 158, 158, 0.5);
+}
+
+.siren-status-code {
+    font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+}
+
+/* Status Code Tooltip */
+.siren-tooltip-panel--status {
+    min-width: 180px;
+    padding: 12px;
+}
+
+.siren-status-detail {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.siren-status-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    min-width: 42px;
+}
+
+.siren-status-badge--success {
+    background: rgba(76, 175, 80, 0.25);
+    color: #4caf50;
+    box-shadow: 0 0 8px rgba(76, 175, 80, 0.3);
+}
+
+.siren-status-badge--redirect {
+    background: rgba(33, 150, 243, 0.25);
+    color: #2196f3;
+    box-shadow: 0 0 8px rgba(33, 150, 243, 0.3);
+}
+
+.siren-status-badge--client-error {
+    background: rgba(255, 152, 0, 0.25);
+    color: #ff9800;
+    box-shadow: 0 0 8px rgba(255, 152, 0, 0.3);
+}
+
+.siren-status-badge--server-error {
+    background: rgba(244, 67, 54, 0.25);
+    color: #f44336;
+    box-shadow: 0 0 8px rgba(244, 67, 54, 0.3);
+}
+
+.siren-status-badge--cancelled,
+.siren-status-badge--default {
+    background: rgba(158, 158, 158, 0.25);
+    color: #9e9e9e;
+    box-shadow: 0 0 8px rgba(158, 158, 158, 0.2);
+}
+
+.siren-status-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--mud-palette-text-primary);
+}
+
+.siren-status-category {
+    font-size: 11px;
+    color: var(--mud-palette-text-secondary);
+    padding-top: 6px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}

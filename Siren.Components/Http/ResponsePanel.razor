@@ -18,10 +18,21 @@
             <HttpStatusCodeChip IsDarkMode="@AppState.IsDarkMode"
                                 StatusCode="@(AppState?.Active?.Response?.HttpStatusCode ?? System.Net.HttpStatusCode.InternalServerError)"/>
         }
-        <SirenChip T="string"
-                   Color="Color.Info">@(Settings.TimeDisplay == TimeDisplayOptions.Milliseconds ? $"{AppState?.Active?.Response?.Duration.TotalMilliseconds}ms" : $"{AppState?.Active?.Response?.Duration.TotalMilliseconds / 1000.00}s")</SirenChip>
-        <SirenChip T="string" Color="Color.Info">@($"{AppState?.Active?.Response?.ResponseSize?.Body + AppState?.Active?.Response?.ResponseSize?.Headers}")B
-        </SirenChip>
+        @if (AppState?.Active?.Response?.NetworkInfo != null)
+        {
+            <NetworkInfoTooltip NetworkInfo="@AppState.Active.Response.NetworkInfo" />
+        }
+        @if (AppState?.Active?.Response != null)
+        {
+            <DurationTimelineTooltip Timeline="@AppState.Active.Response.Timeline"
+                                     DisplayText="@GetDurationDisplayText()" />
+        }
+        @if (AppState?.Active?.Response != null)
+        {
+            <SizeBreakdownTooltip RequestSize="@AppState.Active.Response.RequestSize"
+                                 ResponseSize="@AppState.Active.Response.ResponseSize"
+                                 DisplayText="@GetSizeDisplayText()" />
+        }
         @if (_currentViewType == ResponseViewType.Json)
         {
             <SirenIconButton Icon="@SirenIcons.Format" Size="Size.Small" Tooltip="Format"
@@ -78,6 +89,23 @@
     public void HandleSettingsChanged(SettingsState state)
     {
         StateHasChanged();
+    }
+
+    private string GetDurationDisplayText()
+    {
+        if (AppState?.Active?.Response == null)
+            return "";
+
+        return FormattingUtils.FormatTime(AppState.Active.Response.Duration, Settings.TimeDisplay);
+    }
+
+    private string GetSizeDisplayText()
+    {
+        if (AppState?.Active?.Response?.ResponseSize == null)
+            return "";
+
+        var totalSize = AppState.Active.Response.ResponseSize.Body + AppState.Active.Response.ResponseSize.Headers;
+        return FormattingUtils.FormatSize(totalSize, Settings.SizeDisplay);
     }
 
     private async Task HandleViewTypeChanged(ResponseViewType newViewType)

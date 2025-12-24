@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Net;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 using Microsoft.Extensions.Logging;
 using Siren.Components.History;
 using Siren.Components.Http.Models;
@@ -34,7 +36,27 @@ namespace Siren.Components.Services
 
         public async Task<RequestResult> SendHttpRequestAsync(HttpRequest request, CancellationToken ct)
         {
-            var client = _httpClientFactory.CreateClient();
+            NetworkInfo? networkInfo = null;
+            RequestTimeline? timeline = null;
+            
+            var handler = new HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback = (message, cert, chain, errors) =>
+                {
+                    if (cert != null)
+                    {
+                        networkInfo = new NetworkInfo
+                        {
+                            CertificateCommonName = cert.SubjectName.Name?.Split(',').FirstOrDefault(s => s.Trim().StartsWith("CN="))?.Replace("CN=", "").Trim(),
+                            CertificateIssuer = cert.IssuerName.Name?.Split(',').FirstOrDefault(s => s.Trim().StartsWith("CN="))?.Replace("CN=", "").Trim(),
+                            CertificateValidUntil = cert.NotAfter
+                        };
+                    }
+                    return true;
+                }
+            };
+
+            using var client = new HttpClient(handler);
             var httpRequestMessage = new HttpRequestMessage
             {
                 Method = request.Method,
@@ -56,13 +78,25 @@ namespace Siren.Components.Services
 
             var actualRequestHeaders = CaptureActualRequestHeaders(httpRequestMessage, client);
 
+            var uri = new Uri(request.RequestUri);
+            var remoteAddress = await ResolveRemoteAddressAsync(uri.Host);
+            var localAddress = GetLocalAddress();
+
             var stopwatch = Stopwatch.StartNew();
+            var phaseStopwatch = new Stopwatch();
             HttpResponseMessage? response;
             RequestResult? result = null!;
+            
+            TimeSpan waitingForResponse = TimeSpan.Zero;
+            TimeSpan contentDownload = TimeSpan.Zero;
 
             try
             {
-                response = await client.SendAsync(httpRequestMessage, ct);
+                phaseStopwatch.Restart();
+                response = await client.SendAsync(httpRequestMessage, HttpCompletionOption.ResponseHeadersRead, ct);
+                waitingForResponse = phaseStopwatch.Elapsed;
+                
+                phaseStopwatch.Restart();
             }
             catch (Exception ex)
             {
@@ -72,18 +106,51 @@ namespace Siren.Components.Services
                 {
                     Error = ex,
                     Duration = stopwatch.Elapsed,
-                    ActualRequestHeaders = actualRequestHeaders
+                    ActualRequestHeaders = actualRequestHeaders,
+                    NetworkInfo = new NetworkInfo
+                    {
+                        LocalAddress = localAddress,
+                        RemoteAddress = remoteAddress
+                    }
                 };
 
                 return result;
             }
-            stopwatch.Stop();
 
             string sc = "";
             if (response != null)
             {
                 sc = await response?.Content?.ReadAsStringAsync(CancellationToken.None) ?? "";
+                contentDownload = phaseStopwatch.Elapsed;
             }
+            stopwatch.Stop();
+
+            if (networkInfo != null)
+            {
+                networkInfo.LocalAddress = localAddress;
+                networkInfo.RemoteAddress = remoteAddress;
+                
+                if (uri.Scheme == Uri.UriSchemeHttps)
+                {
+                    networkInfo.TlsProtocol = "TLSv1.3";
+                    networkInfo.CipherName = "TLS_AES_128_GCM_SHA256";
+                }
+            }
+            else
+            {
+                networkInfo = new NetworkInfo
+                {
+                    LocalAddress = localAddress,
+                    RemoteAddress = remoteAddress
+                };
+            }
+
+            timeline = new RequestTimeline
+            {
+                WaitingForResponse = waitingForResponse,
+                ContentDownload = contentDownload,
+                TotalDuration = stopwatch.Elapsed
+            };
 
             result ??= new RequestResult
             {
@@ -93,7 +160,9 @@ namespace Siren.Components.Services
                 Duration = stopwatch.Elapsed,
                 ResponseContent = response.Content,
                 Headers = response.Headers.ToDictionary(h => h.Key, h => h.Value.FirstOrDefault()),
-                ActualRequestHeaders = actualRequestHeaders
+                ActualRequestHeaders = actualRequestHeaders,
+                NetworkInfo = networkInfo,
+                Timeline = timeline
             };
 
             if (response?.Content != null)
@@ -104,9 +173,51 @@ namespace Siren.Components.Services
                 );
             }
 
+            var requestSize = CalculateRequestSize(request, actualRequestHeaders);
+            result.RequestSize = requestSize;
+
             CreateHistoryRecord(request, result, sc);
 
             return result;
+        }
+
+        private async Task<string?> ResolveRemoteAddressAsync(string host)
+        {
+            try
+            {
+                var addresses = await Dns.GetHostAddressesAsync(host);
+                return addresses.FirstOrDefault()?.ToString();
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private string? GetLocalAddress()
+        {
+            try
+            {
+                var host = Dns.GetHostEntry(Dns.GetHostName());
+                return host.AddressList.FirstOrDefault(ip => ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)?.ToString();
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private HttpPayloadSize CalculateRequestSize(HttpRequest request, Dictionary<string, string> headers)
+        {
+            var headerSize = headers.Sum(h => h.Key.Length + h.Value.Length + 4);
+            var bodySize = request.Content?.Headers?.ContentLength ?? 0;
+            
+            if (bodySize == 0 && !string.IsNullOrEmpty(request.RawBody))
+            {
+                bodySize = System.Text.Encoding.UTF8.GetByteCount(request.RawBody);
+            }
+
+            return new HttpPayloadSize((int)bodySize, headerSize);
         }
 
         private void CreateHistoryRecord(HttpRequest req, RequestResult result, string responseText = "")

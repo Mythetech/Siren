@@ -1,0 +1,121 @@
+@using Siren.Components.Http.Models
+@using Siren.Components.Settings
+@using Siren.Components.Theme
+
+<MudTooltip Arrow="true" Placement="Placement.Bottom">
+    <ChildContent>
+        <div class="siren-metric-chip siren-metric-chip--size">
+            <span>@DisplayText</span>
+        </div>
+    </ChildContent>
+    <TooltipContent>
+        <div class="siren-tooltip-panel siren-tooltip-panel--size">
+            @if (ResponseSize != null)
+            {
+                <div class="siren-size-section">
+                    <div class="siren-size-header">
+                        <div class="siren-size-header-content">
+                            <SirenIcon Icon="@SirenIcons.Response" Color="Color.Success" Size="Size.Small"/>
+                            <span>Response Size</span>
+                        </div>
+                        <span class="siren-size-total">@FormatSize(ResponseSize.Body + ResponseSize.Headers)</span>
+                    </div>
+                    
+                    <div class="siren-size-bar-container">
+                        @{ var responseTotal = ResponseSize.Body + ResponseSize.Headers; }
+                        @if (responseTotal > 0)
+                        {
+                            var bodyPercent = (double)ResponseSize.Body / responseTotal * 100;
+                            var headersPercent = 100 - bodyPercent;
+                            
+                            <div class="siren-size-bar">
+                                <div class="siren-size-bar-segment siren-size-bar-segment--body" 
+                                     style="width: @(bodyPercent.ToString("F1"))%;"
+                                     title="Body: @FormatSize(ResponseSize.Body)"></div>
+                                <div class="siren-size-bar-segment siren-size-bar-segment--headers" 
+                                     style="width: @(headersPercent.ToString("F1"))%;"
+                                     title="Headers: @FormatSize(ResponseSize.Headers)"></div>
+                            </div>
+                        }
+                    </div>
+                    
+                    <div class="siren-size-breakdown">
+                        <div class="siren-size-row">
+                            <div class="siren-size-indicator siren-size-indicator--body"></div>
+                            <span class="siren-size-label">Body</span>
+                            <span class="siren-size-value">@FormatSize(ResponseSize.Body)</span>
+                        </div>
+                        <div class="siren-size-row">
+                            <div class="siren-size-indicator siren-size-indicator--headers"></div>
+                            <span class="siren-size-label">Headers</span>
+                            <span class="siren-size-value">@FormatSize(ResponseSize.Headers)</span>
+                        </div>
+                    </div>
+                </div>
+            }
+            
+            @if (RequestSize != null)
+            {
+                <div class="siren-size-section @(ResponseSize != null ? "siren-size-section--bordered" : "")">
+                    <div class="siren-size-header">
+                        <div class="siren-size-header-content">
+                            <SirenIcon Icon="@SirenIcons.Request" Color="Color.Info" Size="Size.Small"/>
+                            <span>Request Size</span>
+                        </div>
+                        <span class="siren-size-total siren-size-total--request">@FormatSize(RequestSize.Body + RequestSize.Headers)</span>
+                    </div>
+                    
+                    <div class="siren-size-bar-container">
+                        @{ var requestTotal = RequestSize.Body + RequestSize.Headers; }
+                        @if (requestTotal > 0)
+                        {
+                            var bodyPercent = (double)RequestSize.Body / requestTotal * 100;
+                            var headersPercent = 100 - bodyPercent;
+                            
+                            <div class="siren-size-bar siren-size-bar--request">
+                                <div class="siren-size-bar-segment siren-size-bar-segment--request-body" 
+                                     style="width: @(bodyPercent.ToString("F1"))%;"
+                                     title="Body: @FormatSize(RequestSize.Body)"></div>
+                                <div class="siren-size-bar-segment siren-size-bar-segment--request-headers" 
+                                     style="width: @(headersPercent.ToString("F1"))%;"
+                                     title="Headers: @FormatSize(RequestSize.Headers)"></div>
+                            </div>
+                        }
+                    </div>
+                    
+                    <div class="siren-size-breakdown">
+                        <div class="siren-size-row">
+                            <div class="siren-size-indicator siren-size-indicator--request-body"></div>
+                            <span class="siren-size-label">Body</span>
+                            <span class="siren-size-value">@FormatSize(RequestSize.Body)</span>
+                        </div>
+                        <div class="siren-size-row">
+                            <div class="siren-size-indicator siren-size-indicator--request-headers"></div>
+                            <span class="siren-size-label">Headers</span>
+                            <span class="siren-size-value">@FormatSize(RequestSize.Headers)</span>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </TooltipContent>
+</MudTooltip>
+
+@code {
+    [Parameter]
+    public HttpPayloadSize? RequestSize { get; set; }
+
+    [Parameter]
+    public HttpPayloadSize? ResponseSize { get; set; }
+
+    [Parameter]
+    public string DisplayText { get; set; } = "";
+
+    [Inject]
+    SettingsState Settings { get; set; } = default!;
+
+    private string FormatSize(long bytes)
+    {
+        return FormattingUtils.FormatSize(bytes, Settings.SizeDisplay);
+    }
+}

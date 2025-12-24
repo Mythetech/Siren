@@ -1,7 +1,20 @@
 ﻿@using System.Net
 
-<MudTooltip Text="@((int)StatusCode == 0 ? "Cancelled" : StatusCode.ToString())">
-    <SirenChip T="string" Class="@(!IsDarkMode ? "mud-chip-content-light" : "")" Value="@(((int)StatusCode).ToString())" Color="GetColor()" />
+<MudTooltip Arrow="true" Placement="Placement.Bottom">
+    <ChildContent>
+        <div class="siren-metric-chip @GetChipClass()">
+            <span class="siren-status-code">@GetStatusCodeText()</span>
+        </div>
+    </ChildContent>
+    <TooltipContent>
+        <div class="siren-tooltip-panel siren-tooltip-panel--status">
+            <div class="siren-status-detail">
+                <span class="siren-status-badge @GetBadgeClass()">@((int)StatusCode)</span>
+                <span class="siren-status-name">@GetStatusName()</span>
+            </div>
+            <div class="siren-status-category">@GetCategoryDescription()</div>
+        </div>
+    </TooltipContent>
 </MudTooltip>
 
 @code {
@@ -11,17 +24,59 @@
     [Parameter]
     public HttpStatusCode StatusCode { get; set; }
 
-    public Color GetColor()
+    private string GetStatusCodeText()
     {
-        var statusCode = (int)StatusCode;
-        return statusCode switch
+        var code = (int)StatusCode;
+        return code == 0 ? "---" : code.ToString();
+    }
+
+    private string GetStatusName()
+    {
+        var code = (int)StatusCode;
+        if (code == 0) return "Cancelled";
+        return StatusCode.ToString().Replace("([a-z])([A-Z])", "$1 $2");
+    }
+
+    private string GetChipClass()
+    {
+        var code = (int)StatusCode;
+        return code switch
         {
-            var s when s >= 200 && s < 300 => Color.Success, // 2xx status codes are green
-            var s when s >= 300 && s < 400 => Color.Info, // 3xx status codes are blue
-            var s when s >= 400 && s < 500 => Color.Warning, // 4xx status codes are yellow
-            var s when s >= 500 && s < 600 => Color.Error, // 5xx status codes are red
-            _ => Color.Default // Other status codes use the default color
+            0 => "siren-metric-chip--status-cancelled",
+            >= 200 and < 300 => "siren-metric-chip--status-success",
+            >= 300 and < 400 => "siren-metric-chip--status-redirect",
+            >= 400 and < 500 => "siren-metric-chip--status-client-error",
+            >= 500 => "siren-metric-chip--status-server-error",
+            _ => "siren-metric-chip--status-default"
+        };
+    }
+
+    private string GetBadgeClass()
+    {
+        var code = (int)StatusCode;
+        return code switch
+        {
+            0 => "siren-status-badge--cancelled",
+            >= 200 and < 300 => "siren-status-badge--success",
+            >= 300 and < 400 => "siren-status-badge--redirect",
+            >= 400 and < 500 => "siren-status-badge--client-error",
+            >= 500 => "siren-status-badge--server-error",
+            _ => "siren-status-badge--default"
+        };
+    }
+
+    private string GetCategoryDescription()
+    {
+        var code = (int)StatusCode;
+        return code switch
+        {
+            0 => "Request was cancelled",
+            >= 100 and < 200 => "Informational response",
+            >= 200 and < 300 => "Successful response",
+            >= 300 and < 400 => "Redirection message",
+            >= 400 and < 500 => "Client error response",
+            >= 500 => "Server error response",
+            _ => "Unknown status"
         };
     }
 }
-

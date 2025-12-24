@@ -27,6 +27,10 @@ namespace Siren.Components.Http.Models
 
         public string ResponseText { get; set; } = "";
 
+        public NetworkInfo? NetworkInfo { get; set; }
+
+        public RequestTimeline? Timeline { get; set; }
+
         public RequestResult Copy()
         {
             return new RequestResult
@@ -41,11 +45,35 @@ namespace Siren.Components.Http.Models
                 Cookies = Cookies != null ? [..Cookies] : null,
                 ResponseContent = ResponseContent,
                 Error = Error,
-                ResponseText = ResponseText
+                ResponseText = ResponseText,
+                NetworkInfo = NetworkInfo,
+                Timeline = Timeline
             };
         }
     }
 
     public record HttpPayloadSize(int Body, int Headers);
+
+    public class NetworkInfo
+    {
+        public string? LocalAddress { get; set; }
+        public string? RemoteAddress { get; set; }
+        public string? TlsProtocol { get; set; }
+        public string? CipherName { get; set; }
+        public string? CertificateCommonName { get; set; }
+        public string? CertificateIssuer { get; set; }
+        public DateTimeOffset? CertificateValidUntil { get; set; }
+    }
+
+    public class RequestTimeline
+    {
+        public TimeSpan? DnsLookup { get; set; }
+        public TimeSpan? TcpConnection { get; set; }
+        public TimeSpan? TlsHandshake { get; set; }
+        public TimeSpan? RequestSent { get; set; }
+        public TimeSpan? WaitingForResponse { get; set; }
+        public TimeSpan? ContentDownload { get; set; }
+        public TimeSpan TotalDuration { get; set; }
+    }
 }
 
