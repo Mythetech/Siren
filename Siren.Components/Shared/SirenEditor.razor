@@ -1,4 +1,4 @@
-﻿<StandaloneCodeEditor @ref="@_editor" Id="@EditorId" ConstructionOptions="EditorConstructionOptions" />
+﻿<StandaloneCodeEditor @ref="@_editor" Id="@EditorId" ConstructionOptions="EditorConstructionOptions" OnDidInit="OnDidInit" />
 
 
 @code {
@@ -10,6 +10,8 @@
 
     [Parameter]
     public bool ReadOnly { get; set; } = true;
+
+    [Parameter] public EventCallback OnDidInit { get; set; }
 
     private StandaloneCodeEditor _editor;
 

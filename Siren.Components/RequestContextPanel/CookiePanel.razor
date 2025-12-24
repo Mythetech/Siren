@@ -2,12 +2,15 @@
 @using Siren.Components.Http
 @using Siren.Components.Http.Models
 @using Siren.Components.Services
+@using System.Text.Json
+@using System.Linq
 @using Orientation = Microsoft.FluentUI.AspNetCore.Components.Orientation
+@implements IDisposable
 
 <SirenStack Class="w-100 h-100">
     <SirenSplitter Orientation="Orientation.Vertical" Class="w-100">
         <Panel1>
-        <MudPaper Elevation="0" Height="50%" Width="100%" Class="p-1">
+        <MudPaper Elevation="0" Height="100%" Width="100%" Class="p-1">
             <SirenText Typo="Typo.body1">Request Cookies</SirenText>
             <SirenSpacer/>
             <SirenStack Spacing="1">
@@ -21,14 +24,11 @@
         </MudPaper>
         </Panel1>
         <Panel2>
-            <MudPaper class="overflow-y-scroll p-1" Elevation="0" Height="50%" Width="100%">
-                <SirenText Typo="Typo.body1">Response Cookies</SirenText>
-                @if (NetworkRequest?.Response?.Cookies != null)
-                {
-                    <pre>
-                    @(System.Text.Json.JsonSerializer.Serialize(NetworkRequest.Response.Cookies, new System.Text.Json.JsonSerializerOptions() { WriteIndented = true }));
-                </pre>
-                }
+            <MudPaper Elevation="0" Height="100%" Width="100%" Class="d-flex flex-column">
+                <SirenText Typo="Typo.body1" Class="p-1">Response Cookies</SirenText>
+                <div class="flex-grow-1" style="min-height: 0;">
+                    <SirenEditor @ref="_cookiesEditor" EditorId="siren-cookie-panel-editor" OnDidInit="UpdateCookiesEditor" />
+                </div>
             </MudPaper>
         </Panel2>
     </SirenSplitter>
@@ -41,12 +41,79 @@
 
     [Inject] public ICookieService CookieService { get; set; } = default!;
 
+    [Inject] public SirenAppState AppState { get; set; } = default!;
+
+    private SirenEditor _cookiesEditor { get; set; } = default!;
+
     private List<Cookie> _cookies = new();
 
-    protected override Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
+        AppState.OnActiveNetworkRequestChanged += HandleActiveNetworkRequestChanged;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await UpdateCookiesEditor();
+        await base.OnInitializedAsync();
+    }
+
+    public void Dispose()
+    {
+        AppState.OnActiveNetworkRequestChanged -= HandleActiveNetworkRequestChanged;
+    }
+
+    private async void HandleActiveNetworkRequestChanged(SirenNetworkRequest? request)
+    {
+        await InvokeAsync(async () =>
+        {
+            await UpdateCookiesEditor();
+            StateHasChanged();
+        });
+    }
+
+    private async Task UpdateCookiesEditor()
+    {
+        await Task.Yield();
         
-        return base.OnInitializedAsync();
+        if (_cookiesEditor?.Editor == null)
+            return;
+
+        try
+        {
+            var cookiesJson = GetCookiesJson();
+            await _cookiesEditor.Editor.SetValue(cookiesJson);
+        }
+        catch
+        {
+        }
+    }
+
+    private string GetCookiesJson()
+    {
+        var cookies = AppState?.Active?.Response?.Cookies ?? NetworkRequest?.Response?.Cookies;
+        
+        if (cookies == null || !cookies.Any())
+        {
+            return "[]";
+        }
+
+        var cookieData = cookies.Select(c => new
+        {
+            Name = c.Name,
+            Value = c.Value,
+            Domain = c.Domain,
+            Path = c.Path,
+            Expires = c.Expires != DateTime.MinValue ? c.Expires.ToString("O") : null,
+            Secure = c.Secure,
+            HttpOnly = c.HttpOnly,
+            SameSite = c.Path.Contains(c.Domain)
+        }).ToList();
+
+        return JsonSerializer.Serialize(cookieData, new JsonSerializerOptions
+        {
+            WriteIndented = true
+        });
     }
 
 }
