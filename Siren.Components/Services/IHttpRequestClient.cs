@@ -39,6 +39,24 @@ namespace Siren.Components.Services
             NetworkInfo? networkInfo = null;
             RequestTimeline? timeline = null;
             
+            Uri? uri = null;
+            string? normalizedUri = null;
+            
+            try
+            {
+                normalizedUri = NormalizeUri(request.RequestUri);
+                uri = new Uri(normalizedUri);
+            }
+            catch (Exception ex)
+            {
+                return new RequestResult
+                {
+                    Error = new UriFormatException($"Invalid URL: {request.RequestUri}. Please include a protocol (e.g., https://)", ex),
+                    Duration = TimeSpan.Zero,
+                    ResponseText = $"Invalid URL: {request.RequestUri}"
+                };
+            }
+            
             var handler = new HttpClientHandler
             {
                 ServerCertificateCustomValidationCallback = (message, cert, chain, errors) =>
@@ -60,7 +78,7 @@ namespace Siren.Components.Services
             var httpRequestMessage = new HttpRequestMessage
             {
                 Method = request.Method,
-                RequestUri = new Uri(request.RequestUri),
+                RequestUri = uri,
                 Content = request.Content,
             };
 
@@ -78,7 +96,6 @@ namespace Siren.Components.Services
 
             var actualRequestHeaders = CaptureActualRequestHeaders(httpRequestMessage, client);
 
-            var uri = new Uri(request.RequestUri);
             var remoteAddress = await ResolveRemoteAddressAsync(uri.Host);
             var localAddress = GetLocalAddress();
 
@@ -354,6 +371,32 @@ namespace Siren.Components.Services
             }
 
             return headers;
+        }
+
+        private string NormalizeUri(string requestUri)
+        {
+            if (string.IsNullOrWhiteSpace(requestUri))
+            {
+                throw new UriFormatException("URI cannot be null or empty");
+            }
+
+            var trimmed = requestUri.Trim();
+            
+            if (Uri.TryCreate(trimmed, UriKind.Absolute, out _))
+            {
+                return trimmed;
+            }
+
+            if (!trimmed.Contains("://"))
+            {
+                var normalized = $"https://{trimmed}";
+                if (Uri.TryCreate(normalized, UriKind.Absolute, out _))
+                {
+                    return normalized;
+                }
+            }
+
+            throw new UriFormatException($"Invalid URI format: {trimmed}");
         }
     }
 }

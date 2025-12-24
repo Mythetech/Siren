@@ -16,6 +16,7 @@
 @using System.Text.Encodings
 @using Microsoft.JSInterop
 @using MudBlazor
+@using System.Net.Sockets
 
 <MudStack Row="true" Class="w-100 h-100 ml-1" Spacing="0">
     <FluentMultiSplitter BarSize="1" @ref="_primarySplitter" OnResize="@SplitterResized" OnCollapse="@((args) => HandleCollapse(args))" OnExpand="HandleExpand" Height="100%" Width="@(sidePanelClosed ? "97%" :"100%")" Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Horizontal" Style="overflow-x:clip;">
@@ -356,6 +357,31 @@
         var r = await HttpRequestClient.SendHttpRequestAsync(req, _cts.Token);
 
         _cts = default;
+
+        if (r.Error != null)
+        {
+            string errorMessage;
+            if (r.Error is UriFormatException)
+            {
+                errorMessage = "Invalid URL";
+            }
+            else if (r.Error is System.Net.Http.HttpRequestException || 
+                     r.Error is System.Net.Sockets.SocketException)
+            {
+                errorMessage = "Invalid URL or hostname could not be resolved";
+            }
+            else
+            {
+                errorMessage = r.Error.Message;
+            }
+            
+            Snackbar.AddSirenError(errorMessage);
+            await _requestPanel.FocusUriInputAsync();
+            
+            _loading = false;
+            StateHasChanged();
+            return;
+        }
 
         _responseText = r.ResponseText;
 
