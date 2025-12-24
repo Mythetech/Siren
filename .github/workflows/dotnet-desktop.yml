@@ -137,6 +137,7 @@ jobs:
       uses: azure/login@v2
       with:
         creds: ${{ steps.azure_creds.outputs.creds }}
+        allow-no-subscriptions: true
     - name: Publish
       run: dotnet publish Siren/Siren.csproj -c Release -r ${{ matrix.rid }} --self-contained -p:PublishSingleFile=true -p:PublishTrimmed=false -o publish/${{ matrix.rid }}
         
