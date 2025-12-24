@@ -20,8 +20,7 @@
         }
         <SirenChip T="string"
                    Color="Color.Info">@(Settings.TimeDisplay == TimeDisplayOptions.Milliseconds ? $"{AppState?.Active?.Response?.Duration.TotalMilliseconds}ms" : $"{AppState?.Active?.Response?.Duration.TotalMilliseconds / 1000.00}s")</SirenChip>
-        <SirenChip T="string" Color="Color.Inherit"
-                   Style="color:#2f4f4f;background-color:#2f4f4f66">@($"{AppState?.Active?.Response?.ResponseSize?.Body + AppState?.Active?.Response?.ResponseSize?.Headers}")B
+        <SirenChip T="string" Color="Color.Info">@($"{AppState?.Active?.Response?.ResponseSize?.Body + AppState?.Active?.Response?.ResponseSize?.Headers}")B
         </SirenChip>
         @if (_currentViewType == ResponseViewType.Json)
         {
