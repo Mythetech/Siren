@@ -104,12 +104,35 @@ jobs:
       run: echo "VERSION=0.0.${{ github.run_number }}" >> $GITHUB_OUTPUT
       shell: bash
     - name: Setup GitHub Package Authentication
-      run: dotnet nuget add source --username USERNAME --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/mythetech/index.json"       
+      run: dotnet nuget add source --username USERNAME --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/mythetech/index.json"
+    - name: Create Azure Trusted Signing Metadata
+      if: matrix.os == 'windows-latest'
+      run: |
+        $metadata = @{
+          Endpoint = "${{ secrets.AZURE_TRUSTED_SIGNING_ENDPOINT }}"
+          CodeSigningAccountName = "${{ secrets.AZURE_TRUSTED_SIGNING_ACCOUNT_NAME }}"
+          CertificateProfileName = "${{ secrets.AZURE_TRUSTED_SIGNING_CERTIFICATE_PROFILE_NAME }}"
+        }
+        $metadata | ConvertTo-Json | Out-File -FilePath azure-signing-metadata.json -Encoding utf8
+      shell: pwsh
+    - name: Authenticate with Azure
+      if: matrix.os == 'windows-latest'
+      uses: azure/login@v2
+      with:
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
     - name: Publish
       run: dotnet publish Siren/Siren.csproj -c Release -r ${{ matrix.rid }} --self-contained -p:PublishSingleFile=true -p:PublishTrimmed=false -o publish/${{ matrix.rid }}
         
     - name: Create Velopack Release
-      run: vpk pack -u "Siren" -v ${{ steps.get_version.outputs.VERSION }} -o "releases/${{ matrix.platform }}" -p "publish/${{ matrix.rid }}" --icon ${{ matrix.icon }}
+      run: |
+        if [ "${{ matrix.os }}" == "windows-latest" ]; then
+          vpk pack -u "Mythetech.Siren" -v ${{ steps.get_version.outputs.VERSION }} -o "releases/${{ matrix.platform }}" -p "publish/${{ matrix.rid }}" --icon ${{ matrix.icon }} --azureTrustedSignFile azure-signing-metadata.json
+        else
+          vpk pack -u "Mythetech.Siren" -v ${{ steps.get_version.outputs.VERSION }} -o "releases/${{ matrix.platform }}" -p "publish/${{ matrix.rid }}" --icon ${{ matrix.icon }}
+        fi
+      shell: bash
       
     - name: Upload Release Artifacts
       uses: actions/upload-artifact@v4
