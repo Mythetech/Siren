@@ -1,21 +1,68 @@
 ﻿@using MudBlazor
 
-<MudSelect Dense="true" @ref="HttpSelector" Clearable="true" Required="true" T="string" Label="Method" Value="selectedMethod" ValueChanged="@(async (s) => { selectedMethod = s; await SelectedMethodChanged.InvokeAsync(s); })" Style="@($"color:{GetColor(selectedMethod)};width:140px;")">
+<MudSelect Dense="true" 
+           @ref="HttpSelector" 
+           Clearable="true" 
+           Required="@(!AllowNone)" 
+           T="string" 
+           Label="@Label" 
+           Placeholder="@Placeholder"
+           Value="selectedMethod" 
+           ValueChanged="@(async (s) => { selectedMethod = s; await SelectedMethodChanged.InvokeAsync(s); })" 
+           Style="@($"color:{GetColor(selectedMethod)};width:140px;")">
+    @if (AllowNone)
+    {
+        <MudSelectItem @onmouseenter="@(() => { _active = ""; StateHasChanged(); })"
+                       @onmouseleave="@(() => { if (_active == "") { _active = ""; StateHasChanged(); } })"
+                       Style="@($"border-left:solid 4px {GetColor("")};background-color:{GetBackgroundColor("", IsFocused("") ? 0.2 : 0.1)};color:{GetColor("")}")" 
+                       Value="@((string?)null)">None</MudSelectItem>
+    }
     @foreach (var method in methods)
     {
         <MudSelectItem @onmouseenter="@(() => { _active = method; StateHasChanged(); })"
                        @onmouseleave="@(() => { if (_active.Equals(method, StringComparison.OrdinalIgnoreCase)) { _active = ""; StateHasChanged(); } })"
-                       Style="@($"border-left:solid 4px {GetColor(method)};background-color:{GetBackgroundColor(method, IsFocused(method) ? 0.2 : 0.1)};color:{GetColor(method)}")" Value="@method">@method</MudSelectItem>
-                }
+                       Style="@($"border-left:solid 4px {GetColor(method)};background-color:{GetBackgroundColor(method, IsFocused(method) ? 0.2 : 0.1)};color:{GetColor(method)}")" 
+                       Value="@method">@method</MudSelectItem>
+    }
 </MudSelect>
 
 @code {
-    string selectedMethod;
+    string? selectedMethod;
     List<string> methods = new List<string> { "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD" };
 
-    public string SelectedMethod { get => selectedMethod; }
+    [Parameter]
+    public bool AllowNone { get; set; } = false;
 
-    public async Task SetMethod(string method)
+    [Parameter]
+    public string Label { get; set; } = "Method";
+
+    [Parameter]
+    public string Placeholder { get; set; } = "";
+
+    [Parameter]
+    public string? SelectedMethod 
+    { 
+        get => selectedMethod;
+        set
+        {
+            if (selectedMethod != value)
+            {
+                selectedMethod = value;
+                StateHasChanged();
+            }
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (selectedMethod != SelectedMethod)
+        {
+            selectedMethod = SelectedMethod;
+        }
+        base.OnParametersSet();
+    }
+
+    public async Task SetMethod(string? method)
     {
         selectedMethod = method;
         await SelectedMethodChanged.InvokeAsync(selectedMethod);
@@ -25,11 +72,11 @@
     public MudSelect<string> HttpSelector { get; set; }
 
     [Parameter]
-    public EventCallback<string> SelectedMethodChanged { get; set; }
+    public EventCallback<string?> SelectedMethodChanged { get; set; }
 
     private string _active = "";
 
-    string GetColor(string method)
+    string GetColor(string? method)
     {
         if (string.IsNullOrWhiteSpace(method))
             return "var(--mud-palette-surface)";
@@ -47,14 +94,25 @@
         };
     }
 
-    bool IsFocused(string method)
+    bool IsFocused(string? method)
     {
-        return method.Equals(_active, StringComparison.OrdinalIgnoreCase);
+        if (string.IsNullOrWhiteSpace(method) && string.IsNullOrWhiteSpace(_active))
+            return true;
+        return method?.Equals(_active, StringComparison.OrdinalIgnoreCase) ?? false;
     }
 
-    string GetBackgroundColor(string method, double opacity = 0.1)
+    string GetBackgroundColor(string? method, double opacity = 0.1)
     {
-        var hexColor = GetColor(method).TrimStart('#');
+        var color = GetColor(method);
+        if (string.IsNullOrWhiteSpace(color) || color.IndexOf("#") < 0)
+        {
+            return "rgba(66, 66, 66, 0.1)";
+        }
+
+        var hexColor = color.TrimStart('#');
+        if (string.IsNullOrWhiteSpace(hexColor) || hexColor.Length < 6)
+            return "rgba(66, 66, 66, 0.1)";
+            
         var r = int.Parse(hexColor.Substring(0, 2), System.Globalization.NumberStyles.HexNumber);
         var g = int.Parse(hexColor.Substring(2, 2), System.Globalization.NumberStyles.HexNumber);
         var b = int.Parse(hexColor.Substring(4, 2), System.Globalization.NumberStyles.HexNumber);

@@ -1,6 +1,7 @@
 ﻿@using Siren.Components.Services
 @using Siren.Components.Settings.Controls
 @using Siren.Components.Infrastructure.Keyboard
+@using Siren.Components.Http
 <MudDialog Class="w-75 h-75">
     <TitleContent>
         <SirenStack Row="true">
@@ -28,6 +29,15 @@
                 <StringSettingItem Text="Default User-Agent"
                                    Label="Sent with requests unless a custom User-Agent header is specified"
                                    @bind-Value="@Settings.DefaultUserAgent" />
+
+                <BaseSettingItem Text="Default HTTP Method"
+                                 Label="HTTP method to use when creating new requests">
+                    <SimpleHttpRequestMethodSelector AllowNone="true"
+                                                     Label=""
+                                                     Placeholder="Select default method..."
+                                                     SelectedMethod="@Settings.DefaultHttpMethod"
+                                                     SelectedMethodChanged="@OnDefaultHttpMethodChanged" />
+                </BaseSettingItem>
             </SettingsSection>
 
             <SettingsSection Icon="@SirenIcons.Response" Title="Response">
@@ -97,7 +107,7 @@
     {
         if (_snapshot != null)
         {
-            Settings.RestoreFromSnapshot(_snapshot);
+            Settings.RestoreFromSnapshot(_snapshot, notify: false);
         }
         MudDialog.Close(DialogResult.Cancel);
     }
@@ -146,6 +156,11 @@
     private void OnSizeDisplayChanged(SizeDisplayOptions value)
     {
         Settings.SizeDisplay = value;
+    }
+
+    private void OnDefaultHttpMethodChanged(string? value)
+    {
+        Settings.DefaultHttpMethod = value;
     }
 
     protected string DisplayFileSize(long size)

@@ -1,5 +1,6 @@
 ﻿using System;
 using Siren.Components.Services;
+using Siren.Components.Settings;
 
 namespace Siren.Infrastructure
 {
@@ -42,6 +43,16 @@ namespace Siren.Infrastructure
             }
 
             return 0;
+        }
+
+        public SettingsStateSnapshot? LoadSettings()
+        {
+            return SettingsRepository.LoadSettings();
+        }
+
+        public void SaveSettings(SettingsStateSnapshot snapshot)
+        {
+            SettingsRepository.SaveSettings(snapshot);
         }
     }
 }
