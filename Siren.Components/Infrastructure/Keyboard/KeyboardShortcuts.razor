@@ -15,6 +15,9 @@
     [Parameter]
     public EventCallback OnFocusUri { get; set; }
 
+    [Parameter]
+    public EventCallback OnOpenSettings { get; set; }
+
     private Dictionary<FluentKeyCode, EventCallback> _shortcutHandlers = new();
 
     protected override void OnInitialized()
@@ -28,6 +31,7 @@
                 "Run active request" => OnRunRequest,
                 "New request tab" => OnNewTab,
                 "Focus URI input" => OnFocusUri,
+                "Open settings" => OnOpenSettings,
                 _ => default
             };
         }

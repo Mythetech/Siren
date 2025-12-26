@@ -46,6 +46,7 @@ namespace Siren.Components.Infrastructure.Keyboard
                 KeyCode.Enter => "Enter",
                 KeyCode.KeyT => "T",
                 KeyCode.KeyU => "U",
+                KeyCode.KeyS => "S",
                 _ => key.ToString().Replace("Key", "")
             };
         }

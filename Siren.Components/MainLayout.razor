@@ -10,6 +10,10 @@
 @using Siren.Components.Shared.Notifications
 @using Siren.Components.Shared.Dialogs.Consumers
 @using Siren.Components.Infrastructure
+@using Siren.Components.Infrastructure.Keyboard
+@using Siren.Components.Settings
+@using Siren.Components.AppContextPanel
+@using MouseEvent = MudBlazor.MouseEvent
 @implements IDisposable
 
 <MudThemeProvider @ref="_theme" @bind-IsDarkMode="@AppState.IsDarkMode" Theme="@Theme" />
@@ -24,7 +28,16 @@
 <MudLayout>
     <MudAppBar Class="pl-4" Style="border-bottom-left-radius:3em;box-shadow:1px 1px 4px 0px var(--mud-palette-primary);border-bottom-right-radius:1.5em;">
         <SirenStack Row="true" Class="w-100" AlignItems="@AlignItems.Center" Spacing="6">
-            <MudText Class="app-header-font" Typo="Typo.h5">Siren</MudText>
+            <MudMenu ActivationEvent="MouseEvent.MouseOver" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft"
+                Dense="true" ListClass="pa-1">
+                <ActivatorContent>
+                    <MudText Class="app-header-font" Typo="Typo.h5" Style="cursor: pointer;">Siren</MudText>
+                </ActivatorContent>
+                <ChildContent>
+                    <MudMenuItem Class="rounded" Icon="@SirenIcons.About" OnClick="OpenAboutSiren">About</MudMenuItem>
+                    <MudMenuItem Class="rounded" Icon="@SirenIcons.Settings" OnClick="OpenSettingsDialog">Settings</MudMenuItem>
+                </ChildContent>
+            </MudMenu>
             <MenuBar />
             <SirenSpacer />
             <HttpRequestTabs />
@@ -42,6 +55,7 @@
             @Body
         </MudContainer>
     </MudMainContent>
+    <KeyboardShortcuts OnOpenSettings="OpenSettingsDialog" />
 </MudLayout>
 
 
@@ -51,6 +65,9 @@
 
     [Inject]
     protected Microsoft.JSInterop.IJSRuntime JS { get; set; } = default!;
+
+    [Inject]
+    protected IDialogService DialogService { get; set; } = default!;
 
     private Func<string> GetWidth => () => AppState.SideBarOpen ? "74vw" : "calc(100vw - 52px)";
 
@@ -93,6 +110,32 @@
     {
         await BlazorMonaco.Editor.Global.SetTheme(JS, isDarkMode ? "vs-dark" : "vs");
         StateHasChanged();
+    }
+
+    protected async Task OpenSettingsDialog()
+    {
+        var options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            BackgroundClass = "siren-dialog",
+            MaxWidth = MaxWidth.Medium
+        };
+
+        var dialog = await DialogService.ShowAsync<SettingsDialog>("Settings", options);
+        var result = await dialog.Result;
+    }
+
+    protected async Task OpenAboutSiren()
+    {
+        var options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            BackgroundClass = "siren-dialog",
+            MaxWidth = MaxWidth.Small
+        };
+
+        var dialog = await DialogService.ShowAsync<AboutSiren>("About", options);
+        var result = await dialog.Result;
     }
 
     public void Dispose()

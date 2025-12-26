@@ -83,7 +83,6 @@
                     }
                 </MudMenu>
             </MudMenu>
-            <MudMenuItem Class="rounded" Icon="@SirenIcons.Settings" OnClick="HandleOpenSettings">Settings</MudMenuItem>
         </ChildContent>
     </MudMenu>
 </SirenStack>
@@ -381,17 +380,5 @@
                 opts.SuccessIcon = SirenIcons.Variables;
             });
         }
-    }
-
-    private async Task HandleOpenSettings()
-    {
-        var options = new DialogOptions
-        {
-            CloseOnEscapeKey = true,
-            BackgroundClass = "siren-dialog",
-            MaxWidth =
-        MaxWidth.Medium
-        };
-        await DialogService.ShowAsync<SettingsDialog>("Settings", options);
     }
 }
