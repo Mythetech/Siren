@@ -165,58 +165,29 @@ jobs:
       if: matrix.os == 'macos-latest'
       run: |
         vpk pack -u "Siren" -v ${{ steps.get_version.outputs.VERSION }} -o "releases/${{ matrix.platform }}" -p "publish/${{ matrix.rid }}" --icon ${{ matrix.icon }}
-    - name: Sign macOS Application
+    - name: List release contents
       if: matrix.os == 'macos-latest'
       run: |
-        APP_PATH=$(find "releases/${{ matrix.platform }}" -name "*.app" -type d | head -n 1)
-        if [ -z "$APP_PATH" ]; then
-          echo "Error: No .app bundle found"
-          exit 1
-        fi
-        echo "Signing $APP_PATH"
-        
-        # Sign all executables and dylibs individually (not directories)
-        find "$APP_PATH" -type f \( -name "*.dylib" -o -perm +111 \) | while read file; do
-          if file "$file" | grep -q "Mach-O"; then
-            echo "Signing: $file"
-            codesign -s "${{ secrets.MACOS_SIGN_APP_IDENTITY }}" -f --timestamp --options runtime --keychain $RUNNER_TEMP/app-signing.keychain-db "$file" || true
-          fi
-        done
-        
-        # Sign the main bundle (without --deep)
-        codesign -s "${{ secrets.MACOS_SIGN_APP_IDENTITY }}" -f --timestamp --options runtime --keychain $RUNNER_TEMP/app-signing.keychain-db "$APP_PATH"
-        
-        # Verify
-        codesign -v "$APP_PATH"
+        echo "Contents of releases/${{ matrix.platform }}:"
+        ls -la "releases/${{ matrix.platform }}"
     - name: Sign macOS Installer Package
       if: matrix.os == 'macos-latest'
       run: |
         PKG_PATH=$(find "releases/${{ matrix.platform }}" -name "*.pkg" -type f | head -n 1)
-        if [ -n "$PKG_PATH" ]; then
-          echo "Signing installer: $PKG_PATH"
-          productsign --sign "${{ secrets.MACOS_SIGN_INSTALL_IDENTITY }}" --keychain $RUNNER_TEMP/app-signing.keychain-db "$PKG_PATH" "${PKG_PATH}.signed"
-          mv "${PKG_PATH}.signed" "$PKG_PATH"
+        if [ -z "$PKG_PATH" ]; then
+          echo "Error: No .pkg found"
+          exit 1
         fi
-    - name: Notarize macOS Application
+        echo "Signing installer: $PKG_PATH"
+        productsign --sign "${{ secrets.MACOS_SIGN_INSTALL_IDENTITY }}" --keychain $RUNNER_TEMP/app-signing.keychain-db "$PKG_PATH" "${PKG_PATH}.signed"
+        mv "${PKG_PATH}.signed" "$PKG_PATH"
+    - name: Notarize macOS Installer
       if: matrix.os == 'macos-latest'
       run: |
-        # Notarize the pkg if it exists, otherwise the app
         PKG_PATH=$(find "releases/${{ matrix.platform }}" -name "*.pkg" -type f | head -n 1)
-        if [ -n "$PKG_PATH" ]; then
-          echo "Notarizing: $PKG_PATH"
-          xcrun notarytool submit "$PKG_PATH" --keychain-profile "velopack-profile" --keychain $RUNNER_TEMP/app-signing.keychain-db --wait
-          xcrun stapler staple "$PKG_PATH"
-        else
-          APP_PATH=$(find "releases/${{ matrix.platform }}" -name "*.app" -type d | head -n 1)
-          if [ -n "$APP_PATH" ]; then
-            # Zip for notarization
-            ditto -c -k --keepParent "$APP_PATH" "${APP_PATH}.zip"
-            echo "Notarizing: ${APP_PATH}.zip"
-            xcrun notarytool submit "${APP_PATH}.zip" --keychain-profile "velopack-profile" --keychain $RUNNER_TEMP/app-signing.keychain-db --wait
-            xcrun stapler staple "$APP_PATH"
-            rm "${APP_PATH}.zip"
-          fi
-        fi
+        echo "Notarizing: $PKG_PATH"
+        xcrun notarytool submit "$PKG_PATH" --keychain-profile "velopack-profile" --keychain $RUNNER_TEMP/app-signing.keychain-db --wait
+        xcrun stapler staple "$PKG_PATH"
     - name: Create Velopack Release
       if: matrix.os == 'ubuntu-latest'
       run: vpk pack -u "Siren" -v ${{ steps.get_version.outputs.VERSION }} -o "releases/${{ matrix.platform }}" -p "publish/${{ matrix.rid }}" --icon ${{ matrix.icon }}
