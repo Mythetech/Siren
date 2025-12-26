@@ -22,6 +22,11 @@ namespace Siren.Components.Infrastructure.Keyboard
                     Description: "Focus URI input",
                     Key: KeyCode.KeyU,
                     RequiresCtrl: true
+                ),
+                new KeyboardShortcut(
+                    Description: "Open settings",
+                    Key: KeyCode.KeyS,
+                    RequiresCtrl: true
                 )
             }.AsReadOnly();
         }
