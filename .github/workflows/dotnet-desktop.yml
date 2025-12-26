@@ -1,40 +1,10 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-
-# This workflow will build, test, sign and package a WPF or Windows Forms desktop application
-# built on .NET Core.
-# To learn how to migrate your existing application to .NET Core,
-# refer to https://docs.microsoft.com/en-us/dotnet/desktop-wpf/migration/convert-project-from-net-framework
+# Build, test, sign and package Siren for Windows, macOS, and Linux
 #
-# To configure this workflow:
+# Windows: Uses Azure Trusted Signing
+# macOS: Uses Developer ID certificates with notarization
+# Linux: Unsigned
 #
-# 1. Configure environment variables
-# GitHub sets default environment variables for every workflow run.
-# Replace the variables relative to your project in the "env" section below.
-#
-# 2. Signing
-# Generate a signing certificate in the Windows Application
-# Packaging Project or add an existing signing certificate to the project.
-# Next, use PowerShell to encode the .pfx file using Base64 encoding
-# by running the following Powershell script to generate the output string:
-#
-# $pfx_cert = Get-Content '.\SigningCertificate.pfx' -Encoding Byte
-# [System.Convert]::ToBase64String($pfx_cert) | Out-File 'SigningCertificate_Encoded.txt'
-#
-# Open the output file, SigningCertificate_Encoded.txt, and copy the
-# string inside. Then, add the string to the repo as a GitHub secret
-# and name it "Base64_Encoded_Pfx."
-# For more information on how to configure your signing certificate for
-# this workflow, refer to https://github.com/microsoft/github-actions-for-desktop-apps#signing
-#
-# Finally, add the signing certificate password to the repo as a secret and name it "Pfx_Key".
-# See "Build the Windows Application Packaging project" below to see how the secret is used.
-#
-# For more information on GitHub Actions, refer to https://github.com/features/actions
-# For a complete CI/CD sample to get started with GitHub Action workflows for Desktop Applications,
-# refer to https://github.com/microsoft/github-actions-for-desktop-apps
+# See docs/macos-signing-setup.md for macOS signing setup instructions
 
 name: .NET Core Desktop
 
@@ -86,7 +56,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
-      pages: write
       id-token: write
     
     steps:
@@ -165,29 +134,142 @@ jobs:
       if: matrix.os == 'macos-latest'
       run: |
         vpk pack -u "Siren" -v ${{ steps.get_version.outputs.VERSION }} -o "releases/${{ matrix.platform }}" -p "publish/${{ matrix.rid }}" --icon ${{ matrix.icon }}
-    - name: List release contents
+    - name: Extract and sign macOS app
       if: matrix.os == 'macos-latest'
       run: |
-        echo "Contents of releases/${{ matrix.platform }}:"
-        ls -la "releases/${{ matrix.platform }}"
-    - name: Sign macOS Installer Package
-      if: matrix.os == 'macos-latest'
-      run: |
-        PKG_PATH=$(find "releases/${{ matrix.platform }}" -name "*.pkg" -type f | head -n 1)
-        if [ -z "$PKG_PATH" ]; then
-          echo "Error: No .pkg found"
-          exit 1
-        fi
-        echo "Signing installer: $PKG_PATH"
-        productsign --sign "${{ secrets.MACOS_SIGN_INSTALL_IDENTITY }}" --keychain $RUNNER_TEMP/app-signing.keychain-db "$PKG_PATH" "${PKG_PATH}.signed"
-        mv "${PKG_PATH}.signed" "$PKG_PATH"
+        # Extract the .app from the portable zip
+        PORTABLE_ZIP=$(find "releases/${{ matrix.platform }}" -name "*Portable.zip" -type f | head -n 1)
+        echo "Extracting from: $PORTABLE_ZIP"
+        mkdir -p signed_app
+        unzip -q "$PORTABLE_ZIP" -d signed_app
+        
+        APP_PATH=$(find signed_app -name "*.app" -type d | head -n 1)
+        echo "Found app: $APP_PATH"
+        
+        # Move all non-Mach-O files from MacOS to Resources
+        # This prevents codesign from trying to validate static files as code
+        echo "Moving non-code files to Contents/Resources..."
+        mkdir -p "$APP_PATH/Contents/Resources"
+        
+        # Move directories (like wwwroot)
+        find "$APP_PATH/Contents/MacOS" -mindepth 1 -maxdepth 1 -type d | while read dir; do
+          dirname=$(basename "$dir")
+          echo "Moving directory: $dirname"
+          mv "$dir" "$APP_PATH/Contents/Resources/"
+          ln -s "../Resources/$dirname" "$APP_PATH/Contents/MacOS/$dirname"
+        done
+        
+        # Move non-Mach-O files (json, txt, xml, etc.)
+        find "$APP_PATH/Contents/MacOS" -maxdepth 1 -type f | while read file; do
+          if ! file "$file" | grep -q "Mach-O"; then
+            filename=$(basename "$file")
+            echo "Moving file: $filename"
+            mv "$file" "$APP_PATH/Contents/Resources/"
+            ln -s "../Resources/$filename" "$APP_PATH/Contents/MacOS/$filename"
+          fi
+        done
+        
+        # Remove any ad-hoc signatures first
+        echo "Removing existing signatures..."
+        find "$APP_PATH" -type f | while read file; do
+          if file "$file" | grep -q "Mach-O"; then
+            codesign --remove-signature "$file" 2>/dev/null || true
+          fi
+        done
+        
+        # Copy entitlements file
+        ENTITLEMENTS="Siren/Siren.entitlements"
+        
+        # Sign all Mach-O binaries (dylibs and executables) with hardened runtime and entitlements
+        # Sign from deepest to shallowest
+        echo "Signing all binaries with entitlements..."
+        find "$APP_PATH" -type f -name "*.dylib" | while read file; do
+          echo "Signing dylib: $file"
+          codesign -s "${{ secrets.MACOS_SIGN_APP_IDENTITY }}" \
+            -f \
+            --timestamp \
+            --options runtime \
+            --entitlements "$ENTITLEMENTS" \
+            --keychain $RUNNER_TEMP/app-signing.keychain-db \
+            "$file"
+        done
+        
+        # Sign executables (but not the main one yet)
+        find "$APP_PATH/Contents/MacOS" -type f ! -name "Siren" | while read file; do
+          if file "$file" | grep -q "Mach-O"; then
+            echo "Signing executable: $file"
+            codesign -s "${{ secrets.MACOS_SIGN_APP_IDENTITY }}" \
+              -f \
+              --timestamp \
+              --options runtime \
+              --entitlements "$ENTITLEMENTS" \
+              --keychain $RUNNER_TEMP/app-signing.keychain-db \
+              "$file"
+          fi
+        done
+        
+        # Sign the main executable
+        echo "Signing main executable..."
+        codesign -s "${{ secrets.MACOS_SIGN_APP_IDENTITY }}" \
+          -f \
+          --timestamp \
+          --options runtime \
+          --entitlements "$ENTITLEMENTS" \
+          --keychain $RUNNER_TEMP/app-signing.keychain-db \
+          "$APP_PATH/Contents/MacOS/Siren"
+        
+        # Sign the main app bundle
+        echo "Signing app bundle: $APP_PATH"
+        codesign -s "${{ secrets.MACOS_SIGN_APP_IDENTITY }}" \
+          -f \
+          --timestamp \
+          --options runtime \
+          --entitlements "$ENTITLEMENTS" \
+          --keychain $RUNNER_TEMP/app-signing.keychain-db \
+          "$APP_PATH"
+        
+        # Verify signature
+        echo "Verifying signature..."
+        codesign -v --verbose=2 "$APP_PATH"
+        
+        # Create signed pkg
+        echo "Creating signed .pkg..."
+        PKG_PATH="releases/${{ matrix.platform }}/Siren-osx-Setup-signed.pkg"
+        productbuild --component "$APP_PATH" /Applications --sign "${{ secrets.MACOS_SIGN_INSTALL_IDENTITY }}" --keychain $RUNNER_TEMP/app-signing.keychain-db "$PKG_PATH"
+        
+        # Replace the original pkg
+        rm "releases/${{ matrix.platform }}/Siren-osx-Setup.pkg"
+        mv "$PKG_PATH" "releases/${{ matrix.platform }}/Siren-osx-Setup.pkg"
+        
+        # Also update the portable zip with signed app
+        rm "$PORTABLE_ZIP"
+        cd signed_app && zip -r -q -y "../$PORTABLE_ZIP" . && cd ..
+        
+        echo "Done signing"
     - name: Notarize macOS Installer
       if: matrix.os == 'macos-latest'
       run: |
-        PKG_PATH=$(find "releases/${{ matrix.platform }}" -name "*.pkg" -type f | head -n 1)
+        PKG_PATH="releases/${{ matrix.platform }}/Siren-osx-Setup.pkg"
         echo "Notarizing: $PKG_PATH"
-        xcrun notarytool submit "$PKG_PATH" --keychain-profile "velopack-profile" --keychain $RUNNER_TEMP/app-signing.keychain-db --wait
-        xcrun stapler staple "$PKG_PATH"
+        
+        # Submit and capture the output
+        SUBMIT_OUTPUT=$(xcrun notarytool submit "$PKG_PATH" --keychain-profile "velopack-profile" --keychain $RUNNER_TEMP/app-signing.keychain-db --wait 2>&1) || true
+        echo "$SUBMIT_OUTPUT"
+        
+        # Extract submission ID
+        SUBMISSION_ID=$(echo "$SUBMIT_OUTPUT" | grep -o 'id: [a-f0-9-]*' | head -1 | cut -d' ' -f2)
+        
+        # Check if notarization succeeded
+        if echo "$SUBMIT_OUTPUT" | grep -q "status: Accepted"; then
+          echo "Notarization succeeded!"
+          xcrun stapler staple "$PKG_PATH"
+        else
+          echo "Notarization failed. Fetching log..."
+          if [ -n "$SUBMISSION_ID" ]; then
+            xcrun notarytool log "$SUBMISSION_ID" --keychain-profile "velopack-profile" --keychain $RUNNER_TEMP/app-signing.keychain-db
+          fi
+          exit 1
+        fi
     - name: Create Velopack Release
       if: matrix.os == 'ubuntu-latest'
       run: vpk pack -u "Siren" -v ${{ steps.get_version.outputs.VERSION }} -o "releases/${{ matrix.platform }}" -p "publish/${{ matrix.rid }}" --icon ${{ matrix.icon }}
@@ -201,51 +283,3 @@ jobs:
       with:
         name: Siren-${{ matrix.platform }}-${{ steps.get_version.outputs.VERSION }}
         path: releases/${{ matrix.platform }}
-
-#  build-package:
-#    needs: test 
-#    runs-on: windows-latest
-#    
-#    env:
-#      Solution_Name: Siren.sln
-#      Wap_Project_Directory: Siren.Desktop
-#      Wap_Project_Path: Siren.Desktop.csproj
-#
-#    steps:
-#    - name: Checkout
-#      uses: actions/checkout@v4
-#      with:
-#        fetch-depth: 0
-#
-#    - name: Install .NET Core
-#      uses: actions/setup-dotnet@v4
-#      with:
-#        dotnet-version: 9.0.x
-#
-#    - name: Setup MSBuild.exe
-#      uses: microsoft/setup-msbuild@v2
-#
-#    - name: Restore the application
-#      run: msbuild $env:Solution_Name /t:Restore /p:Configuration=Release
-#
-#    - name: Decode the pfx
-#      run: |
-#        $pfx_cert_byte = [System.Convert]::FromBase64String("${{ secrets.Base64_Encoded_Pfx }}")
-#        $certificatePath = Join-Path -Path $env:Wap_Project_Directory -ChildPath GitHubActionsWorkflow.pfx
-#        [IO.File]::WriteAllBytes("$certificatePath", $pfx_cert_byte)
-#
-#    - name: Create the app package
-#      run: msbuild $env:Wap_Project_Path /p:Configuration=Release /p:UapAppxPackageBuildMode=$env:Appx_Package_Build_Mode /p:AppxBundle=$env:Appx_Bundle /p:PackageCertificateKeyFile=GitHubActionsWorkflow.pfx /p:PackageCertificatePassword=${{ secrets.Pfx_Key }}
-#      env:
-#        Appx_Bundle: Always
-#        Appx_Bundle_Platforms: x86|x64
-#        Appx_Package_Build_Mode: StoreUpload
-#
-#    - name: Remove the pfx
-#      run: Remove-Item -path $env:Wap_Project_Directory\GitHubActionsWorkflow.pfx
-#
-#    - name: Upload build artifacts
-#      uses: actions/upload-artifact@v4
-#      with:
-#        name: MSIX Package
-#        path: ${{ env.Wap_Project_Directory }}\AppPackages
