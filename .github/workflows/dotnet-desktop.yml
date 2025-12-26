@@ -165,7 +165,7 @@ jobs:
     - name: Create Velopack Release
       if: matrix.os == 'macos-latest'
       run: |
-        vpk pack -u "Siren" -v ${{ steps.get_version.outputs.VERSION }} -o "releases/${{ matrix.platform }}" -p "publish/${{ matrix.rid }}" --icon ${{ matrix.icon }} --signAppIdentity "${{ secrets.MACOS_SIGN_APP_IDENTITY }}" --signInstallIdentity "${{ secrets.MACOS_SIGN_INSTALL_IDENTITY }}" --notaryProfile "velopack-profile" --keychain $RUNNER_TEMP/app-signing.keychain-db
+        vpk pack -u "Siren" -v ${{ steps.get_version.outputs.VERSION }} -o "releases/${{ matrix.platform }}" -p "publish/${{ matrix.rid }}" --icon ${{ matrix.icon }} --signAppIdentity "${{ secrets.MACOS_SIGN_APP_IDENTITY }}" --signInstallIdentity "${{ secrets.MACOS_SIGN_INSTALL_IDENTITY }}" --notaryProfile "velopack-profile" --keychain $RUNNER_TEMP/app-signing.keychain-db --exclude "wwwroot/.*"
     - name: Create Velopack Release
       if: matrix.os == 'ubuntu-latest'
       run: vpk pack -u "Siren" -v ${{ steps.get_version.outputs.VERSION }} -o "releases/${{ matrix.platform }}" -p "publish/${{ matrix.rid }}" --icon ${{ matrix.icon }}
