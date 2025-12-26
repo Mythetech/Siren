@@ -154,7 +154,6 @@ jobs:
         xcrun notarytool store-credentials --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM" --password "$APPLE_PASSWORD" velopack-profile
     - name: Publish
       run: dotnet publish Siren/Siren.csproj -c Release -r ${{ matrix.rid }} --self-contained -p:PublishSingleFile=true -p:PublishTrimmed=false -o publish/${{ matrix.rid }}
-        
     - name: Create Velopack Release
       if: matrix.os == 'windows-latest'
       env:
@@ -162,10 +161,62 @@ jobs:
         AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
         AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       run: vpk pack -u "Siren" -v ${{ steps.get_version.outputs.VERSION }} -o "releases/${{ matrix.platform }}" -p "publish/${{ matrix.rid }}" --icon ${{ matrix.icon }} --azureTrustedSignFile azure-signing-metadata.json
-    - name: Create Velopack Release
+    - name: Create Velopack Release (unsigned)
       if: matrix.os == 'macos-latest'
       run: |
-        vpk pack -u "Siren" -v ${{ steps.get_version.outputs.VERSION }} -o "releases/${{ matrix.platform }}" -p "publish/${{ matrix.rid }}" --icon ${{ matrix.icon }} --signAppIdentity "${{ secrets.MACOS_SIGN_APP_IDENTITY }}" --signInstallIdentity "${{ secrets.MACOS_SIGN_INSTALL_IDENTITY }}" --notaryProfile "velopack-profile" --keychain $RUNNER_TEMP/app-signing.keychain-db --signDisableDeep
+        vpk pack -u "Siren" -v ${{ steps.get_version.outputs.VERSION }} -o "releases/${{ matrix.platform }}" -p "publish/${{ matrix.rid }}" --icon ${{ matrix.icon }}
+    - name: Sign macOS Application
+      if: matrix.os == 'macos-latest'
+      run: |
+        APP_PATH=$(find "releases/${{ matrix.platform }}" -name "*.app" -type d | head -n 1)
+        if [ -z "$APP_PATH" ]; then
+          echo "Error: No .app bundle found"
+          exit 1
+        fi
+        echo "Signing $APP_PATH"
+        
+        # Sign all executables and dylibs individually (not directories)
+        find "$APP_PATH" -type f \( -name "*.dylib" -o -perm +111 \) | while read file; do
+          if file "$file" | grep -q "Mach-O"; then
+            echo "Signing: $file"
+            codesign -s "${{ secrets.MACOS_SIGN_APP_IDENTITY }}" -f --timestamp --options runtime --keychain $RUNNER_TEMP/app-signing.keychain-db "$file" || true
+          fi
+        done
+        
+        # Sign the main bundle (without --deep)
+        codesign -s "${{ secrets.MACOS_SIGN_APP_IDENTITY }}" -f --timestamp --options runtime --keychain $RUNNER_TEMP/app-signing.keychain-db "$APP_PATH"
+        
+        # Verify
+        codesign -v "$APP_PATH"
+    - name: Sign macOS Installer Package
+      if: matrix.os == 'macos-latest'
+      run: |
+        PKG_PATH=$(find "releases/${{ matrix.platform }}" -name "*.pkg" -type f | head -n 1)
+        if [ -n "$PKG_PATH" ]; then
+          echo "Signing installer: $PKG_PATH"
+          productsign --sign "${{ secrets.MACOS_SIGN_INSTALL_IDENTITY }}" --keychain $RUNNER_TEMP/app-signing.keychain-db "$PKG_PATH" "${PKG_PATH}.signed"
+          mv "${PKG_PATH}.signed" "$PKG_PATH"
+        fi
+    - name: Notarize macOS Application
+      if: matrix.os == 'macos-latest'
+      run: |
+        # Notarize the pkg if it exists, otherwise the app
+        PKG_PATH=$(find "releases/${{ matrix.platform }}" -name "*.pkg" -type f | head -n 1)
+        if [ -n "$PKG_PATH" ]; then
+          echo "Notarizing: $PKG_PATH"
+          xcrun notarytool submit "$PKG_PATH" --keychain-profile "velopack-profile" --keychain $RUNNER_TEMP/app-signing.keychain-db --wait
+          xcrun stapler staple "$PKG_PATH"
+        else
+          APP_PATH=$(find "releases/${{ matrix.platform }}" -name "*.app" -type d | head -n 1)
+          if [ -n "$APP_PATH" ]; then
+            # Zip for notarization
+            ditto -c -k --keepParent "$APP_PATH" "${APP_PATH}.zip"
+            echo "Notarizing: ${APP_PATH}.zip"
+            xcrun notarytool submit "${APP_PATH}.zip" --keychain-profile "velopack-profile" --keychain $RUNNER_TEMP/app-signing.keychain-db --wait
+            xcrun stapler staple "$APP_PATH"
+            rm "${APP_PATH}.zip"
+          fi
+        fi
     - name: Create Velopack Release
       if: matrix.os == 'ubuntu-latest'
       run: vpk pack -u "Siren" -v ${{ steps.get_version.outputs.VERSION }} -o "releases/${{ matrix.platform }}" -p "publish/${{ matrix.rid }}" --icon ${{ matrix.icon }}
