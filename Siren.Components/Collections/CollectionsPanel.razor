@@ -31,7 +31,7 @@
         }
         else
         {
-            <SirenStack Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="1">
+            <SirenStack Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="1" Class="w-100">
                 <SirenIcon Icon="@SirenIcons.Empty" Style="font-size:4em;" Color="Color.Primary" />
                 No Collections
                 <SirenButton Variant="Variant.Filled" OnClick="@(() => { CollectionsService.CreateCollection("Untitled", default!); StateHasChanged(); })">
