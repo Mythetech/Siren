@@ -37,8 +37,15 @@ namespace Siren.Components
             services.AddFluentUIComponents();
 
             services.AddSingleton<SirenAppState>();
-            services.AddSingleton<ICookieService, CookieService>();  
-            services.AddSingleton<SettingsState>();
+            services.AddSingleton<ICookieService, CookieService>();
+            
+            services.AddSingleton<ISettingsService, TSettingsService>();
+            
+            services.AddSingleton<SettingsState>(sp =>
+            {
+                var settingsService = sp.GetRequiredService<ISettingsService>();
+                return new SettingsState(settingsService);
+            });
             services.AddSingleton<VariableState>();
 
             services.AddHttpClient();
@@ -52,8 +59,6 @@ namespace Siren.Components
             services.AddSingleton<IVariableService, TVariablesService>();
 
             services.AddSingleton<IVariableSubstitutionService, VariableSubstitutionService>();
-
-            services.AddSingleton<ISettingsService, TSettingsService>();
 
             services.AddSingleton<RequestAuthenticationState>();
             

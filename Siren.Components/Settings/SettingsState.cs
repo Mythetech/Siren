@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.AspNetCore.Components;
+using Siren.Components.Services;
 
 namespace Siren.Components.Settings
 {
@@ -22,13 +23,24 @@ namespace Siren.Components.Settings
         bool SaveHttpContent,
         TimeDisplayOptions TimeDisplay,
         SizeDisplayOptions SizeDisplay,
-        string DefaultUserAgent
+        string DefaultUserAgent,
+        string? DefaultHttpMethod
     );
 
     public class SettingsState
     {
+        private readonly ISettingsService? _settingsService;
+        private bool _isInitialized = false;
+        private bool _isLoading = false;
+
         public EventCallback<SettingsState> SettingsCallback;
         public event Action<SettingsState> SettingsChanged;
+
+        public SettingsState(ISettingsService? settingsService = null)
+        {
+            _settingsService = settingsService;
+            LoadSettings();
+        }
 
         private int _requestTimeout = 10;
         public int RequestTimeout
@@ -112,6 +124,20 @@ namespace Siren.Components.Settings
             }
         }
 
+        private string? _defaultHttpMethod = null;
+        
+        public string? DefaultHttpMethod
+        {
+            get => _defaultHttpMethod;
+            set
+            {
+                if (_defaultHttpMethod == value) return;
+                
+                _defaultHttpMethod = value;
+                NotifyChangeSubscribersAsync();
+            }
+        }
+
         /// <summary>
         /// Creates a snapshot of the current settings state for later restoration.
         /// </summary>
@@ -124,7 +150,8 @@ namespace Siren.Components.Settings
                 SaveHttpContent,
                 TimeDisplay,
                 SizeDisplay,
-                DefaultUserAgent
+                DefaultUserAgent,
+                DefaultHttpMethod
             );
         }
 
@@ -132,7 +159,8 @@ namespace Siren.Components.Settings
         /// Restores settings from a previously created snapshot and notifies subscribers of changes.
         /// </summary>
         /// <param name="snapshot">The snapshot to restore from.</param>
-        public void RestoreFromSnapshot(SettingsStateSnapshot snapshot)
+        /// <param name="notify">Whether to notify subscribers and save. Default is true.</param>
+        public void RestoreFromSnapshot(SettingsStateSnapshot snapshot, bool notify = true)
         {
             _requestTimeout = snapshot.RequestTimeout;
             _sendRequestsWithSystemToken = snapshot.SendRequestsWithSystemToken;
@@ -140,13 +168,56 @@ namespace Siren.Components.Settings
             _timeDisplay = snapshot.TimeDisplay;
             _sizeDisplay = snapshot.SizeDisplay;
             _defaultUserAgent = snapshot.DefaultUserAgent;
-            NotifyChangeSubscribersAsync();
+            _defaultHttpMethod = snapshot.DefaultHttpMethod;
+            
+            if (notify)
+            {
+                NotifyChangeSubscribersAsync();
+            }
         }
 
         private async void NotifyChangeSubscribersAsync()
         {
+            if (_isInitialized && !_isLoading && _settingsService != null)
+            {
+                try
+                {
+                    var snapshot = CreateSnapshot();
+                    _settingsService.SaveSettings(snapshot);
+                    System.Diagnostics.Debug.WriteLine($"Settings saved: DefaultHttpMethod={snapshot.DefaultHttpMethod}");
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Error saving settings: {ex}");
+                }
+            }
+
             await SettingsCallback.InvokeAsync();
             SettingsChanged?.Invoke(this);
+        }
+
+        private void LoadSettings()
+        {
+            if (_settingsService == null) return;
+
+            try
+            {
+                _isLoading = true;
+                var snapshot = _settingsService.LoadSettings();
+                if (snapshot != null)
+                {
+                    RestoreFromSnapshot(snapshot, notify: false);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error loading settings: {ex}");
+            }
+            finally
+            {
+                _isLoading = false;
+                _isInitialized = true;
+            }
         }
 
     }

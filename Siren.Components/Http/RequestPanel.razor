@@ -333,14 +333,18 @@
         StateHasChanged();
     }
 
-    protected void UpdateHttpMethod(string method)
+    protected void UpdateHttpMethod(string? method)
     {
-        if (string.IsNullOrWhiteSpace(method))
-            return;
-
         var req = AppState.Active;
 
-        req.Request.Method = new HttpMethod(method);
+        if (string.IsNullOrWhiteSpace(method))
+        {
+            req.Request.Method = default!;
+        }
+        else
+        {
+            req.Request.Method = new HttpMethod(method);
+        }
 
         AppState.Active = req;
 

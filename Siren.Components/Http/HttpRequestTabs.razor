@@ -1,4 +1,5 @@
 ﻿@using Siren.Components.Http.Models
+@using Siren.Components.Settings
 @implements IDisposable
 
 <SirenDynamicTabs T="SirenNetworkRequest"
@@ -17,6 +18,9 @@
 @code {
     [Inject]
     protected SirenAppState AppState { get; set; } = default!;
+
+    [Inject]
+    protected SettingsState Settings { get; set; } = default!;
 
     private Func<SirenNetworkRequest, string> ItemDisplayFunc => (x) =>
     {
@@ -63,9 +67,17 @@
     {
         if (AppState.NetworkRequests.Count < 1)
         {
+            var request = new HttpRequest();
+            
+            if (!string.IsNullOrWhiteSpace(Settings.DefaultHttpMethod))
+            {
+                request.Method = new HttpMethod(Settings.DefaultHttpMethod);
+            }
+
             var r = new SirenNetworkRequest()
             {
-                Name = "Untitled"
+                Name = "Untitled",
+                Request = request
             };
 
             AppState.AddNetworkRequest(r);
@@ -122,10 +134,17 @@
 
     protected void HandleNetworkRequestAdded()
     {
+        var request = new HttpRequest();
+        
+        if (!string.IsNullOrWhiteSpace(Settings.DefaultHttpMethod))
+        {
+            request.Method = new HttpMethod(Settings.DefaultHttpMethod);
+        }
+
         var networkRequest = new SirenNetworkRequest()
         {
             Name = "New Request",
-            Request = new(),
+            Request = request,
         };
 
         AppState.AddNetworkRequest(networkRequest);

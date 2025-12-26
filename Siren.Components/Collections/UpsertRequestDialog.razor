@@ -54,7 +54,14 @@
             return;
         }
 
-        _newRequest.Method = new HttpMethod(_httpSelector.SelectedMethod);
+        if (!string.IsNullOrWhiteSpace(_httpSelector.SelectedMethod))
+        {
+            _newRequest.Method = new HttpMethod(_httpSelector.SelectedMethod);
+        }
+        else
+        {
+            _newRequest.Method = default!;
+        }
 
         Save();
     }
