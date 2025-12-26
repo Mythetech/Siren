@@ -125,32 +125,33 @@ jobs:
         allow-no-subscriptions: true
       env:
         AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-    - name: Import macOS Certificate
+    - name: Install Apple certificates and notary profile
       if: matrix.os == 'macos-latest'
-      run: |
-        echo "${{ secrets.MACOS_CERTIFICATE }}" | base64 --decode > certificate.p12
-        security create-keychain -p "" build.keychain
-        security default-keychain -s build.keychain
-        security unlock-keychain -p "" build.keychain
-        security import certificate.p12 -k build.keychain -P "${{ secrets.MACOS_CERTIFICATE_PASSWORD }}" -T /usr/bin/codesign -T /usr/bin/productsign
-        security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
-        rm certificate.p12
       env:
-        MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
-        MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
-    - name: Setup NotaryTool Profile
-      if: matrix.os == 'macos-latest'
+        BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+        INSTALLER_CERTIFICATE_BASE64: ${{ secrets.INSTALLER_CERTIFICATE_BASE64 }}
+        P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+        APPLE_ID: ${{ secrets.APPLE_ID }}
+        APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+        APPLE_TEAM: ${{ secrets.APPLE_TEAM }}
+        KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
       run: |
-        xcrun notarytool store-credentials \
-          --apple-id "${{ secrets.APPLE_ID_USERNAME }}" \
-          --team-id "${{ secrets.APPLE_TEAM_ID }}" \
-          --password "${{ secrets.APPLE_SIREN_ID_PASSWORD }}" \
-          "github-actions-profile" \
-          --keychain build.keychain
-      env:
-        APPLE_ID_USERNAME: ${{ secrets.APPLE_ID_USERNAME }}
-        APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        APPLE_SIREN_ID_PASSWORD: ${{ secrets.APPLE_SIREN_ID_PASSWORD }}
+        CERT_BUILD_PATH=$RUNNER_TEMP/build_certificate.p12
+        CERT_INSTALLER_PATH=$RUNNER_TEMP/installer_certificate.p12
+        KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+
+        echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERT_BUILD_PATH
+        echo -n "$INSTALLER_CERTIFICATE_BASE64" | base64 --decode -o $CERT_INSTALLER_PATH
+
+        security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+        security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+        security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+        security import $CERT_BUILD_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+        security import $CERT_INSTALLER_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+        security list-keychain -d user -s $KEYCHAIN_PATH
+
+        xcrun notarytool store-credentials --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM" --password "$APPLE_PASSWORD" velopack-profile
     - name: Publish
       run: dotnet publish Siren/Siren.csproj -c Release -r ${{ matrix.rid }} --self-contained -p:PublishSingleFile=true -p:PublishTrimmed=false -o publish/${{ matrix.rid }}
         
@@ -164,10 +165,14 @@ jobs:
     - name: Create Velopack Release
       if: matrix.os == 'macos-latest'
       run: |
-        vpk pack -u "Siren" -v ${{ steps.get_version.outputs.VERSION }} -o "releases/${{ matrix.platform }}" -p "publish/${{ matrix.rid }}" --icon ${{ matrix.icon }} --signAppIdentity "${{ secrets.MACOS_SIGN_APP_IDENTITY }}" --signInstallIdentity "${{ secrets.MACOS_SIGN_INSTALL_IDENTITY }}" --notaryProfile "github-actions-profile" --keychain build.keychain
+        vpk pack -u "Siren" -v ${{ steps.get_version.outputs.VERSION }} -o "releases/${{ matrix.platform }}" -p "publish/${{ matrix.rid }}" --icon ${{ matrix.icon }} --signAppIdentity "${{ secrets.MACOS_SIGN_APP_IDENTITY }}" --signInstallIdentity "${{ secrets.MACOS_SIGN_INSTALL_IDENTITY }}" --notaryProfile "velopack-profile" --keychain $RUNNER_TEMP/app-signing.keychain-db
     - name: Create Velopack Release
       if: matrix.os == 'ubuntu-latest'
       run: vpk pack -u "Siren" -v ${{ steps.get_version.outputs.VERSION }} -o "releases/${{ matrix.platform }}" -p "publish/${{ matrix.rid }}" --icon ${{ matrix.icon }}
+      
+    - name: Clean up keychain
+      if: matrix.os == 'macos-latest' && always()
+      run: security delete-keychain $RUNNER_TEMP/app-signing.keychain-db
       
     - name: Upload Release Artifacts
       uses: actions/upload-artifact@v4
