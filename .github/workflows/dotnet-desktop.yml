@@ -299,14 +299,22 @@ jobs:
         ZIP_FILE="$RELEASE_DIR/$ZIP_NAME"
         
         if [ "${{ matrix.platform }}" = "macOS" ]; then
-          EXISTING_ZIP=$(find "$RELEASE_DIR" -name "*Portable.zip" -type f | head -n 1)
-          if [ -n "$EXISTING_ZIP" ]; then
-            echo "Found existing Portable.zip, using it"
-            cp "$EXISTING_ZIP" "$ZIP_FILE"
+          PKG_INSTALLER=$(find "$RELEASE_DIR" -name "*.pkg" -type f | head -n 1)
+          if [ -n "$PKG_INSTALLER" ]; then
+            echo "Found .pkg installer, creating zip: $PKG_INSTALLER"
+            cd "$RELEASE_DIR"
+            zip -q "$ZIP_NAME" "$(basename "$PKG_INSTALLER")"
+            cd - > /dev/null
           else
-            echo "Error: No Portable.zip found in $RELEASE_DIR"
-            ls -la "$RELEASE_DIR"
-            exit 1
+            EXISTING_ZIP=$(find "$RELEASE_DIR" -name "*Portable.zip" -type f | head -n 1)
+            if [ -n "$EXISTING_ZIP" ]; then
+              echo "No .pkg found, using Portable.zip"
+              cp "$EXISTING_ZIP" "$ZIP_FILE"
+            else
+              echo "Error: No .pkg installer or Portable.zip found in $RELEASE_DIR"
+              ls -la "$RELEASE_DIR"
+              exit 1
+            fi
           fi
         elif [ "${{ matrix.platform }}" = "Linux" ]; then
           APPIMAGE=$(find "$RELEASE_DIR" -name "*.AppImage" -type f | head -n 1)
@@ -320,14 +328,22 @@ jobs:
           zip -q "$ZIP_NAME" "$(basename "$APPIMAGE")"
           cd - > /dev/null
         else
-          EXISTING_ZIP=$(find "$RELEASE_DIR" -name "*.zip" -type f | head -n 1)
-          if [ -n "$EXISTING_ZIP" ]; then
-            echo "Found existing zip file, using it"
-            cp "$EXISTING_ZIP" "$ZIP_FILE"
+          SETUP_EXE=$(find "$RELEASE_DIR" -name "*Setup.exe" -o -name "*.msi" | head -n 1)
+          if [ -n "$SETUP_EXE" ]; then
+            echo "Found setup installer, creating zip: $SETUP_EXE"
+            cd "$RELEASE_DIR"
+            zip -q "$ZIP_NAME" "$(basename "$SETUP_EXE")"
+            cd - > /dev/null
           else
-            echo "Error: No zip file found in $RELEASE_DIR and platform is not Linux"
-            ls -la "$RELEASE_DIR"
-            exit 1
+            EXISTING_ZIP=$(find "$RELEASE_DIR" -name "*.zip" -type f | head -n 1)
+            if [ -n "$EXISTING_ZIP" ]; then
+              echo "No setup installer found, using existing zip"
+              cp "$EXISTING_ZIP" "$ZIP_FILE"
+            else
+              echo "Error: No setup installer or zip file found in $RELEASE_DIR"
+              ls -la "$RELEASE_DIR"
+              exit 1
+            fi
           fi
         fi
         
