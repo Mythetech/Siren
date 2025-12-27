@@ -97,9 +97,9 @@
           .ToList();
     }
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        _collections = CollectionsService.GetCollections();
+        _collections = await Task.Run(() => CollectionsService.GetCollections());
     }
 
     protected void ClearSelected()

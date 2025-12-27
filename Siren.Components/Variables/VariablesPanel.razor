@@ -203,9 +203,13 @@
 
     protected override void OnInitialized()
     {
-        LoadVariables();
         AppState.OnActiveEnvironmentChanged += HandleEnvironmentChanged;
         VariableState.StateChanged += HandleStateChanged;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.Run(LoadVariables);
     }
 
     private void HandleEnvironmentChanged(string? environment)
