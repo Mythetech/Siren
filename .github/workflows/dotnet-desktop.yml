@@ -271,6 +271,82 @@ jobs:
     - name: Clean up keychain
       if: matrix.os == 'macos-latest' && always()
       run: security delete-keychain $RUNNER_TEMP/app-signing.keychain-db
+    
+    - name: Map platform to blob path
+      id: platform_map
+      run: |
+        case "${{ matrix.platform }}" in
+          Windows)
+            echo "BLOB_PLATFORM=windows" >> $GITHUB_OUTPUT
+            echo "ZIP_NAME=Siren-Windows.zip" >> $GITHUB_OUTPUT
+            ;;
+          macOS)
+            echo "BLOB_PLATFORM=macos" >> $GITHUB_OUTPUT
+            echo "ZIP_NAME=Siren-MacOS.zip" >> $GITHUB_OUTPUT
+            ;;
+          Linux)
+            echo "BLOB_PLATFORM=linux" >> $GITHUB_OUTPUT
+            echo "ZIP_NAME=Siren-Linux.zip" >> $GITHUB_OUTPUT
+            ;;
+        esac
+      shell: bash
+    
+    - name: Find release zip file
+      id: find_zip
+      run: |
+        RELEASE_DIR="releases/${{ matrix.platform }}"
+        if [ "${{ matrix.platform }}" = "macOS" ]; then
+          ZIP_FILE=$(find "$RELEASE_DIR" -name "*Portable.zip" -type f | head -n 1)
+        else
+          ZIP_FILE=$(find "$RELEASE_DIR" -name "*.zip" -type f | head -n 1)
+        fi
+        
+        if [ -z "$ZIP_FILE" ]; then
+          echo "Error: No zip file found in $RELEASE_DIR"
+          ls -la "$RELEASE_DIR"
+          exit 1
+        fi
+        
+        echo "ZIP_FILE=$ZIP_FILE" >> $GITHUB_OUTPUT
+        echo "Found zip file: $ZIP_FILE"
+      shell: bash
+    
+    - name: Upload to versioned blob path
+      run: |
+        VERSION="${{ steps.get_version.outputs.VERSION }}"
+        BLOB_PLATFORM="${{ steps.platform_map.outputs.BLOB_PLATFORM }}"
+        ZIP_NAME="${{ steps.platform_map.outputs.ZIP_NAME }}"
+        ZIP_FILE="${{ steps.find_zip.outputs.ZIP_FILE }}"
+        
+        BLOB_PATH="release/$VERSION/$BLOB_PLATFORM/$ZIP_NAME"
+        echo "Uploading to: $BLOB_PATH"
+        
+        az storage blob upload \
+          --account-name stsirendownloads \
+          --container-name release \
+          --name "$BLOB_PATH" \
+          --file "$ZIP_FILE" \
+          --overwrite \
+          --sas-token "${{ secrets.SIREN_BLOB_SAS_TOKEN }}"
+      shell: bash
+    
+    - name: Upload to latest blob path
+      run: |
+        BLOB_PLATFORM="${{ steps.platform_map.outputs.BLOB_PLATFORM }}"
+        ZIP_NAME="${{ steps.platform_map.outputs.ZIP_NAME }}"
+        ZIP_FILE="${{ steps.find_zip.outputs.ZIP_FILE }}"
+        
+        BLOB_PATH="latest/$BLOB_PLATFORM/$ZIP_NAME"
+        echo "Uploading to: $BLOB_PATH"
+        
+        az storage blob upload \
+          --account-name stsirendownloads \
+          --container-name release \
+          --name "$BLOB_PATH" \
+          --file "$ZIP_FILE" \
+          --overwrite \
+          --sas-token "${{ secrets.SIREN_BLOB_SAS_TOKEN }}"
+      shell: bash
       
     - name: Upload Release Artifacts
       uses: actions/upload-artifact@v4
