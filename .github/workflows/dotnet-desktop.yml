@@ -348,7 +348,7 @@ jobs:
         ZIP_NAME="${{ steps.platform_map.outputs.ZIP_NAME }}"
         ZIP_FILE="${{ steps.prepare_zip.outputs.ZIP_FILE }}"
         
-        BLOB_PATH="release/$VERSION/$BLOB_PLATFORM/$ZIP_NAME"
+        BLOB_PATH="$VERSION/$BLOB_PLATFORM/$ZIP_NAME"
         echo "Uploading to: $BLOB_PATH"
         
         az storage blob upload \
