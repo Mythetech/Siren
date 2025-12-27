@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
+using Mythetech.Components.Desktop;
 using Mythetech.Components.Desktop.Photino;
 using Mythetech.Components.Infrastructure.MessageBus;
 using Photino.Blazor;
@@ -26,7 +27,7 @@ namespace Siren
 
             appBuilder.Services.AddHttpClient();
 
-            appBuilder.Services.AddPhotinoServices();
+            appBuilder.Services.AddDesktopServices();
 
             // register root component and selector
             appBuilder.RootComponents.Add<Components.App>("app");

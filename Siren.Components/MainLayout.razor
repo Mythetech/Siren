@@ -13,6 +13,8 @@
 @using Siren.Components.Infrastructure.Keyboard
 @using Siren.Components.Settings
 @using Siren.Components.AppContextPanel
+@using Siren.Components.Configuration
+@using Mythetech.Components.Infrastructure
 @using MouseEvent = MudBlazor.MouseEvent
 @implements IDisposable
 
@@ -36,6 +38,7 @@
                 <ChildContent>
                     <MudMenuItem Class="rounded" Icon="@SirenIcons.About" OnClick="OpenAboutSiren">About</MudMenuItem>
                     <MudMenuItem Class="rounded" Icon="@SirenIcons.Settings" OnClick="OpenSettingsDialog">Settings</MudMenuItem>
+                    <MudMenuItem Class="rounded" Icon="@SirenIcons.Bug" OnClick="OpenReportIssue">Report Issue</MudMenuItem>
                 </ChildContent>
             </MudMenu>
             <MenuBar />
@@ -68,6 +71,12 @@
 
     [Inject]
     protected IDialogService DialogService { get; set; } = default!;
+
+    [Inject]
+    protected ILinkOpenService LinkOpenService { get; set; } = default!;
+
+    [Inject]
+    protected AppConfiguration AppConfig { get; set; } = default!;
 
     private Func<string> GetWidth => () => AppState.SideBarOpen ? "74vw" : "calc(100vw - 52px)";
 
@@ -136,6 +145,11 @@
 
         var dialog = await DialogService.ShowAsync<AboutSiren>("About", options);
         var result = await dialog.Result;
+    }
+
+    protected async Task OpenReportIssue()
+    {
+        await LinkOpenService.OpenLinkAsync(AppConfig.ReportIssueUrl);
     }
 
     public void Dispose()

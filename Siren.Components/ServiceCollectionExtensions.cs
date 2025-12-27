@@ -5,6 +5,7 @@ using MudBlazor;
 using MudBlazor.Services;
 using Mythetech.Components.Infrastructure.MessageBus;
 using Siren.Components.Collections;
+using Siren.Components.Configuration;
 using Siren.Components.History;
 using Siren.Components.RequestContextPanel.Authentication;
 using Siren.Components.Services;
@@ -61,6 +62,8 @@ namespace Siren.Components
             services.AddSingleton<IVariableSubstitutionService, VariableSubstitutionService>();
 
             services.AddSingleton<RequestAuthenticationState>();
+            
+            services.AddSingleton<AppConfiguration>();
             
             return services;
         }

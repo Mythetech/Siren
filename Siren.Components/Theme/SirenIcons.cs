@@ -101,5 +101,9 @@ namespace Siren.Components.Theme
         public static string Network => Round("network_check");
 
         public static string About => Round("info");
+
+        public static string Bug => Round("bug_report");
+
+        public static string GitHub => Icons.Custom.Brands.GitHub;
     }
 }
