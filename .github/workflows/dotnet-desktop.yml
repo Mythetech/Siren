@@ -123,10 +123,6 @@ jobs:
       run: dotnet publish Siren/Siren.csproj -c Release -r ${{ matrix.rid }} --self-contained -p:PublishSingleFile=true -p:PublishTrimmed=false -o publish/${{ matrix.rid }}
     - name: Create Velopack Release
       if: matrix.os == 'windows-latest'
-      env:
-        AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-        AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-        AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       run: vpk pack -u "Siren" -v ${{ steps.get_version.outputs.VERSION }} -o "releases/${{ matrix.platform }}" -p "publish/${{ matrix.rid }}" --icon ${{ matrix.icon }} --azureTrustedSignFile azure-signing-metadata.json
     - name: Create Velopack Release (unsigned)
       if: matrix.os == 'macos-latest'
