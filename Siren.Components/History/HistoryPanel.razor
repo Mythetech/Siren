@@ -84,7 +84,11 @@
     protected override void OnInitialized()
     {
         HistoryService.HistoryRecordsChanged += HandleHistoryChange;
-        HistoryRecords = HistoryService.GetHistory().OrderByDescending(x => x.Timestamp).ToList();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        HistoryRecords = await Task.Run(() => HistoryService.GetHistory().OrderByDescending(x => x.Timestamp).ToList());
     }
 
     protected async Task PromptDeleteHistory()
