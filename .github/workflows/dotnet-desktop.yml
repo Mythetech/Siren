@@ -291,8 +291,47 @@ jobs:
         esac
       shell: bash
     
-    - name: Prepare release zip file
-      id: prepare_zip
+    - name: Prepare release zip file (Windows)
+      if: matrix.platform == 'Windows'
+      id: prepare_zip_windows
+      run: |
+        $RELEASE_DIR = "releases/Windows"
+        $ZIP_NAME = "${{ steps.platform_map.outputs.ZIP_NAME }}"
+        $ZIP_FILE = Join-Path $RELEASE_DIR $ZIP_NAME
+        
+        $SETUP_EXE = Get-ChildItem -Path $RELEASE_DIR -Filter "*Setup.exe" -File | Select-Object -First 1
+        if (-not $SETUP_EXE) {
+          $SETUP_EXE = Get-ChildItem -Path $RELEASE_DIR -Filter "*.msi" -File | Select-Object -First 1
+        }
+        
+        if ($SETUP_EXE) {
+          Write-Host "Found setup installer, creating zip: $($SETUP_EXE.FullName)"
+          Compress-Archive -Path $SETUP_EXE.FullName -DestinationPath $ZIP_FILE -Force
+        } else {
+          $EXISTING_ZIP = Get-ChildItem -Path $RELEASE_DIR -Filter "*.zip" -File | Select-Object -First 1
+          if ($EXISTING_ZIP) {
+            Write-Host "No setup installer found, using existing zip"
+            Copy-Item $EXISTING_ZIP.FullName $ZIP_FILE -Force
+          } else {
+            Write-Host "Error: No setup installer or zip file found in $RELEASE_DIR"
+            Get-ChildItem -Path $RELEASE_DIR
+            exit 1
+          }
+        }
+        
+        if (-not (Test-Path $ZIP_FILE)) {
+          Write-Host "Error: Failed to create/find zip file at $ZIP_FILE"
+          exit 1
+        }
+        
+        "ZIP_FILE=$ZIP_FILE" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+        Write-Host "Using zip file: $ZIP_FILE"
+        Get-Item $ZIP_FILE | Format-List
+      shell: pwsh
+    
+    - name: Prepare release zip file (macOS/Linux)
+      if: matrix.platform != 'Windows'
+      id: prepare_zip_unix
       run: |
         RELEASE_DIR="releases/${{ matrix.platform }}"
         ZIP_NAME="${{ steps.platform_map.outputs.ZIP_NAME }}"
@@ -327,24 +366,6 @@ jobs:
           cd "$RELEASE_DIR"
           zip -q "$ZIP_NAME" "$(basename "$APPIMAGE")"
           cd - > /dev/null
-        else
-          SETUP_EXE=$(find "$RELEASE_DIR" -name "*Setup.exe" -o -name "*.msi" | head -n 1)
-          if [ -n "$SETUP_EXE" ]; then
-            echo "Found setup installer, creating zip: $SETUP_EXE"
-            cd "$RELEASE_DIR"
-            zip -q "$ZIP_NAME" "$(basename "$SETUP_EXE")"
-            cd - > /dev/null
-          else
-            EXISTING_ZIP=$(find "$RELEASE_DIR" -name "*.zip" -type f | head -n 1)
-            if [ -n "$EXISTING_ZIP" ]; then
-              echo "No setup installer found, using existing zip"
-              cp "$EXISTING_ZIP" "$ZIP_FILE"
-            else
-              echo "Error: No setup installer or zip file found in $RELEASE_DIR"
-              ls -la "$RELEASE_DIR"
-              exit 1
-            fi
-          fi
         fi
         
         if [ ! -f "$ZIP_FILE" ]; then
@@ -362,7 +383,11 @@ jobs:
         VERSION="${{ steps.get_version.outputs.VERSION }}"
         BLOB_PLATFORM="${{ steps.platform_map.outputs.BLOB_PLATFORM }}"
         ZIP_NAME="${{ steps.platform_map.outputs.ZIP_NAME }}"
-        ZIP_FILE="${{ steps.prepare_zip.outputs.ZIP_FILE }}"
+        if [ "${{ matrix.platform }}" = "Windows" ]; then
+          ZIP_FILE="${{ steps.prepare_zip_windows.outputs.ZIP_FILE }}"
+        else
+          ZIP_FILE="${{ steps.prepare_zip_unix.outputs.ZIP_FILE }}"
+        fi
         
         BLOB_PATH="$VERSION/$BLOB_PLATFORM/$ZIP_NAME"
         echo "Uploading to: $BLOB_PATH"
@@ -380,7 +405,11 @@ jobs:
       run: |
         BLOB_PLATFORM="${{ steps.platform_map.outputs.BLOB_PLATFORM }}"
         ZIP_NAME="${{ steps.platform_map.outputs.ZIP_NAME }}"
-        ZIP_FILE="${{ steps.prepare_zip.outputs.ZIP_FILE }}"
+        if [ "${{ matrix.platform }}" = "Windows" ]; then
+          ZIP_FILE="${{ steps.prepare_zip_windows.outputs.ZIP_FILE }}"
+        else
+          ZIP_FILE="${{ steps.prepare_zip_unix.outputs.ZIP_FILE }}"
+        fi
         
         BLOB_PATH="latest/$BLOB_PLATFORM/$ZIP_NAME"
         echo "Uploading to: $BLOB_PATH"
