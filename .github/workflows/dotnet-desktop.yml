@@ -92,8 +92,6 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
         allow-no-subscriptions: true
-      env:
-        AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
     - name: Install Apple certificates and notary profile
       if: matrix.os == 'macos-latest'
       env:
