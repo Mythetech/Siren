@@ -4,10 +4,10 @@
 @using Siren.Components.Collections
 @using Siren.Components.Variables
 @using Siren.Components.History
-@using Mythetech.Components.Infrastructure
+@using Mythetech.Framework.Infrastructure
 @using System.Text.Json
 @using Microsoft.Extensions.Logging
-@using Mythetech.Components.Infrastructure.MessageBus
+@using Mythetech.Framework.Infrastructure.MessageBus
 @using Siren.Components.Settings
 @using MouseEvent = MudBlazor.MouseEvent
 @implements IDisposable
@@ -58,9 +58,12 @@
                 <MudMenuItem Class="rounded" Icon="@SirenIcons.AddCollection" OnClick="HandleCreateCollection">Create
                     new</MudMenuItem>
                 <MudMenu Label="Import from" StartIcon="@SirenIcons.UrlImport" Dense="true" ListClass="pa-1">
-                    <MudMenuItem Class="rounded" Icon="@SirenIcons.UrlImport" OnClick="HandleImportFromOpenApi">OpenAPI</MudMenuItem>
-                    <MudMenuItem Class="rounded" Icon="@SirenIcons.UrlImport" OnClick="HandleImportPostmanCollection">Postman Collection</MudMenuItem>
-                    <MudMenuItem Class="rounded" Icon="@SirenIcons.UrlImport" OnClick="HandleImportBrunoCollection">Bruno Collection</MudMenuItem>
+                    <MudMenuItem Class="rounded" Icon="@SirenIcons.UrlImport" OnClick="HandleImportFromOpenApi">OpenAPI
+                    </MudMenuItem>
+                    <MudMenuItem Class="rounded" Icon="@SirenIcons.UrlImport" OnClick="HandleImportPostmanCollection">
+                        Postman Collection</MudMenuItem>
+                    <MudMenuItem Class="rounded" Icon="@SirenIcons.UrlImport" OnClick="HandleImportBrunoCollection">
+                        Bruno Collection</MudMenuItem>
                 </MudMenu>
                 <MudMenuItem Class="rounded" Icon="@SirenIcons.Export" OnClick="HandleExportToJson">Export to JSON
                 </MudMenuItem>
@@ -167,7 +170,7 @@
         }
 
         var request = AppState.Active.Request;
-        
+
         var (editorBody, _) = await AppState.RequestBodyContentAsync();
         if (request.BodyType == RequestBodyType.Raw && !string.IsNullOrEmpty(editorBody))
         {

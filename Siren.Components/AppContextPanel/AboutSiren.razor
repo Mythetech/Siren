@@ -1,8 +1,8 @@
 ﻿@using System.Reflection
 @using Siren.Components.Configuration
 @using Siren.Components.Theme
-@using Mythetech.Components.Infrastructure
-@using Mythetech.Components.Components.Links
+@using Mythetech.Framework.Infrastructure
+@using Mythetech.Framework.Components.Links
 
 <MudDialog>
     <TitleContent>
@@ -10,10 +10,10 @@
             <SirenText Typo="Typo.h6">About</SirenText>
             <SirenStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
                 <MudTooltip Text="Report Issue">
-                    <MudIconButton Icon="@SirenIcons.Bug" Color="Color.Primary" OnClick="OpenReportIssue"/>
+                    <MudIconButton Icon="@SirenIcons.Bug" Color="Color.Primary" OnClick="OpenReportIssue" />
                 </MudTooltip>
                 <MudTooltip Text="GitHub">
-                    <MudIconButton Icon="@SirenIcons.GitHub" Color="Color.Primary" OnClick="OpenGitHub"/>
+                    <MudIconButton Icon="@SirenIcons.GitHub" Color="Color.Primary" OnClick="OpenGitHub" />
                 </MudTooltip>
             </SirenStack>
         </SirenStack>
@@ -21,23 +21,25 @@
     <DialogContent>
         <MudGrid>
             <MudItem xs="6" Class="pt-0">
-                <MudImage ObjectFit="ObjectFit.Contain" Class="w-100 h-100" Src="../siren-logo-full.png"/>
+                <MudImage ObjectFit="ObjectFit.Contain" Class="w-100 h-100" Src="../siren-logo-full.png" />
             </MudItem>
             <MudItem xs="6">
                 <SirenStack Class="w-100 h-100" Spacing="3" AlignItems="AlignItems.Center" Justify="Justify.Center">
                     <SirenText Class="app-header-font" Typo="Typo.h4">Siren</SirenText>
                     <SirenText Typo="Typo.h5" Class="mud-text-secondary">Call to your endpoints</SirenText>
-                    <SirenText Typo="Typo.h6">Simplify your API testing workflow. Reimagine modern tools, and focus on your requests with features that enhance your developer experience.</SirenText>
+                    <SirenText Typo="Typo.h6">Simplify your API testing workflow. Reimagine modern tools, and focus on
+                        your requests with features that enhance your developer experience.</SirenText>
                 </SirenStack>
             </MudItem>
         </MudGrid>
         <SirenStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.FlexStart" Class="pt-4 px-1 mb-n2">
-            <ExternalLink Typo="Typo.h6" Color="Color.Inherit" Link="@AppConfig.CompanyWebsite" Class="app-header-font">Mythetech</ExternalLink>
+            <ExternalLink Typo="Typo.h6" Color="Color.Inherit" Link="@AppConfig.CompanyWebsite" Class="app-header-font">
+                Mythetech</ExternalLink>
         </SirenStack>
     </DialogContent>
     <DialogActions>
         <SirenText Typo="Typo.body1" class="mud-text-secondary pl-3">Version @Version</SirenText>
-        <SirenSpacer/>
+        <SirenSpacer />
         <MudButton OnClick="Cancel">Close</MudButton>
         <SirenButton Variant="Variant.Text" OnClick="Cancel">Get Started!</SirenButton>
     </DialogActions>
@@ -45,13 +47,13 @@
 @code {
     [CascadingParameter]
     private IMudDialogInstance MudDialog { get; set; }
-    
+
     [Inject]
     protected ILinkOpenService LinkOpenService { get; set; } = default!;
 
     [Inject]
     protected AppConfiguration AppConfig { get; set; } = default!;
-    
+
     private void Cancel() => MudDialog.Cancel();
 
     private string Version => Assembly.GetExecutingAssembly().GetName().Version.ToString();

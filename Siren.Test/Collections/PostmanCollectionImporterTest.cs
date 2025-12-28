@@ -4,8 +4,8 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using MudBlazor;
-using Mythetech.Components.Infrastructure;
-using Mythetech.Components.Infrastructure.MessageBus;
+using Mythetech.Framework.Infrastructure;
+using Mythetech.Framework.Infrastructure.MessageBus;
 using NSubstitute;
 using Siren.Components.Collections;
 using Siren.Components.Collections.Commands;
@@ -64,7 +64,7 @@ namespace Siren.Test.Collections
 
             await _importer.Consume(new ImportPostmanCollection());
 
-            await _messageBus.Received().PublishAsync(Arg.Is<ShowDialog>(d => 
+            await _messageBus.Received().PublishAsync(Arg.Is<ShowDialog>(d =>
                 d.Dialog == typeof(Siren.Components.Collections.CollectionImportDialog) &&
                 d.Title == "Import Postman Collection"));
 
@@ -119,7 +119,7 @@ namespace Siren.Test.Collections
 
             await _importer.Consume(new ImportPostmanCollection());
 
-            await _messageBus.Received().PublishAsync(Arg.Is<ShowDialog>(d => 
+            await _messageBus.Received().PublishAsync(Arg.Is<ShowDialog>(d =>
                 d.Dialog == typeof(Siren.Components.Collections.CollectionImportDialog) &&
                 d.Title == "Import Postman Collection"));
 
@@ -160,7 +160,7 @@ namespace Siren.Test.Collections
         {
             var testDataPath = Path.Combine("Collections", "TestData", "Public REST APIs.postman_collection.json");
             var fullPath = Path.Combine(AppContext.BaseDirectory, testDataPath);
-            
+
             if (!File.Exists(fullPath))
             {
                 var assemblyLocation = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
@@ -185,7 +185,7 @@ namespace Siren.Test.Collections
 
             await _importer.Consume(new ImportPostmanCollection());
 
-            await _messageBus.Received().PublishAsync(Arg.Is<ShowDialog>(d => 
+            await _messageBus.Received().PublishAsync(Arg.Is<ShowDialog>(d =>
                 d.Dialog == typeof(Siren.Components.Collections.CollectionImportDialog) &&
                 d.Title == "Import Postman Collection" &&
                 d.Parameters != null &&
@@ -201,7 +201,7 @@ namespace Siren.Test.Collections
             showDialogCalls.Should().NotBeEmpty();
             var dialog = showDialogCalls.First();
             var collection = dialog.Parameters?.FirstOrDefault(x => x.Key.Equals("Collection")).Value as Collection;
-            
+
             collection.Should().NotBeNull();
             collection!.Name.Should().Be("Public REST APIs");
             collection.Requests.Should().NotBeNull();

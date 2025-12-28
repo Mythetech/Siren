@@ -1,5 +1,5 @@
 @using Siren.Components.Collections
-@using Mythetech.Components.Infrastructure.MessageBus
+@using Mythetech.Framework.Infrastructure.MessageBus
 @using Siren.Components.Shared.Notifications.Commands
 @using MudBlazor
 
@@ -11,7 +11,8 @@
                 <SirenText Class="mb-2">@Collection.Name</SirenText>
                 @foreach (var req in Collection.Requests)
                 {
-                    <SirenStack Spacing="3" Row="true" Class="w-100" Style="@($"background-color:{GetBackgroundColor(req.Method.Method)}")">
+                    <SirenStack Spacing="3" Row="true" Class="w-100"
+                        Style="@($"background-color:{GetBackgroundColor(req.Method.Method)}")">
                         <Siren.Components.Http.HttpMethodChip Method="@req.Method" />
                         <SirenText>@(!string.IsNullOrWhiteSpace(req.DisplayUri) ? req.DisplayUri : req.RequestUri)</SirenText>
                     </SirenStack>
@@ -82,4 +83,3 @@
         return $"rgba({r}, {g}, {b}, {opacity})";
     }
 }
-

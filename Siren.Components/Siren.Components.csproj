@@ -16,7 +16,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="10.0.0" />
     <PackageReference Include="BlazorMonaco" Version="3.2.0" />
     <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components" Version="4.11.3" />
-    <PackageReference Include="mythetech.components" Version="0.0.10" />
+    <PackageReference Include="Mythetech.Framework" Version="0.1.0" />
     <PackageReference Include="Nerdbank.GitVersioning" Version="3.7.115">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

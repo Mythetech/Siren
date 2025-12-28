@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.FluentUI.AspNetCore.Components;
 using MudBlazor;
 using MudBlazor.Services;
-using Mythetech.Components.Infrastructure.MessageBus;
+using Mythetech.Framework.Infrastructure.MessageBus;
 using Siren.Components.Collections;
 using Siren.Components.Configuration;
 using Siren.Components.History;
@@ -39,9 +39,9 @@ namespace Siren.Components
 
             services.AddSingleton<SirenAppState>();
             services.AddSingleton<ICookieService, CookieService>();
-            
+
             services.AddSingleton<ISettingsService, TSettingsService>();
-            
+
             services.AddSingleton<SettingsState>(sp =>
             {
                 var settingsService = sp.GetRequiredService<ISettingsService>();
@@ -62,9 +62,9 @@ namespace Siren.Components
             services.AddSingleton<IVariableSubstitutionService, VariableSubstitutionService>();
 
             services.AddSingleton<RequestAuthenticationState>();
-            
+
             services.AddSingleton<AppConfiguration>();
-            
+
             return services;
         }
     }
