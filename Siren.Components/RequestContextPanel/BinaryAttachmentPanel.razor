@@ -2,34 +2,21 @@
 @using Siren.Components.Theme
 @using Siren.Components.Shared.Notifications
 @using System.IO
-@using Mythetech.Components.Infrastructure
+@using Mythetech.Framework.Infrastructure
 
 <SirenStack Class="w-100 h-100 d-flex">
     <SirenStack Spacing="3" Class="p-1 overflow-y-scroll d-flex h-100 w-100">
         <SirenStack Row="true" Spacing="3" Class="w-100" AlignItems="AlignItems.Center">
             <SirenText Typo="Typo.body1">Binary Attachments</SirenText>
-            <SirenSpacer/>
-            <SirenIconButton OnClick="@AddFile"
-                             Icon="@SirenIcons.Add"
-                             Tooltip="Add File Attachment"
-                             Class="scale-75"
-                             Size="Size.Medium"
-                             Variant="Variant.Text"
-                             Color="Color.Primary"/>
+            <SirenSpacer />
+            <SirenIconButton OnClick="@AddFile" Icon="@SirenIcons.Add" Tooltip="Add File Attachment" Class="scale-75"
+                Size="Size.Medium" Variant="Variant.Text" Color="Color.Primary" />
         </SirenStack>
 
         @if (attachments.Any())
         {
-            <MudDataGrid T="BinaryAttachment"
-                        Items="@attachments"
-                        Context="context"
-                        Class="w-100"
-                        Bordered="false"
-                        Elevation="0"
-                        RowClass="text-truncate hover-error-zone"
-                        Style="overflow:hidden;"
-                        Dense="true"
-                        Hover="true">
+            <MudDataGrid T="BinaryAttachment" Items="@attachments" Context="context" Class="w-100" Bordered="false"
+                Elevation="0" RowClass="text-truncate hover-error-zone" Style="overflow:hidden;" Dense="true" Hover="true">
                 <Columns>
                     <MudBlazor.PropertyColumn Property="x => x.FileName" Title="File Name" />
                     <MudBlazor.PropertyColumn Property="x => x.ContentType" Title="Content Type" />
@@ -40,14 +27,11 @@
                     </MudBlazor.TemplateColumn>
                     <MudBlazor.TemplateColumn>
                         <CellTemplate>
-                            <SirenSpacer/>
-                            <SirenIconButton OnClick="@(() => RemoveAttachment(context.Item))"
-                                             Icon="@SirenIcons.Delete"
-                                             Class="hover-visible hover-visible-error scale-75"
-                                             Tooltip="@($"Remove `{context.Item.FileName}`")"
-                                             Size="Size.Small"
-                                             Variant="Variant.Text"
-                                             Color="Color.Transparent"/>
+                            <SirenSpacer />
+                            <SirenIconButton OnClick="@(() => RemoveAttachment(context.Item))" Icon="@SirenIcons.Delete"
+                                Class="hover-visible hover-visible-error scale-75"
+                                Tooltip="@($"Remove `{context.Item.FileName}`")" Size="Size.Small" Variant="Variant.Text"
+                                Color="Color.Transparent" />
                         </CellTemplate>
                     </MudBlazor.TemplateColumn>
                 </Columns>
@@ -58,7 +42,8 @@
             <SirenStack Spacing="3" Class="w-100 h-100 d-flex" AlignItems="AlignItems.Center" Justify="Justify.Center">
                 <SirenIcon Icon="@SirenIcons.Request" Size="Size.Large" Color="Color.Inherit" />
                 <SirenText Typo="Typo.h6">No Attachments</SirenText>
-                <SirenText Typo="Typo.body2" Class="mud-text-secondary">Click the + button to add file attachments</SirenText>
+                <SirenText Typo="Typo.body2" Class="mud-text-secondary">Click the + button to add file attachments
+                </SirenText>
             </SirenStack>
         }
     </SirenStack>
@@ -179,4 +164,3 @@
         };
     }
 }
-

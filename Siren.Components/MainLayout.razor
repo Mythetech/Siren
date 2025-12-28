@@ -14,7 +14,7 @@
 @using Siren.Components.Settings
 @using Siren.Components.AppContextPanel
 @using Siren.Components.Configuration
-@using Mythetech.Components.Infrastructure
+@using Mythetech.Framework.Infrastructure
 @using MouseEvent = MudBlazor.MouseEvent
 @implements IDisposable
 
@@ -28,17 +28,20 @@
 <FluentKeyCodeProvider />
 
 <MudLayout>
-    <MudAppBar Class="pl-4" Style="border-bottom-left-radius:3em;box-shadow:1px 1px 4px 0px var(--mud-palette-primary);border-bottom-right-radius:1.5em;">
+    <MudAppBar Class="pl-4"
+        Style="border-bottom-left-radius:3em;box-shadow:1px 1px 4px 0px var(--mud-palette-primary);border-bottom-right-radius:1.5em;">
         <SirenStack Row="true" Class="w-100" AlignItems="@AlignItems.Center" Spacing="6">
-            <MudMenu ActivationEvent="MouseEvent.MouseOver" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft"
-                Dense="true" ListClass="pa-1">
+            <MudMenu ActivationEvent="MouseEvent.MouseOver" AnchorOrigin="Origin.BottomLeft"
+                TransformOrigin="Origin.TopLeft" Dense="true" ListClass="pa-1">
                 <ActivatorContent>
                     <MudText Class="app-header-font" Typo="Typo.h5" Style="cursor: pointer;">Siren</MudText>
                 </ActivatorContent>
                 <ChildContent>
                     <MudMenuItem Class="rounded" Icon="@SirenIcons.About" OnClick="OpenAboutSiren">About</MudMenuItem>
-                    <MudMenuItem Class="rounded" Icon="@SirenIcons.Settings" OnClick="OpenSettingsDialog">Settings</MudMenuItem>
-                    <MudMenuItem Class="rounded" Icon="@SirenIcons.Bug" OnClick="OpenReportIssue">Report Issue</MudMenuItem>
+                    <MudMenuItem Class="rounded" Icon="@SirenIcons.Settings" OnClick="OpenSettingsDialog">Settings
+                    </MudMenuItem>
+                    <MudMenuItem Class="rounded" Icon="@SirenIcons.Bug" OnClick="OpenReportIssue">Report Issue
+                    </MudMenuItem>
                 </ChildContent>
             </MudMenu>
             <MenuBar />
@@ -47,14 +50,14 @@
         </SirenStack>
     </MudAppBar>
     <MudDrawer @bind-Open="@AppState.SideBarOpen" Variant="DrawerVariant.Mini" Style="overflow: hidden;">
-        <ContextPanel IsDarkMode="@AppState.IsDarkMode"
-                      DrawerBackgroundColor="@_backgroundColor"
-                      DrawerToggled="@(() => AppState.ToggleSideBar())"
-                      DarkModeToggled="@(() => AppState.IsDarkMode = !AppState.IsDarkMode)" />
+        <ContextPanel IsDarkMode="@AppState.IsDarkMode" DrawerBackgroundColor="@_backgroundColor"
+            DrawerToggled="@(() => AppState.ToggleSideBar())"
+            DarkModeToggled="@(() => AppState.IsDarkMode = !AppState.IsDarkMode)" />
         <div class="@($"resizer {(!AppState.SideBarOpen ? "d-none" : "")}")"></div>
     </MudDrawer>
     <MudMainContent Class=" pl-2 pr-0" Style="@($"max-height:100dvh;max-width:100vw;overflow:hidden;")">
-        <MudContainer Class="px-0 mud-width-full" MaxWidth="MaxWidth.ExtraLarge" Style="@($"height:94vh;overflow:hidden;")">
+        <MudContainer Class="px-0 mud-width-full" MaxWidth="MaxWidth.ExtraLarge"
+            Style="@($"height:94vh;overflow:hidden;")">
             @Body
         </MudContainer>
     </MudMainContent>
@@ -90,7 +93,8 @@
 
     public bool _isDarkMode = false;
 
-    private string _backgroundColor => (!AppState.IsDarkMode ? $"background-color:{_theme.Theme.PaletteLight.OverlayLight}" : $"background-color:{_theme.Theme.PaletteDark.Black}");
+    private string _backgroundColor => (!AppState.IsDarkMode ? $"background-color:{_theme.Theme.PaletteLight.OverlayLight}"
+    : $"background-color:{_theme.Theme.PaletteDark.Black}");
 
     private MudTheme Theme { get; } = new SirenTheme();
 
@@ -111,7 +115,7 @@
         {
             AppState.SetThemeProvider(_theme);
         }
-        
+
         base.OnAfterRender(firstRender);
     }
 
@@ -126,7 +130,7 @@
                 _hasRestoredEnvironment = true;
             }
         }
-        
+
         await base.OnAfterRenderAsync(firstRender);
     }
 
@@ -194,7 +198,7 @@
         }
 
         var availableEnvironments = VariableState.Environments.Select(e => e.Name).ToList();
-        
+
         if (!availableEnvironments.Contains(currentEnvironment))
         {
             AppState.ActiveEnvironment = null;
@@ -210,7 +214,7 @@
         }
 
         var availableEnvironments = VariableState.Environments.Select(e => e.Name).ToList();
-        
+
         if (availableEnvironments.Contains(Settings.LastActiveEnvironment))
         {
             AppState.ActiveEnvironment = Settings.LastActiveEnvironment;

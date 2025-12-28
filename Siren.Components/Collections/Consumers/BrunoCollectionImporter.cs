@@ -1,8 +1,8 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using MudBlazor;
-using Mythetech.Components.Infrastructure;
-using Mythetech.Components.Infrastructure.MessageBus;
+using Mythetech.Framework.Infrastructure;
+using Mythetech.Framework.Infrastructure.MessageBus;
 using Siren.Components.Collections.Commands;
 using Siren.Components.Http.Models;
 using Siren.Components.Shared.Dialogs;
@@ -197,7 +197,7 @@ namespace Siren.Components.Collections.Consumers
                         {
                             var key = parts[0].Trim();
                             var value = parts[1].Trim();
-                            
+
                             switch (key.ToLower())
                             {
                                 case "url":

@@ -1,28 +1,28 @@
 ﻿@using System.Reflection
 @using Siren.Components.RequestContextPanel.Authentication
-@using Mythetech.Components.Components.SimpleTabs
+@using Mythetech.Framework.Components.SimpleTabs
 <SirenStack Class="h-100 w-100 flex-grow-1">
     <SirenStack Row="true" Class="w-100 h-100 flex-grow-1" Style="min-width:calc(100% - 3.5rem)" Spacing="1">
         <SimpleTabs Class="mt-4 flex-grow-1" Style="width: 90%" @ref="_tabs">
             <Tab Name="Auth" Icon="@SirenIcons.Auth">
                 <ChildContent>
-                    <AuthenticationPanel/>
+                    <AuthenticationPanel />
                 </ChildContent>
             </Tab>
             <Tab Name="Headers" Icon="@SirenIcons.Headers">
                 <ChildContent>
-                    <HeadersPanel NetworkRequest="@AppState.Active"/>
+                    <HeadersPanel NetworkRequest="@AppState.Active" />
                 </ChildContent>
             </Tab>
             <Tab Name="Cookies" Icon="@SirenIcons.Cookies">
                 <ChildContent>
-                    <CookiePanel NetworkRequest="@AppState.Active"/>
+                    <CookiePanel NetworkRequest="@AppState.Active" />
                 </ChildContent>
             </Tab>
         </SimpleTabs>
         <MudTooltip Text="Close" RootClass="absolute mt-n2" RootStyle="right:0">
             <MudIconButton Icon="@SirenIcons.Close" Color="Color.Surface" Variant="Variant.Text"
-                           OnClick="@PanelClosed"/>
+                OnClick="@PanelClosed" />
         </MudTooltip>
     </SirenStack>
     @if (string.IsNullOrWhiteSpace(_openTab))
@@ -45,11 +45,11 @@
     private MudToggleGroup<string> _toggle;
 
     private Dictionary<string, int> TabLookup = new()
-    {
-        { "Auth", 0 },
-        { "Headers", 1 },
-        { "Cookies", 2 }
-    };
+{
+{ "Auth", 0 },
+{ "Headers", 1 },
+{ "Cookies", 2 }
+};
 
     private string _openTab = "";
 
@@ -62,4 +62,3 @@
     }
 
 }
-

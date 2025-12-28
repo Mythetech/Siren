@@ -1,12 +1,13 @@
 @using Siren.Components.Shared.Dialogs.Commands
-@inherits Mythetech.Components.Infrastructure.MessageBus.ComponentConsumer<ShowDialog>
+@inherits Mythetech.Framework.Infrastructure.MessageBus.ComponentConsumer<ShowDialog>
 
 @code {
     [Inject] IDialogService DialogService { get; set; } = default!;
-    
+
     protected override async Task Consume(ShowDialog message, CancellationToken cancellationToken)
     {
-        var r = await DialogService.ShowAsync(message.Dialog, message.Title, message?.Parameters ?? new(), message?.Options ?? SirenDialogs.CreateDefaultOptions());
+        var r = await DialogService.ShowAsync(message.Dialog, message.Title, message?.Parameters ?? new(), message?.Options ??
+        SirenDialogs.CreateDefaultOptions());
         await r.Result;
     }
 }
