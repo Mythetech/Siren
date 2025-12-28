@@ -78,6 +78,12 @@
     [Inject]
     protected AppConfiguration AppConfig { get; set; } = default!;
 
+    [Inject]
+    protected SettingsState Settings { get; set; } = default!;
+
+    [Inject]
+    protected VariableState VariableState { get; set; } = default!;
+
     private Func<string> GetWidth => () => AppState.SideBarOpen ? "74vw" : "calc(100vw - 52px)";
 
     protected MudThemeProvider _theme { get; set; } = default!;
@@ -90,9 +96,13 @@
 
     private List<SirenNetworkRequest> _networkRequests = new();
 
+    private bool _hasRestoredEnvironment = false;
+
     protected override void OnInitialized()
     {
         AppState.OnDarkModeChanged += HandleDarkModeChange;
+        AppState.OnActiveEnvironmentChanged += HandleActiveEnvironmentChanged;
+        VariableState.StateChanged += HandleVariableStateChanged;
     }
 
     protected override void OnAfterRender(bool firstRender)
@@ -110,6 +120,11 @@
         if (firstRender)
         {
             await AppState.SetSystemColorMode();
+            if (!_hasRestoredEnvironment)
+            {
+                RestoreLastActiveEnvironment();
+                _hasRestoredEnvironment = true;
+            }
         }
         
         await base.OnAfterRenderAsync(firstRender);
@@ -152,9 +167,65 @@
         await LinkOpenService.OpenLinkAsync(AppConfig.ReportIssueUrl);
     }
 
+    private void HandleActiveEnvironmentChanged(string? environment)
+    {
+        Settings.LastActiveEnvironment = environment;
+    }
+
+    private void HandleVariableStateChanged()
+    {
+        if (_hasRestoredEnvironment)
+        {
+            ValidateCurrentEnvironment();
+        }
+        else
+        {
+            RestoreLastActiveEnvironment();
+            _hasRestoredEnvironment = true;
+        }
+    }
+
+    private void ValidateCurrentEnvironment()
+    {
+        var currentEnvironment = AppState.ActiveEnvironment;
+        if (string.IsNullOrWhiteSpace(currentEnvironment))
+        {
+            return;
+        }
+
+        var availableEnvironments = VariableState.Environments.Select(e => e.Name).ToList();
+        
+        if (!availableEnvironments.Contains(currentEnvironment))
+        {
+            AppState.ActiveEnvironment = null;
+            Settings.LastActiveEnvironment = null;
+        }
+    }
+
+    private void RestoreLastActiveEnvironment()
+    {
+        if (string.IsNullOrWhiteSpace(Settings.LastActiveEnvironment))
+        {
+            return;
+        }
+
+        var availableEnvironments = VariableState.Environments.Select(e => e.Name).ToList();
+        
+        if (availableEnvironments.Contains(Settings.LastActiveEnvironment))
+        {
+            AppState.ActiveEnvironment = Settings.LastActiveEnvironment;
+        }
+        else
+        {
+            Settings.LastActiveEnvironment = null;
+        }
+    }
+
     public void Dispose()
     {
         AppState.OnDarkModeChanged -= HandleDarkModeChange;
+        AppState.OnActiveEnvironmentChanged -= HandleActiveEnvironmentChanged;
+        VariableState.StateChanged -= HandleVariableStateChanged;
     }
 
 }

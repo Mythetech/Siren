@@ -24,7 +24,8 @@ namespace Siren.Components.Settings
         TimeDisplayOptions TimeDisplay,
         SizeDisplayOptions SizeDisplay,
         string DefaultUserAgent,
-        string? DefaultHttpMethod
+        string? DefaultHttpMethod,
+        string? LastActiveEnvironment
     );
 
     public class SettingsState
@@ -138,6 +139,20 @@ namespace Siren.Components.Settings
             }
         }
 
+        private string? _lastActiveEnvironment = null;
+        
+        public string? LastActiveEnvironment
+        {
+            get => _lastActiveEnvironment;
+            set
+            {
+                if (_lastActiveEnvironment == value) return;
+                
+                _lastActiveEnvironment = value;
+                NotifyChangeSubscribersAsync();
+            }
+        }
+
         /// <summary>
         /// Creates a snapshot of the current settings state for later restoration.
         /// </summary>
@@ -151,7 +166,8 @@ namespace Siren.Components.Settings
                 TimeDisplay,
                 SizeDisplay,
                 DefaultUserAgent,
-                DefaultHttpMethod
+                DefaultHttpMethod,
+                LastActiveEnvironment
             );
         }
 
@@ -169,6 +185,7 @@ namespace Siren.Components.Settings
             _sizeDisplay = snapshot.SizeDisplay;
             _defaultUserAgent = snapshot.DefaultUserAgent;
             _defaultHttpMethod = snapshot.DefaultHttpMethod;
+            _lastActiveEnvironment = snapshot.LastActiveEnvironment;
             
             if (notify)
             {
