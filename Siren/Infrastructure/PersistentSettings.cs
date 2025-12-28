@@ -21,6 +21,8 @@ namespace Siren.Infrastructure
         public string DefaultUserAgent { get; set; } = "";
         
         public string? DefaultHttpMethod { get; set; }
+        
+        public string? LastActiveEnvironment { get; set; }
 
         public static PersistentSettings Create(SettingsStateSnapshot snapshot)
         {
@@ -32,7 +34,8 @@ namespace Siren.Infrastructure
                 TimeDisplay = snapshot.TimeDisplay,
                 SizeDisplay = snapshot.SizeDisplay,
                 DefaultUserAgent = snapshot.DefaultUserAgent,
-                DefaultHttpMethod = snapshot.DefaultHttpMethod
+                DefaultHttpMethod = snapshot.DefaultHttpMethod,
+                LastActiveEnvironment = snapshot.LastActiveEnvironment
             };
         }
 
@@ -45,7 +48,8 @@ namespace Siren.Infrastructure
                 TimeDisplay,
                 SizeDisplay,
                 DefaultUserAgent,
-                DefaultHttpMethod
+                DefaultHttpMethod,
+                LastActiveEnvironment
             );
         }
     }
