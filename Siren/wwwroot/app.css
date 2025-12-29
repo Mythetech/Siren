@@ -444,12 +444,13 @@ a, .btn-link {
     background-color: var(--mud-palette-primary-hover);
     background: linear-gradient(90deg, var(--mud-palette-tertiary-hover) 0%, var(--mud-palette-primary-hover) 100%);
     border-bottom: solid 1px var(--http-request-dropdown-color);
+    color: var(--mud-palette-text-primary);
 }
 
     .send-request-button:hover {
         background: linear-gradient(90deg, 
-            var(--mud-palette-primary) 0%, 
-            var(--mud-palette-primary-darken) 100%);
+            rgba(var(--mud-palette-primary-rgb), 0.1) 0%,
+            rgba(var(--mud-palette-primary-rgb), 1) 100%);
         box-shadow: 1px 0 3px 1px var(--mud-palette-primary);
     }
 

@@ -19,7 +19,7 @@
                     ValueChanged="UpdateRequestUri" />
 
                 <MudButton OnClick="@OnSendClicked" Variant="Variant.Text"
-                    Color="@(Loading? Color.Dark: Color.Primary)" Class="send-request-button">
+                    Color="@(Loading? Color.Dark: Color.Inherit)" Class="send-request-button">
                     @(Loading ? "Cancel" : "Send")
                 </MudButton>
             </SirenStack>
