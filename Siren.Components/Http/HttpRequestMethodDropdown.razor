@@ -12,7 +12,7 @@
            Class="@($"{Class} http-request-dropdown mt-0")"
            Dense="true"
            AdornmentColor="Color.Inherit"
-           InputClass="mud-palette-inherit"
+           InputClass="mud-palette-inherit w-100 justify-end"
            Variant="Variant.Text"
            Required="@(!AllowNone)"
            T="string"
@@ -22,7 +22,7 @@
            Underline="false"
            Value="_selectedMethod"
            ValueChanged="@(async (s) => { _selectedMethod = s; await SelectedMethodChanged.InvokeAsync(s); })"
-           Style="@($"max-width:160px;color:{GetColor(_selectedMethod)};border:none;background:linear-gradient(-90deg, var(--mud-palette-surface) 0%, transparent 100%);")">
+           Style="@($"width:100%;color:{GetColor(_selectedMethod)};border:none;background:linear-gradient(-90deg, var(--mud-palette-surface) 0%, transparent 100%);")">
     @if (AllowNone)
     {
         <MudSelectItem @onmouseenter="@(() => { _active = ""; StateHasChanged(); })"

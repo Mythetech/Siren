@@ -370,27 +370,57 @@ a, .btn-link {
     border-radius: 4em;
     height: 45px;
     position: relative;
+    display: flex;
+    align-items: stretch;
     transition: all 0.2s ease-in-out;
+    box-sizing: border-box;
+    gap: 0;
+}
+
+.http-request-group > * {
+    margin: 0 !important;
 }
 
 .http-request-dropdown-outer {
     height: 45px;
-    padding-bottom: 0.05em;
+    display: flex;
+    align-items: center;
     overflow: clip;
+    width: 150px;
+    min-width: 150px;
     max-width: 150px;
+    flex-shrink: 0;
     border-bottom-left-radius: 4em;
     border-top-left-radius: 4em;
     border-top: solid 1px var(--http-request-dropdown-color);
     border-left: solid 3px var(--http-request-dropdown-color);
     border-bottom: solid 1px var(--http-request-dropdown-color);
-    top: -0.325em;
+    margin: 0 !important;
+    padding: 0;
+    align-self: stretch;
+    box-sizing: border-box;
+    transform: translateY(-1px);
+}
+
+.http-request-dropdown-outer > .mud-select {
+    margin: 0 !important;
+    padding: 0 !important;
+    height: 44px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    display: flex;
+    align-items: center;
 }
 
 .http-request-dropdown {
-    max-width: 150px;
-    min-height: 2.813em;
+    width: 100%;
+    height: 45px;
     border-bottom-left-radius: 4em;
     border-top-left-radius: 4em;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
 }
 
     .http-request-dropdown .mud-input-control-input-container {
@@ -402,24 +432,30 @@ a, .btn-link {
 
         .http-request-dropdown .mud-input-control-input-container .mud-input .mud-input-slot {
             top: 0.25em;
+            display: flex;
+            align-items: center;
         }
 
         .http-request-dropdown .mud-input-control-input-container .mud-input .mud-input-adornment {
             background-color: transparent;
             color: var(--http-request-dropdown-color);
             margin-top: 0.5em;
+            display: flex;
+            align-items: center;
         }
 
 .mud-input-control + .mud-input-required + .mud-select + .http-request-dropdown {
     background-color: transparent;
     padding-left: 0.25em;
-    top: -0.15em;
 }
 
 .http-request-dropdown > .mud-input-control-input-container {
     border-top-right-radius: 0px;
     border-bottom-right-radius: 0px;
-    height: 2.813em;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    margin: 0;
 }
 
 .http-request-dropdown-outer .http-request-dropdown > .mud-input-control:hover {
@@ -440,11 +476,17 @@ a, .btn-link {
     border-top-right-radius: 4em;
     border-bottom-right-radius: 4em;
     border: solid 0px transparent;
-    height: 2.75em;
+    height: 44px;
+    flex-shrink: 0;
+    align-self: stretch;
+    display: flex;
+    align-items: center;
     background-color: var(--mud-palette-primary-hover);
     background: linear-gradient(90deg, var(--mud-palette-tertiary-hover) 0%, var(--mud-palette-primary-hover) 100%);
     border-bottom: solid 1px var(--http-request-dropdown-color);
     color: var(--mud-palette-text-primary);
+    margin: 0 !important;
+    box-sizing: border-box;
 }
 
     .send-request-button:hover {
@@ -471,8 +513,55 @@ a, .btn-link {
     box-shadow: 1px 0 3px 0px var(--http-request-dropdown-color);
 }
 
+.http-request-input {
+    display: flex;
+    margin: 0 !important;
+    flex: 1 1 0;
+    min-width: 0;
+    height: 45px;
+    align-self: stretch;
+    justify-content: center;
+}
+
 .http-request-input > * > * > .mud-input-slot {
     padding: 0px !important;
+    display: flex;
+    align-items: center;
+    height: 100%;
+    justify-content: flex-start;
+    width: 100%;
+}
+
+.http-request-input > .mud-input-control {
+    height: 45px;
+    margin: 0;
+    width: 100%;
+    display: flex;
+    align-items: center;
+}
+
+.http-request-input > .mud-input-control > .mud-input-control-input-container {
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.http-request-input .mud-input {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+}
+
+.http-request-input .mud-input input {
+    height: 100%;
+    line-height: normal;
+    padding: 0;
+    margin: 0;
+    text-align: left !important;
+    width: 100%;
 }
 
 .http-request-input:focus-within {
