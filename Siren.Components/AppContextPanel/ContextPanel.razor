@@ -1,4 +1,6 @@
 ﻿@implements IDisposable
+@using Mythetech.Framework.Infrastructure.Plugins
+@using Mythetech.Framework.Infrastructure.Plugins.Components
 @using Siren.Components.Settings
 @using Siren.Components.History
 @using Siren.Components.Collections
@@ -21,12 +23,30 @@
             <CollectionsPanel />
         </PanelContent>
     </ContextPanelItem>
-    <ContextPanelItem Active="@(_activeItem?.Title == "Variables")" @ref="@_contextPanelItems[" Variables"]"
+    <ContextPanelItem Active="@(_activeItem?.Title == "Variables")" @ref="@_contextPanelItems["Variables"]"
         Title="Variables" Icon="@SirenIcons.Variables" ContextPanelItemClicked="HandleContextPanelItemClicked">
         <PanelContent>
             <VariablesPanel />
         </PanelContent>
     </ContextPanelItem>
+    @if (Plugins.PluginsActive && Plugins.EnabledPlugins.Any(x => x.ContextPanelComponents.Count > 0))
+    {
+        <MudDivider Class="my-1" Style="max-height: 2px;" />
+        @foreach (var plugin in Plugins.EnabledPlugins.Where(x => x.ContextPanelComponents.Count > 0))
+        {
+            @foreach (var component in plugin.ContextPanelComponentsMetadata)
+            {
+                <ContextPanelItem Active="@(_activeItem?.Title == component.Title)" @ref="@_contextPanelItems[component.Title]"
+                    Title="@component.Title" Icon="@(component.Icon)" ContextPanelItemClicked="HandleContextPanelItemClicked">
+                    <PanelContent>
+                       
+                            <DynamicComponent Type="component.ComponentType" />
+                        
+                    </PanelContent>
+                </ContextPanelItem>
+            }
+        }
+    }
     <MudSpacer />
 
     <MudMenu ActivationEvent="MouseEvent.MouseOver" AnchorOrigin="Origin.TopRight">
@@ -49,8 +69,8 @@
         <MudIconButton Color="Color.Primary" Icon="@SirenIcons.Settings" OnClick="OpenSettingsDialog" />
     </MudTooltip>
 
-    <MudIconButton Icon="@(AppState.SideBarOpen? SirenIcons.CollapseLeft: SirenIcons.ExpandRight)"
-        Color="Color.Inherit" OnClick="@DrawerToggled" />
+    <MudIconButton Icon="@(AppState.SideBarOpen? SirenIcons.CollapseLeft: SirenIcons.ExpandRight)" Color="Color.Inherit"
+        OnClick="@DrawerToggled" />
 </SirenStack>
 
 <MudStack Class="p-0 mud-width-full" Style="@($"{(!AppState.SideBarOpen ? "width:0px;" : "")}")">
@@ -85,6 +105,8 @@
 @code {
     [Inject]
     protected SirenAppState AppState { get; set; } = default!;
+
+    [Inject] protected PluginState Plugins { get; set; } = default!;
 
     [Inject]
     protected IDialogService DialogService { get; set; } = default!;
@@ -125,9 +147,12 @@
         StateHasChanged();
     }
 
+    private void PluginStateChanged(object? sender, EventArgs args) => StateHasChanged();
+
     protected override void OnInitialized()
     {
         AppState.OnChange += SideBarChanged;
+        Plugins.StateChanged += PluginStateChanged;
     }
     protected void SideBarChanged()
     {
@@ -142,6 +167,7 @@
     public void Dispose()
     {
         AppState.OnChange -= SideBarChanged;
+        Plugins.StateChanged -= PluginStateChanged;
     }
 
     protected async Task CloseContextPanel()
@@ -165,7 +191,7 @@
             _activeItem = null;
             await DrawerToggled.InvokeAsync();
         }
-
+        
         _activeItem = item;
         StateHasChanged();
     }

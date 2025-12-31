@@ -71,6 +71,12 @@
                     <KeyboardShortcutDisplay Shortcut="@shortcut" />
                 }
             </SettingsSection>
+
+            <SettingsSection Icon="@SirenIcons.Plugins" Title="Plugins">
+                <BooleanSettingItem Text="Enable plugins"
+                                    Label="Allow plugins to extend Siren functionality"
+                                    @bind-Value="@Settings.PluginState" />
+            </SettingsSection>
         </SirenStack>
     </DialogContent>
     <DialogActions>

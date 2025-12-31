@@ -8,8 +8,10 @@
 @using System.Text.Json
 @using Microsoft.Extensions.Logging
 @using Mythetech.Framework.Infrastructure.MessageBus
+@using Mythetech.Framework.Infrastructure.Plugins
 @using Siren.Components.Settings
 @using MouseEvent = MudBlazor.MouseEvent
+@using Mythetech.Framework.Infrastructure.Plugins.Components
 @implements IDisposable
 
 <SirenStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
@@ -44,7 +46,7 @@
     </MudMenu>
 
     <MudMenu ActivationEvent="MouseEvent.MouseOver" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft"
-        Dense="true" ListClass="pa-1 max-w-160">
+             Dense="true" ListClass="pa-1 max-w-160">
         <ActivatorContent>
             <MudButton Size="Size.Small" Variant="Variant.Text" Color="Color.Inherit" Class="text-transform-none">Tools
             </MudButton>
@@ -88,6 +90,13 @@
             </MudMenu>
         </ChildContent>
     </MudMenu>
+    @if (Settings.PluginState)
+    {
+        <StandardPluginMenu MenuText="Plugins"
+                            ListClass="pa-1"
+                            ItemClass="rounded"
+                            ButtonClass="text-transform-none"/>
+    }
 </SirenStack>
 
 @code {
@@ -118,6 +127,10 @@
     [Inject]
     protected IMessageBus MessageBus { get; set; } = default!;
 
+    [Inject] protected PluginState PluginState { get; set; } = default!;
+
+    [Inject] protected SettingsState Settings { get; set; } = default!;
+
     private List<string> AvailableEnvironments = new();
 
     protected override void OnInitialized()
@@ -125,7 +138,13 @@
         LoadEnvironments();
         AppState.OnActiveEnvironmentChanged += HandleEnvironmentChanged;
         VariableState.StateChanged += HandleStateChanged;
+        PluginState.StateChanged += HandlePluginStateChanged;
+        Settings.SettingsChanged += HandleSettingsStateChanged;
     }
+
+    private void HandleSettingsStateChanged(SettingsState s) => StateHasChanged();
+
+    private void HandlePluginStateChanged(object? sender, EventArgs args) => StateHasChanged();
 
     private void HandleStateChanged()
     {
@@ -147,6 +166,8 @@
     {
         AppState.OnActiveEnvironmentChanged -= HandleEnvironmentChanged;
         VariableState.StateChanged -= HandleStateChanged;
+        PluginState.StateChanged -= HandlePluginStateChanged;
+        Settings.SettingsChanged -= HandleSettingsStateChanged;
     }
 
     private void HandleNewRequest()

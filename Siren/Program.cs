@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Mythetech.Framework.Desktop;
 using Mythetech.Framework.Desktop.Photino;
 using Mythetech.Framework.Infrastructure.MessageBus;
+using Mythetech.Framework.Infrastructure.Plugins;
 using Photino.Blazor;
 using Siren.Collections;
 using Siren.Components;
@@ -29,6 +30,8 @@ namespace Siren
 
             appBuilder.Services.AddDesktopServices();
 
+            appBuilder.Services.AddPluginFramework();
+
             // register root component and selector
             appBuilder.RootComponents.Add<Components.App>("app");
 
@@ -39,6 +42,10 @@ namespace Siren
             var app = appBuilder.Build();
 
             app.Services.UseMessageBus(typeof(App).Assembly);
+            
+            var pluginDir = Path.Combine(AppContext.BaseDirectory, "plugins");
+
+            app.Services.UsePlugins(pluginDir);
 
             // customize window
             app.MainWindow

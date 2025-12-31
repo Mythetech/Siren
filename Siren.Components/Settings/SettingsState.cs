@@ -25,7 +25,8 @@ namespace Siren.Components.Settings
         SizeDisplayOptions SizeDisplay,
         string DefaultUserAgent,
         string? DefaultHttpMethod,
-        string? LastActiveEnvironment
+        string? LastActiveEnvironment,
+        bool PluginState
     );
 
     public class SettingsState
@@ -153,6 +154,20 @@ namespace Siren.Components.Settings
             }
         }
 
+        private bool _pluginState = false;
+        
+        public bool PluginState
+        {
+            get => _pluginState;
+            set
+            {
+                if (_pluginState == value) return;
+                
+                _pluginState = value;
+                NotifyChangeSubscribersAsync();
+            }
+        }
+
         /// <summary>
         /// Creates a snapshot of the current settings state for later restoration.
         /// </summary>
@@ -167,7 +182,8 @@ namespace Siren.Components.Settings
                 SizeDisplay,
                 DefaultUserAgent,
                 DefaultHttpMethod,
-                LastActiveEnvironment
+                LastActiveEnvironment,
+                PluginState
             );
         }
 
@@ -186,6 +202,7 @@ namespace Siren.Components.Settings
             _defaultUserAgent = snapshot.DefaultUserAgent;
             _defaultHttpMethod = snapshot.DefaultHttpMethod;
             _lastActiveEnvironment = snapshot.LastActiveEnvironment;
+            _pluginState = snapshot.PluginState;
             
             if (notify)
             {
