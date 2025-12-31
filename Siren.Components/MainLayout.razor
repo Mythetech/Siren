@@ -15,6 +15,7 @@
 @using Siren.Components.AppContextPanel
 @using Siren.Components.Configuration
 @using Mythetech.Framework.Infrastructure
+@using Mythetech.Framework.Infrastructure.Plugins
 @using MouseEvent = MudBlazor.MouseEvent
 @implements IDisposable
 
@@ -87,11 +88,17 @@
     [Inject]
     protected VariableState VariableState { get; set; } = default!;
 
+    [Inject] protected PluginState PluginState { get; set; } = default!;
+
+    [Inject] protected IPluginAssetLoader PluginLoader { get; set; } = default!;
+
     private Func<string> GetWidth => () => AppState.SideBarOpen ? "74vw" : "calc(100vw - 52px)";
 
     protected MudThemeProvider _theme { get; set; } = default!;
 
     public bool _isDarkMode = false;
+    
+    private bool _assetsLoaded = false;
 
     private string _backgroundColor => (!AppState.IsDarkMode ? $"background-color:{_theme.Theme.PaletteLight.OverlayLight}"
     : $"background-color:{_theme.Theme.PaletteDark.Black}");
@@ -107,6 +114,7 @@
         AppState.OnDarkModeChanged += HandleDarkModeChange;
         AppState.OnActiveEnvironmentChanged += HandleActiveEnvironmentChanged;
         VariableState.StateChanged += HandleVariableStateChanged;
+        PluginState.StateChanged += OnPluginStateChanged;
     }
 
     protected override void OnAfterRender(bool firstRender)
@@ -130,14 +138,25 @@
                 _hasRestoredEnvironment = true;
             }
         }
+        
+        if (firstRender || !_assetsLoaded)
+        {
+            await LoadAllPluginAssetsAsync();
+            _assetsLoaded = true;
+            StateHasChanged();
+        }
 
         await base.OnAfterRenderAsync(firstRender);
     }
 
     protected async void HandleDarkModeChange(bool isDarkMode)
     {
-        await BlazorMonaco.Editor.Global.SetTheme(JS, isDarkMode ? "vs-dark" : "vs");
-        StateHasChanged();
+        try
+        {
+            await BlazorMonaco.Editor.Global.SetTheme(JS, isDarkMode ? "vs-dark" : "vs");
+            StateHasChanged();
+        } catch { }
+
     }
 
     protected async Task OpenSettingsDialog()
@@ -224,12 +243,28 @@
             Settings.LastActiveEnvironment = null;
         }
     }
+    
+    private async Task LoadAllPluginAssetsAsync()
+    {
+        foreach (var plugin in PluginState.EnabledPlugins)
+        {
+            await PluginLoader.LoadPluginAssetsAsync(plugin);
+        }
+    }
+
+    private void OnPluginStateChanged(object? sender, EventArgs e)
+    {
+        _assetsLoaded = false;
+        InvokeAsync(StateHasChanged);
+    }
+
 
     public void Dispose()
     {
         AppState.OnDarkModeChanged -= HandleDarkModeChange;
         AppState.OnActiveEnvironmentChanged -= HandleActiveEnvironmentChanged;
         VariableState.StateChanged -= HandleVariableStateChanged;
+        PluginState.StateChanged -= OnPluginStateChanged;
     }
 
 }

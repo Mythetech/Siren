@@ -17,33 +17,41 @@
 @using Microsoft.JSInterop
 @using MudBlazor
 @using System.Net.Sockets
+@using System.Reflection
+@using Mythetech.Framework.Infrastructure.Plugins
 @using Siren.Components.Settings
 
 <MudStack Row="true" Class="w-100 h-100 ml-1" Spacing="0">
-    <FluentMultiSplitter BarSize="1" @ref="_primarySplitter" OnResize="@SplitterResized" OnCollapse="@((args) => HandleCollapse(args))" OnExpand="HandleExpand" Height="100%" Width="@(sidePanelClosed ? "97%" :"100%")" Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Horizontal" Style="overflow-x:clip;">
+    <FluentMultiSplitter BarSize="1" @ref="_primarySplitter" OnResize="@SplitterResized"
+        OnCollapse="@((args) => HandleCollapse(args))" OnExpand="HandleExpand" Height="100%"
+        Width="@(sidePanelClosed ? "97%" :"100%")"
+        Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Horizontal" Style="overflow-x:clip;">
         <FluentMultiSplitterPane Size="@(!sidePanelClosed ? "80%" : "88%")" Min="400px" Max="100%">
-            <FluentMultiSplitter OnResize="@SplitterResized" Height="100%" Width="100%" Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Vertical">
+            <FluentMultiSplitter OnResize="@SplitterResized" Height="100%" Width="100%"
+                Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Vertical">
                 <FluentMultiSplitterPane Size="50%" Min="150px">
                     <MudPaper Height="100%" Elevation="0" Width="100%">
-                        <RequestPanel Loading="@_loading" @ref="_requestPanel" SendClicked="HandleSendClicked" />
+                       <RequestPanel Loading="@_loading" @ref="_requestPanel" SendClicked="HandleSendClicked" /> 
                     </MudPaper>
                 </FluentMultiSplitterPane>
                 <FluentMultiSplitterPane Size="50%" Min="150px" Collapsible="true">
                     <MudPaper Height="100%" Elevation="0" Width="100%">
-                        <ResponsePanel />
+                        <ResponsePanel /> 
                     </MudPaper>
                 </FluentMultiSplitterPane>
             </FluentMultiSplitter>
         </FluentMultiSplitterPane>
-        <FluentMultiSplitterPane Id="request-context-panel" Collapsed="@sidePanelClosed" Collapsible="true" Size="@(!sidePanelClosed ? "20%" :"12%")" Min="50px" Max="50%">
+        <FluentMultiSplitterPane Id="request-context-panel" Collapsed="@sidePanelClosed" Collapsible="true"
+            Size="@(!sidePanelClosed ? "20%" :"12%")" Min="50px" Max="50%">
             <MudPaper Height="100%" Width="100%">
-                <RequestContextPanel @ref="_requestContextPanel" PanelClosed="@(() => ToggleSidePanel())" />
+                <RequestContextPanel @ref="_requestContextPanel" PanelClosed="@(() => ToggleSidePanel())" /> 
             </MudPaper>
         </FluentMultiSplitterPane>
     </FluentMultiSplitter>
     @if (sidePanelClosed)
     {
-        <MudStack Spacing="3" AlignItems="AlignItems.Center" Class="w-100 h-100 pl-3" Style="min-width: 30px;max-width:30px;">
+        <MudStack Spacing="3" AlignItems="AlignItems.Center" Class="w-100 h-100 pl-3"
+            Style="min-width: 30px;max-width:30px;">
             <SirenIconButton Tooltip="Authorization" Icon="@SirenIcons.Auth" OnClick="@(() => ToggleSidePanel("Auth"))" />
 
             <SirenIconButton Tooltip="Headers" Icon="@SirenIcons.Headers" OnClick="@(() => ToggleSidePanel("Headers"))" />
@@ -75,8 +83,11 @@
     [Inject]
     protected SettingsState Settings { get; set; } = default!;
 
-    
-    private IJSObjectReference _module;
+    [Inject] protected PluginState PluginState { get; set; } = default!;
+    [Inject] protected PluginLoader PluginLoader { get; set; } = default!;
+
+
+    private IJSObjectReference? _module;
 
     private FluentMultiSplitter _primarySplitter = default!;
 
@@ -92,7 +103,7 @@
 
     private string _responseText = "";
 
-    private CancellationTokenSource? _cts = default; 
+    private CancellationTokenSource? _cts = default;
 
     protected void HandleExpand(FluentMultiSplitterEventArgs args)
     {
@@ -115,7 +126,7 @@
     protected async Task ToggleSidePanel(string selectedTab = "")
     {
         sidePanelClosed = !sidePanelClosed;
-        
+
         StateHasChanged();
 
         if (!string.IsNullOrWhiteSpace(selectedTab))
@@ -177,6 +188,7 @@
         if (firstRender)
         {
             _module = await JS.InvokeAsync<IJSObjectReference>("import", "./app.js");
+
         }
     }
 
@@ -207,7 +219,7 @@
     private SirenNetworkRequest CreateNewNetworkRequest()
     {
         var request = new HttpRequest();
-        
+
         if (!string.IsNullOrWhiteSpace(Settings.DefaultHttpMethod))
         {
             request.Method = new HttpMethod(Settings.DefaultHttpMethod);
@@ -250,7 +262,7 @@
             _cts = null;
             _loading = false;
             _responseText = "Cancelled request.";
-            if(AppState?.Active != null)
+            if (AppState?.Active != null)
                 AppState.Active.DisplayText = _responseText;
             StateHasChanged();
             return;
@@ -258,7 +270,7 @@
 
         _cts = new();
         _cts.CancelAfter(10_000);
-        
+
         _loading = true;
         _responseText = "";
         StateHasChanged();
@@ -287,8 +299,8 @@
         {
             if (active.Request?.Headers != null)
             {
-                var contentTypeHeader = active.Request.Headers.FirstOrDefault(h => 
-                    string.Equals(h.Key, "Content-Type", StringComparison.OrdinalIgnoreCase));
+                var contentTypeHeader = active.Request.Headers.FirstOrDefault(h =>
+                string.Equals(h.Key, "Content-Type", StringComparison.OrdinalIgnoreCase));
                 if (contentTypeHeader.Key != null)
                 {
                     contentType = contentTypeHeader.Value;
@@ -301,7 +313,7 @@
         else if (bodyType == "binary")
         {
             var attachments = active.Request?.BinaryAttachments ?? new List<BinaryAttachment>();
-            
+
             if (attachments.Count == 1)
             {
                 var attachment = attachments.First();
@@ -349,8 +361,10 @@
             RequestUri = requestUri,
             Method = active.Request?.Method ?? HttpMethod.Get,
             Headers = substitutedHeaders,
-            FormData = active.Request?.FormData != null ? new Dictionary<string, string>(active.Request.FormData) : new Dictionary<string, string>(),
-            BinaryAttachments = active.Request?.BinaryAttachments != null ? active.Request.BinaryAttachments.Select(a => a.Copy()).ToList() : new List<BinaryAttachment>(),
+            FormData = active.Request?.FormData != null ? new Dictionary<string, string>(active.Request.FormData) : new
+        Dictionary<string, string>(),
+            BinaryAttachments = active.Request?.BinaryAttachments != null ? active.Request.BinaryAttachments.Select(a =>
+            a.Copy()).ToList() : new List<BinaryAttachment>(),
             Content = content,
             BodyType = active.Request?.BodyType ?? RequestBodyType.Raw,
             RawBody = active.Request?.RawBody ?? ""
@@ -374,8 +388,8 @@
             {
                 errorMessage = "Invalid URL";
             }
-            else if (r.Error is System.Net.Http.HttpRequestException || 
-                     r.Error is System.Net.Sockets.SocketException)
+            else if (r.Error is System.Net.Http.HttpRequestException ||
+            r.Error is System.Net.Sockets.SocketException)
             {
                 errorMessage = "Invalid URL or hostname could not be resolved";
             }
@@ -383,10 +397,10 @@
             {
                 errorMessage = r.Error.Message;
             }
-            
+
             Snackbar.AddSirenError(errorMessage);
             await _requestPanel.FocusUriInputAsync();
-            
+
             _loading = false;
             StateHasChanged();
             return;
@@ -419,7 +433,8 @@
 
     public async ValueTask DisposeAsync()
     {
-        await _module.DisposeAsync();
+        if (_module != null)
+            await _module.DisposeAsync();
     }
 
 }

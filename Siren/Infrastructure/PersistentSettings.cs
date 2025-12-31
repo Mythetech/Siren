@@ -23,6 +23,8 @@ namespace Siren.Infrastructure
         public string? DefaultHttpMethod { get; set; }
         
         public string? LastActiveEnvironment { get; set; }
+        
+        public bool PluginState { get; set; }
 
         public static PersistentSettings Create(SettingsStateSnapshot snapshot)
         {
@@ -35,7 +37,8 @@ namespace Siren.Infrastructure
                 SizeDisplay = snapshot.SizeDisplay,
                 DefaultUserAgent = snapshot.DefaultUserAgent,
                 DefaultHttpMethod = snapshot.DefaultHttpMethod,
-                LastActiveEnvironment = snapshot.LastActiveEnvironment
+                LastActiveEnvironment = snapshot.LastActiveEnvironment,
+                PluginState = snapshot.PluginState
             };
         }
 
@@ -49,7 +52,8 @@ namespace Siren.Infrastructure
                 SizeDisplay,
                 DefaultUserAgent,
                 DefaultHttpMethod,
-                LastActiveEnvironment
+                LastActiveEnvironment,
+                PluginState
             );
         }
     }

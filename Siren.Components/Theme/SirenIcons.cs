@@ -105,5 +105,7 @@ namespace Siren.Components.Theme
         public static string Bug => Round("bug_report");
 
         public static string GitHub => Icons.Custom.Brands.GitHub;
+
+        public static string Plugins => Round("extension");
     }
 }
