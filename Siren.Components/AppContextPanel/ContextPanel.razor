@@ -39,9 +39,9 @@
                 <ContextPanelItem Active="@(_activeItem?.Title == component.Title)" @ref="@_contextPanelItems[component.Title]"
                     Title="@component.Title" Icon="@(component.Icon)" ContextPanelItemClicked="HandleContextPanelItemClicked">
                     <PanelContent>
-                       
+                       <PluginGuard Metadata="component" PluginInfo="plugin">
                             <DynamicComponent Type="component.ComponentType" />
-                        
+                       </PluginGuard>                   
                     </PanelContent>
                 </ContextPanelItem>
             }
