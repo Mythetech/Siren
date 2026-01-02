@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using MudBlazor;
 using Mythetech.Framework.Infrastructure;
+using Mythetech.Framework.Infrastructure.Files;
 using Mythetech.Framework.Infrastructure.MessageBus;
 using NSubstitute;
 using Siren.Components.Collections;

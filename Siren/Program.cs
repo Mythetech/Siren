@@ -43,9 +43,7 @@ namespace Siren
 
             app.Services.UseMessageBus(typeof(App).Assembly);
             
-            var pluginDir = Path.Combine(AppContext.BaseDirectory, "plugins");
-
-            app.Services.UsePlugins(pluginDir);
+            app.Services.UsePlugins();
 
             // customize window
             app.MainWindow
