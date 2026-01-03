@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Mythetech.Framework.Desktop;
 using Mythetech.Framework.Desktop.Photino;
 using Mythetech.Framework.Infrastructure.MessageBus;
@@ -22,9 +24,18 @@ namespace Siren
             VelopackApp.Build().Run();
 
             var appBuilder = PhotinoBlazorAppBuilder.CreateDefault(args);
+            
+            var configuration = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                .Build();
 
             appBuilder.Services
-                .AddLogging();
+                  .AddLogging(builder =>
+                {
+                    builder.AddConfiguration(configuration.GetSection("Logging"));
+                    builder.AddConsole();
+                });
 
             appBuilder.Services.AddHttpClient();
 
@@ -42,7 +53,7 @@ namespace Siren
             var app = appBuilder.Build();
 
             app.Services.UseMessageBus(typeof(App).Assembly);
-            
+
             app.Services.UsePlugins();
 
             // customize window
@@ -50,7 +61,7 @@ namespace Siren
                 .SetSize(1920, 1080)
                 .SetUseOsDefaultSize(false)
                 .SetFullScreen(false)
-                .SetLogVerbosity(10)
+                .SetLogVerbosity(0)
                 .SetTitle("Siren");
 
             app.RegisterProvider(app.Services);
