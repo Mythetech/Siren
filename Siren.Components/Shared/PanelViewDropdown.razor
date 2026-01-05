@@ -1,0 +1,55 @@
+@typeparam T
+@using MouseEvent = MudBlazor.MouseEvent
+
+<MudMenu @ref="_menu"
+         AnchorOrigin="Origin.BottomLeft"
+         TransformOrigin="Origin.TopLeft"
+         Dense="true"
+         ListClass="pa-1"
+         ActivationEvent="MouseEvent.MouseOver">
+    <ActivatorContent>
+        <SirenText Typo="Typo.body1"
+                   Class="panel-view-dropdown-activator"
+                   Style="cursor: pointer;">
+            @GetDisplayText(Value)
+        </SirenText>
+    </ActivatorContent>
+    <ChildContent>
+        @foreach (var item in Items)
+        {
+            <MudMenuItem Class="@GetItemClass(item)"
+                         OnClick="@(() => SelectItem(item))">
+                @GetDisplayText(item)
+            </MudMenuItem>
+        }
+    </ChildContent>
+</MudMenu>
+
+@code {
+    [Parameter] public T? Value { get; set; }
+    [Parameter] public EventCallback<T> ValueChanged { get; set; }
+    [Parameter] public IEnumerable<T> Items { get; set; } = Enumerable.Empty<T>();
+    [Parameter] public Func<T, string>? DisplayTextSelector { get; set; }
+
+    private MudMenu? _menu;
+
+    private string GetDisplayText(T? item)
+    {
+        if (item == null) return "";
+        if (DisplayTextSelector != null)
+            return DisplayTextSelector(item);
+        return item.ToString() ?? "";
+    }
+
+    private string GetItemClass(T item)
+    {
+        var isSelected = EqualityComparer<T>.Default.Equals(item, Value);
+        return $"{(isSelected ? "list-item-active" : "")} rounded-lg px-2 py-0";
+    }
+
+    private async Task SelectItem(T item)
+    {
+        Value = item;
+        await ValueChanged.InvokeAsync(item);
+    }
+}

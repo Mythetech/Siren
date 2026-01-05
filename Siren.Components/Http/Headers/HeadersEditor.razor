@@ -1,0 +1,165 @@
+@using Siren.Components.Http.Models
+
+<SirenStack Spacing="3" Class="@($"overflow-auto d-flex h-100 w-100 {Class}")">
+    @if (!ReadOnly && ShowAddButton)
+    {
+        <SirenStack Row="true" Spacing="3" Class="w-100" AlignItems="AlignItems.Center">
+            <SirenSpacer/>
+            <SirenIconButton OnClick="@AddHeader"
+                             Icon="@SirenIcons.Add"
+                             Tooltip="Add Header"
+                             Class="scale-75"
+                             Size="Size.Medium"
+                             Variant="Variant.Text"
+                             Color="Color.Primary"/>
+        </SirenStack>
+    }
+
+    <MudDataGrid T="HeaderModel"
+                 Items="@DisplayHeaders"
+                 Context="context"
+                 Class="w-100"
+                 Bordered="false"
+                 Elevation="0"
+                 RowClass="text-truncate hover-error-zone"
+                 Style="overflow:hidden;"
+                 EditMode="DataGridEditMode.Cell"
+                 EditTrigger="DataGridEditTrigger.Manual"
+                 CommittedItemChanges="HandleUpdate"
+                 ReadOnly="@ReadOnly"
+                 Dense="true"
+                 Hover="true"
+                 RowKeySelector="x => x.Id">
+        <Columns>
+            <MudBlazor.PropertyColumn Property="x => x.Key" Title="Header">
+                <EditTemplate>
+                    <MudTextField @bind-Value="@context.Item.Key"
+                                  OnBlur="(() => HandleUpdate(context.Item))"
+                                  Disabled="@context.Item.IsSystemHeader"
+                                  Class="w-100"/>
+                </EditTemplate>
+                <CellTemplate>
+                    <MudTextField Value="@context.Item.Key"
+                                  ReadOnly="@(ReadOnly || context.Item.IsSystemHeader)"
+                                  Disabled="@context.Item.IsSystemHeader"
+                                  Class="w-100"/>
+                </CellTemplate>
+            </MudBlazor.PropertyColumn>
+
+            <MudBlazor.PropertyColumn Property="x => x.Value" Title="Value">
+                <EditTemplate>
+                    <MudTextField @bind-Value="@context.Item.Value"
+                                  OnBlur="(() => HandleUpdate(context.Item))"
+                                  Disabled="@context.Item.IsSystemHeader"
+                                  Class="w-100"/>
+                </EditTemplate>
+                <CellTemplate>
+                    <MudTextField Value="@context.Item.Value"
+                                  ReadOnly="@(ReadOnly || context.Item.IsSystemHeader)"
+                                  Disabled="@context.Item.IsSystemHeader"
+                                  Class="w-100"/>
+                </CellTemplate>
+            </MudBlazor.PropertyColumn>
+
+            @if (AllowEnable)
+            {
+                <MudBlazor.TemplateColumn Title="Enabled">
+                    <CellTemplate>
+                        <SirenSwitch Value="@context.Item.Enabled"
+                                     ValueChanged="@((bool value) => ToggleEnabled(context.Item, value))"
+                                     Disabled="@(ReadOnly || context.Item.IsSystemHeader)"
+                                     Size="Size.Small"
+                                     Color="Color.Primary"/>
+                    </CellTemplate>
+                    <EditTemplate>
+                        <SirenSwitch Value="@context.Item.Enabled"
+                                     ValueChanged="@((bool value) => ToggleEnabled(context.Item, value))"
+                                     Disabled="@(ReadOnly || context.Item.IsSystemHeader)"
+                                     Size="Size.Small"
+                                     Color="Color.Primary"/>
+                    </EditTemplate>
+                </MudBlazor.TemplateColumn>
+            }
+
+            <MudBlazor.TemplateColumn Title="">
+                <CellTemplate>
+                    <MudMenu ListClass="pa-1" Dense="true">
+                        <ActivatorContent>
+                            <SirenIconButton Icon="@SirenIcons.MoreVert"
+                                             Variant="Variant.Text"
+                                             Color="Color.Inherit" />
+                        </ActivatorContent>
+                        <ChildContent>
+                            <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Copy"
+                                         OnClick="@(async () => await CopyToClipboard(context.Item.Key))">
+                                Copy Key
+                            </MudMenuItem>
+                            <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Copy"
+                                         OnClick="@(async () => await CopyToClipboard(context.Item.Value))">
+                                Copy Value
+                            </MudMenuItem>
+                            @if (!ReadOnly && !context.Item.IsSystemHeader)
+                            {
+                                <MudDivider />
+                                <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Delete"
+                                             OnClick="@(() => DeleteHeader(context.Item))">
+                                    Delete Header
+                                </MudMenuItem>
+                            }
+                        </ChildContent>
+                    </MudMenu>
+                </CellTemplate>
+            </MudBlazor.TemplateColumn>
+        </Columns>
+    </MudDataGrid>
+</SirenStack>
+
+@code {
+    [Parameter] public List<HeaderModel> Headers { get; set; } = new();
+    [Parameter] public EventCallback<List<HeaderModel>> HeadersChanged { get; set; }
+    [Parameter] public bool ReadOnly { get; set; } = false;
+    [Parameter] public bool AllowEnable { get; set; } = true;
+    [Parameter] public bool ShowSystemHeaders { get; set; } = true;
+    [Parameter] public bool ShowAddButton { get; set; } = true;
+    [Parameter] public string? Class { get; set; }
+
+    [Inject] public IJsApiService JsApiService { get; set; } = default!;
+    [Inject] public ISnackbar Snackbar { get; set; } = default!;
+
+    private List<HeaderModel> DisplayHeaders => ShowSystemHeaders
+        ? Headers
+        : Headers.Where(h => !h.IsSystemHeader).ToList();
+
+    private async Task AddHeader()
+    {
+        Headers.Add(new HeaderModel { Key = "Key", Value = "Value" });
+        await HeadersChanged.InvokeAsync(Headers);
+    }
+
+    private async Task HandleUpdate(HeaderModel model)
+    {
+        if (model.IsSystemHeader) return;
+        await HeadersChanged.InvokeAsync(Headers);
+    }
+
+    private async Task ToggleEnabled(HeaderModel model, bool enabled)
+    {
+        if (model.IsSystemHeader) return;
+        model.Enabled = enabled;
+        await HeadersChanged.InvokeAsync(Headers);
+    }
+
+    private async Task DeleteHeader(HeaderModel model)
+    {
+        if (model.IsSystemHeader) return;
+        Headers.Remove(model);
+        await HeadersChanged.InvokeAsync(Headers);
+    }
+
+    private async Task CopyToClipboard(string? value)
+    {
+        if (string.IsNullOrEmpty(value)) return;
+        await JsApiService.CopyToClipboardAsync(value);
+        Snackbar.Add($"Copied `{value}` to clipboard", Severity.Info);
+    }
+}

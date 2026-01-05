@@ -1,0 +1,268 @@
+@using Siren.Components.Http.Models
+
+<SirenStack Class="w-100 h-100 d-flex">
+    <SirenStack Spacing="3" Class="p-1 overflow-y-scroll d-flex h-100 w-100">
+        <SirenStack Row="true" Spacing="3" Class="w-100" AlignItems="AlignItems.Center">
+            <SirenSpacer/>
+            <SirenIconButton OnClick="AddParameter"
+                             Icon="@SirenIcons.Add"
+                             Tooltip="Add Query Parameter"
+                             Class="scale-75"
+                             Size="Size.Medium"
+                             Variant="Variant.Text"
+                             Color="Color.Primary"/>
+        </SirenStack>
+
+        <MudDataGrid T="QueryParameterModel"
+                     Items="@_queryParams"
+                     Context="context"
+                     Class="w-100"
+                     Bordered="false"
+                     Elevation="0"
+                     RowClass="text-truncate hover-error-zone"
+                     Style="overflow:hidden;"
+                     EditMode="DataGridEditMode.Cell"
+                     EditTrigger="DataGridEditTrigger.Manual"
+                     CommittedItemChanges="UpdateParameter"
+                     ReadOnly="false"
+                     Dense="true"
+                     Hover="true"
+                     RowKeySelector="x => x.Id">
+            <Columns>
+                <MudBlazor.PropertyColumn Property="x => x.Key" Title="Key">
+                    <EditTemplate>
+                        <MudTextField @bind-Value="@context.Item.Key"
+                                      OnBlur="@(() => UpdateParameter(context.Item))"
+                                      Class="w-100"/>
+                    </EditTemplate>
+                    <CellTemplate>
+                        <MudTextField Value="@context.Item.Key"
+                                      ReadOnly="false"
+                                      Class="w-100"/>
+                    </CellTemplate>
+                </MudBlazor.PropertyColumn>
+
+                <MudBlazor.PropertyColumn Property="x => x.Value" Title="Value">
+                    <EditTemplate>
+                        <MudTextField @bind-Value="@context.Item.Value"
+                                      OnBlur="@(() => UpdateParameter(context.Item))"
+                                      Class="w-100"/>
+                    </EditTemplate>
+                    <CellTemplate>
+                        <MudTextField Value="@context.Item.Value"
+                                      ReadOnly="false"
+                                      Class="w-100"/>
+                    </CellTemplate>
+                </MudBlazor.PropertyColumn>
+
+                <MudBlazor.TemplateColumn Title="Enabled" Style="width: 80px;">
+                    <CellTemplate>
+                        <SirenSwitch Value="@context.Item.Enabled"
+                                     ValueChanged="@((bool v) => ToggleEnabled(context.Item, v))"
+                                     Size="Size.Small"
+                                     Color="Color.Primary"/>
+                    </CellTemplate>
+                    <EditTemplate>
+                        <SirenSwitch Value="@context.Item.Enabled"
+                                     ValueChanged="@((bool v) => ToggleEnabled(context.Item, v))"
+                                     Size="Size.Small"
+                                     Color="Color.Primary"/>
+                    </EditTemplate>
+                </MudBlazor.TemplateColumn>
+
+                <MudBlazor.TemplateColumn Title="" Style="width: 50px;">
+                    <CellTemplate>
+                        <MudMenu ListClass="pa-1" Dense="true">
+                            <ActivatorContent>
+                                <SirenIconButton Icon="@SirenIcons.MoreVert"
+                                                 Variant="Variant.Text"
+                                                 Color="Color.Inherit" />
+                            </ActivatorContent>
+                            <ChildContent>
+                                <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Copy"
+                                             OnClick="@(async () => await CopyToClipboard(context.Item.Key))">
+                                    Copy Key
+                                </MudMenuItem>
+                                <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Copy"
+                                             OnClick="@(async () => await CopyToClipboard(context.Item.Value))">
+                                    Copy Value
+                                </MudMenuItem>
+                                <MudDivider />
+                                <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Delete"
+                                             OnClick="@(() => DeleteParameter(context.Item))">
+                                    Delete
+                                </MudMenuItem>
+                            </ChildContent>
+                        </MudMenu>
+                    </CellTemplate>
+                </MudBlazor.TemplateColumn>
+            </Columns>
+        </MudDataGrid>
+    </SirenStack>
+</SirenStack>
+
+@code {
+    [Parameter] public string? RequestUri { get; set; }
+    [Parameter] public EventCallback<string> RequestUriChanged { get; set; }
+
+    [Inject] public IJsApiService JsApiService { get; set; } = default!;
+    [Inject] public ISnackbar Snackbar { get; set; } = default!;
+
+    private List<QueryParameterModel> _queryParams = new();
+    private string? _previousUri;
+    private bool _isSyncing;
+
+    protected override void OnParametersSet()
+    {
+        if (!_isSyncing && RequestUri != _previousUri)
+        {
+            _previousUri = RequestUri;
+            ParseQueryParamsFromUri();
+        }
+    }
+
+    private void ParseQueryParamsFromUri()
+    {
+        _queryParams.Clear();
+
+        if (string.IsNullOrWhiteSpace(RequestUri)) return;
+
+        try
+        {
+            var queryIndex = RequestUri.IndexOf('?');
+            if (queryIndex < 0) return;
+
+            var fragmentIndex = RequestUri.IndexOf('#', queryIndex);
+            var queryPart = fragmentIndex >= 0
+                ? RequestUri.Substring(queryIndex + 1, fragmentIndex - queryIndex - 1)
+                : RequestUri.Substring(queryIndex + 1);
+
+            if (string.IsNullOrEmpty(queryPart)) return;
+
+            var pairs = queryPart.Split('&', StringSplitOptions.RemoveEmptyEntries);
+
+            foreach (var pair in pairs)
+            {
+                var parts = pair.Split('=', 2);
+                _queryParams.Add(new QueryParameterModel
+                {
+                    Key = Uri.UnescapeDataString(parts[0]),
+                    Value = parts.Length > 1 ? Uri.UnescapeDataString(parts[1]) : "",
+                    Enabled = true
+                });
+            }
+        }
+        catch
+        {
+            // Invalid URI - leave params empty
+        }
+    }
+
+    private async Task SyncToUri()
+    {
+        if (string.IsNullOrWhiteSpace(RequestUri))
+        {
+            // If no URI yet, build one from just query params
+            var enabledParams = _queryParams.Where(p => p.Enabled && !string.IsNullOrWhiteSpace(p.Key));
+            if (enabledParams.Any())
+            {
+                var queryString = string.Join("&",
+                    enabledParams.Select(p =>
+                        $"{Uri.EscapeDataString(p.Key!)}={Uri.EscapeDataString(p.Value ?? "")}"));
+                _isSyncing = true;
+                _previousUri = $"?{queryString}";
+                await RequestUriChanged.InvokeAsync(_previousUri);
+                _isSyncing = false;
+            }
+            return;
+        }
+
+        try
+        {
+            var queryIndex = RequestUri.IndexOf('?');
+            var fragmentIndex = RequestUri.IndexOf('#');
+
+            string basePart;
+            string fragment = "";
+
+            if (fragmentIndex >= 0)
+            {
+                fragment = RequestUri.Substring(fragmentIndex);
+                if (queryIndex >= 0 && queryIndex < fragmentIndex)
+                {
+                    basePart = RequestUri.Substring(0, queryIndex);
+                }
+                else
+                {
+                    basePart = RequestUri.Substring(0, fragmentIndex);
+                }
+            }
+            else if (queryIndex >= 0)
+            {
+                basePart = RequestUri.Substring(0, queryIndex);
+            }
+            else
+            {
+                basePart = RequestUri;
+            }
+
+            var enabledParams = _queryParams.Where(p => p.Enabled && !string.IsNullOrWhiteSpace(p.Key));
+
+            string newUri;
+            if (enabledParams.Any())
+            {
+                var queryString = string.Join("&",
+                    enabledParams.Select(p =>
+                        $"{Uri.EscapeDataString(p.Key!)}={Uri.EscapeDataString(p.Value ?? "")}"));
+
+                newUri = $"{basePart}?{queryString}{fragment}";
+            }
+            else
+            {
+                newUri = $"{basePart}{fragment}";
+            }
+
+            _isSyncing = true;
+            _previousUri = newUri;
+            await RequestUriChanged.InvokeAsync(newUri);
+            _isSyncing = false;
+        }
+        catch
+        {
+            // Keep current URI on error
+        }
+    }
+
+    private async Task AddParameter()
+    {
+        _queryParams.Add(new QueryParameterModel { Key = "", Value = "" });
+        StateHasChanged();
+    }
+
+    private async Task UpdateParameter(QueryParameterModel model)
+    {
+        await SyncToUri();
+        StateHasChanged();
+    }
+
+    private async Task DeleteParameter(QueryParameterModel model)
+    {
+        _queryParams.Remove(model);
+        await SyncToUri();
+        StateHasChanged();
+    }
+
+    private async Task ToggleEnabled(QueryParameterModel model, bool enabled)
+    {
+        model.Enabled = enabled;
+        await SyncToUri();
+        StateHasChanged();
+    }
+
+    private async Task CopyToClipboard(string? value)
+    {
+        if (string.IsNullOrEmpty(value)) return;
+        await JsApiService.CopyToClipboardAsync(value);
+        Snackbar.Add($"Copied `{value}` to clipboard", Severity.Info);
+    }
+}

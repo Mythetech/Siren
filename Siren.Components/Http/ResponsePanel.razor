@@ -1,17 +1,24 @@
 ﻿@using Siren.Components.Settings
 @using Siren.Components.Http.Models
+@using Siren.Components.Http.Headers
 @implements IDisposable
 
 <SirenStack Class="h-100">
     <SirenStack Row="true" Spacing="6" Class="w-100 mt-2 px-4" AlignItems="AlignItems.Center">
         <SirenIcon Icon="@SirenIcons.Response" Color="Color.Inherit"/>
         <SirenText Typo="Typo.h6" Color="Color.Inherit">Response</SirenText>
-        <SirenText Typo="Typo.body1">Body</SirenText>
-        <SirenToggleGroup T="ResponseViewType"
-                          Value="@_currentViewType"
-                          ValueChanged="@HandleViewTypeChanged"
-                          Items="@_viewTypes"
-                          DisplayTextSelector="@(v => v.ToString().ToLowerInvariant())"/>
+        <PanelViewDropdown T="ResponsePanelViewType"
+                           Value="@_panelViewType"
+                           ValueChanged="@HandlePanelViewTypeChanged"
+                           Items="@_panelViewTypes" />
+        @if (_panelViewType == ResponsePanelViewType.Body)
+        {
+            <SirenToggleGroup T="ResponseViewType"
+                              Value="@_currentViewType"
+                              ValueChanged="@HandleViewTypeChanged"
+                              Items="@_viewTypes"
+                              DisplayTextSelector="@(v => v.ToString().ToLowerInvariant())"/>
+        }
         <SirenSpacer/>
         @if (AppState?.Active?.Response?.HttpStatusCode != null)
         {
@@ -33,29 +40,43 @@
                                  ResponseSize="@AppState.Active.Response.ResponseSize"
                                  DisplayText="@GetSizeDisplayText()" />
         }
-        @if (_currentViewType == ResponseViewType.Json)
+        @if (_panelViewType == ResponsePanelViewType.Body && _currentViewType == ResponseViewType.Json)
         {
             <SirenIconButton Icon="@SirenIcons.Format" Size="Size.Small" Tooltip="Format"
                              OnClick="@(async () => await FormatDocumentAsync())"/>
         }
-        <SirenIconButton Icon="@SirenIcons.Copy" Size="Size.Small" Tooltip="Copy" OnClick="Copy"/>
+        @if (_panelViewType == ResponsePanelViewType.Body)
+        {
+            <SirenIconButton Icon="@SirenIcons.Copy" Size="Size.Small" Tooltip="Copy" OnClick="Copy"/>
+        }
     </SirenStack>
 
-    @if (_currentViewType == ResponseViewType.Json)
+    @if (_panelViewType == ResponsePanelViewType.Body)
     {
-        <SirenEditor @ref="_editor" EditorId="siren-response-editor"/>
+        @if (_currentViewType == ResponseViewType.Json)
+        {
+            <SirenEditor @ref="_editor" EditorId="siren-response-editor"/>
+        }
+        else if (_currentViewType == ResponseViewType.Text)
+        {
+            <MudPaper Class="pa-4 overflow-auto"
+                      Style="height: 100%; font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; white-space: pre-wrap; word-break: break-word;"
+                      Elevation="0">
+                @(_responseText ?? "")
+            </MudPaper>
+        }
+        else if (_currentViewType == ResponseViewType.Html)
+        {
+            <HtmlViewer HtmlContent="@_responseText" BaseUrl="@(AppState?.Active?.Request?.RequestUri)"/>
+        }
     }
-    else if (_currentViewType == ResponseViewType.Text)
+    else if (_panelViewType == ResponsePanelViewType.Headers)
     {
-        <MudPaper Class="pa-4 overflow-auto"
-                  Style="height: 100%; font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; white-space: pre-wrap; word-break: break-word;"
-                  Elevation="0">
-            @(_responseText ?? "")
-        </MudPaper>
-    }
-    else if (_currentViewType == ResponseViewType.Html)
-    {
-        <HtmlViewer HtmlContent="@_responseText" BaseUrl="@(AppState?.Active?.Request?.RequestUri)"/>
+        <HeadersEditor Headers="@_responseHeaders"
+                       ReadOnly="true"
+                       AllowEnable="false"
+                       ShowSystemHeaders="true"
+                       ShowAddButton="false" />
     }
 </SirenStack>
 
@@ -69,6 +90,10 @@
     [Inject] SettingsState Settings { get; set; } = default!;
 
     public SirenEditor _editor { get; set; } = default!;
+
+    private ResponsePanelViewType _panelViewType = ResponsePanelViewType.Body;
+    private readonly ResponsePanelViewType[] _panelViewTypes = Enum.GetValues<ResponsePanelViewType>();
+    private List<HeaderModel> _responseHeaders = new();
 
     private ResponseViewType _currentViewType = ResponseViewType.Json;
     private readonly ResponseViewType[] _viewTypes = Enum.GetValues<ResponseViewType>();
@@ -108,6 +133,50 @@
         return FormattingUtils.FormatSize(totalSize, Settings.SizeDisplay);
     }
 
+    private async Task HandlePanelViewTypeChanged(ResponsePanelViewType newViewType)
+    {
+        _panelViewType = newViewType;
+
+        if (_panelViewType == ResponsePanelViewType.Headers)
+        {
+            LoadResponseHeaders();
+        }
+
+        StateHasChanged();
+
+        if (_panelViewType == ResponsePanelViewType.Body && _currentViewType == ResponseViewType.Json && _editor?.Editor != null)
+        {
+            await Task.Yield();
+            try
+            {
+                await _editor.Editor.SetValue(_responseText ?? "");
+                await FormatDocumentAsync();
+            }
+            catch
+            {
+            }
+        }
+    }
+
+    private void LoadResponseHeaders()
+    {
+        _responseHeaders.Clear();
+
+        if (AppState?.Active?.Response?.Headers != null)
+        {
+            foreach (var header in AppState.Active.Response.Headers)
+            {
+                _responseHeaders.Add(new HeaderModel
+                {
+                    Key = header.Key,
+                    Value = header.Value,
+                    IsSystemHeader = true,
+                    Enabled = true
+                });
+            }
+        }
+    }
+
     private async Task HandleViewTypeChanged(ResponseViewType newViewType)
     {
         _currentViewType = newViewType;
@@ -130,6 +199,12 @@
     public async void HandleAppStateChanged(SirenAppState state)
     {
         _responseText = state?.Active?.DisplayText ?? "";
+
+        // Reload response headers if viewing Headers panel
+        if (_panelViewType == ResponsePanelViewType.Headers)
+        {
+            LoadResponseHeaders();
+        }
 
         if (_currentViewType == ResponseViewType.Json)
         {
