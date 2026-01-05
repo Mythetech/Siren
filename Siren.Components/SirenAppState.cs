@@ -165,6 +165,15 @@ namespace Siren.Components
             AppStateChanged();
         }
 
+        /// <summary>
+        /// Call this to notify subscribers when nested properties of Active are modified directly
+        /// (e.g., Active.Request.Headers). This ensures all components stay in sync.
+        /// </summary>
+        public void NotifyActiveRequestChanged()
+        {
+            AppStateChanged();
+        }
+
         public async Task SetSystemColorMode()
         {
             if (_themeProvider == null)

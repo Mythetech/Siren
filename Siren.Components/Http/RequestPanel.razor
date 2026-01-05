@@ -3,6 +3,8 @@
 @using Siren.Components.RequestContextPanel
 @using Siren.Components.Http
 @using Siren.Components.Http.Models
+@using Siren.Components.Http.Headers
+@using Siren.Components.Http.QueryParams
 @using Siren.Components.Variables
 @implements IDisposable
 
@@ -29,42 +31,66 @@
     <SirenStack Row="true" Spacing="6" Class="w-100 px-4" AlignItems="AlignItems.Center">
         <SirenIcon Color="@Color.Inherit" Icon="@SirenIcons.Request" />
         <SirenText Typo="Typo.h6" Color="Color.Inherit">Request</SirenText>
-        <SirenText Typo="Typo.body1">Body</SirenText>
-        <MudToggleGroup Value="@CurrentBodyType" ValueChanged="@HandleBodyTypeChanged" T="RequestBodyType" Outlined="true" Size="Size.Small" CheckMark="false"
-            Class="pa-1 gap-4 rounded-xl" Color="Color.Primary" Style="height:2rem;">
-            <MudToggleItem Class="rounded-xl" Value="@(RequestBodyType.None)" Text="none" Style="height:1.375rem;" />
-            <MudToggleItem Class="rounded-xl" Value="@(RequestBodyType.FormData)" Text="form-data" Style="height:1.375rem;" />
-            <MudToggleItem Class="rounded-xl" Value="@(RequestBodyType.Raw)" Text="raw" Style="height:1.375rem;" />
-            <MudToggleItem Class="rounded-xl" Value="@(RequestBodyType.Binary)" Text="binary" Style="height: 1.375rem;" />
-        </MudToggleGroup>
+        <PanelViewDropdown T="RequestPanelViewType"
+                           Value="@_currentPanelView"
+                           ValueChanged="@HandlePanelViewChanged"
+                           Items="@_panelViewTypes"
+                           DisplayTextSelector="@(v => v == RequestPanelViewType.QueryParams ? "Query Params" : v.ToString())" />
+        @if (_currentPanelView == RequestPanelViewType.Body)
+        {
+            <MudToggleGroup Value="@CurrentBodyType" ValueChanged="@HandleBodyTypeChanged" T="RequestBodyType" Outlined="true" Size="Size.Small" CheckMark="false"
+                Class="pa-1 gap-4 rounded-xl" Color="Color.Primary" Style="height:2rem;">
+                <MudToggleItem Class="rounded-xl" Value="@(RequestBodyType.None)" Text="none" Style="height:1.375rem;" />
+                <MudToggleItem Class="rounded-xl" Value="@(RequestBodyType.FormData)" Text="form-data" Style="height:1.375rem;" />
+                <MudToggleItem Class="rounded-xl" Value="@(RequestBodyType.Raw)" Text="raw" Style="height:1.375rem;" />
+                <MudToggleItem Class="rounded-xl" Value="@(RequestBodyType.Binary)" Text="binary" Style="height: 1.375rem;" />
+            </MudToggleGroup>
+        }
         <SirenSpacer />
         <EnvironmentDropdown />
-        @if (CurrentBodyType == RequestBodyType.Raw)
+        @if (_currentPanelView == RequestPanelViewType.Body && CurrentBodyType == RequestBodyType.Raw)
         {
             <SirenIconButton Icon="@SirenIcons.Format" Size="Size.Small" Tooltip="Format"
                 OnClick="@(async () => await FormatDocumentAsync())" />
             <SirenIconButton Icon="@SirenIcons.Copy" Size="Size.Small" Tooltip="Copy" OnClick="Copy" />
         }
     </SirenStack>
-    @if (CurrentBodyType == RequestBodyType.FormData)
+    @if (_currentPanelView == RequestPanelViewType.Body)
     {
-        <FormDataPanel NetworkRequest="@AppState.Active" />
+        @if (CurrentBodyType == RequestBodyType.FormData)
+        {
+            <FormDataPanel NetworkRequest="@AppState.Active" />
+        }
+        else if (CurrentBodyType == RequestBodyType.Raw)
+        {
+            <SirenEditor @ref="_editor" EditorId="siren-request-editor" ReadOnly="false" />
+        }
+        else if (CurrentBodyType == RequestBodyType.Binary)
+        {
+            <BinaryAttachmentPanel NetworkRequest="@AppState.Active" />
+        }
+        else
+        {
+            <SirenStack Spacing="3" Class="w-100 h-100 d-flex" AlignItems="AlignItems.Center" Justify="Justify.Center">
+                <SirenIcon Icon="@SirenIcons.Request" Size="Size.Large" Color="Color.Inherit" />
+                <SirenText Typo="Typo.h6">No Request Body</SirenText>
+                <SirenText Typo="Typo.body2" Class="mud-text-secondary">This request will be sent without a body</SirenText>
+            </SirenStack>
+        }
     }
-    else if (CurrentBodyType == RequestBodyType.Raw)
+    else if (_currentPanelView == RequestPanelViewType.Headers)
     {
-        <SirenEditor @ref="_editor" EditorId="siren-request-editor" ReadOnly="false" />
+        <HeadersEditor Headers="@_requestHeaders"
+                       HeadersChanged="@HandleRequestHeadersChanged"
+                       ReadOnly="false"
+                       AllowEnable="true"
+                       ShowSystemHeaders="false"
+                       ShowAddButton="true" />
     }
-    else if (CurrentBodyType == RequestBodyType.Binary)
+    else if (_currentPanelView == RequestPanelViewType.QueryParams)
     {
-        <BinaryAttachmentPanel NetworkRequest="@AppState.Active" />
-    }
-    else
-    {
-        <SirenStack Spacing="3" Class="w-100 h-100 d-flex" AlignItems="AlignItems.Center" Justify="Justify.Center">
-            <SirenIcon Icon="@SirenIcons.Request" Size="Size.Large" Color="Color.Inherit" />
-            <SirenText Typo="Typo.h6">No Request Body</SirenText>
-            <SirenText Typo="Typo.body2" Class="mud-text-secondary">This request will be sent without a body</SirenText>
-        </SirenStack>
+        <QueryParamsEditor RequestUri="@AppState?.Active?.Request?.RequestUri"
+                           RequestUriChanged="@HandleQueryParamsUriChanged" />
     }
 </SirenStack>
 
@@ -75,6 +101,10 @@
     private MudTextField<string>? _requestUriInput = default!;
 
     private HttpRequestMethodDropdown _httpMethodDropdown = default!;
+
+    private RequestPanelViewType _currentPanelView = RequestPanelViewType.Body;
+    private readonly RequestPanelViewType[] _panelViewTypes = Enum.GetValues<RequestPanelViewType>();
+    private List<HeaderModel> _requestHeaders = new();
 
     [Parameter]
     public EventCallback SendClicked { get; set; } = default!;
@@ -109,9 +139,63 @@
         }
     }
 
+    private async Task HandlePanelViewChanged(RequestPanelViewType newView)
+    {
+        // Sync editor content before switching away from Body view
+        if (_currentPanelView == RequestPanelViewType.Body)
+        {
+            await SyncEditorToModel();
+        }
+
+        // Load headers when switching to Headers view
+        if (newView == RequestPanelViewType.Headers)
+        {
+            LoadRequestHeaders();
+        }
+
+        _currentPanelView = newView;
+        StateHasChanged();
+
+        // Restore editor content when switching back to Body view
+        if (newView == RequestPanelViewType.Body && CurrentBodyType == RequestBodyType.Raw)
+        {
+            await Task.Yield();
+            await SyncModelToEditor();
+        }
+    }
+
+    private void LoadRequestHeaders()
+    {
+        _requestHeaders = AppState?.Active?.Request?.Headers?.ToViewModel() ?? new();
+    }
+
+    private async Task HandleRequestHeadersChanged(List<HeaderModel> headers)
+    {
+        _requestHeaders = headers;
+        if (AppState?.Active?.Request != null)
+        {
+            AppState.Active.Request.Headers = headers
+                .Where(h => !string.IsNullOrWhiteSpace(h.Key) && h.Enabled)
+                .Select(h => new KeyValuePair<string, string>(h.Key!, h.Value ?? ""))
+                .ToList();
+            AppState.NotifyActiveRequestChanged();
+        }
+        await Task.CompletedTask;
+    }
+
+    private async Task HandleQueryParamsUriChanged(string newUri)
+    {
+        if (AppState?.Active?.Request != null)
+        {
+            AppState.Active.Request.RequestUri = newUri;
+            StateHasChanged();
+        }
+        await Task.CompletedTask;
+    }
+
     private async Task SyncEditorToModel()
     {
-        if (CurrentBodyType == RequestBodyType.Raw && _editor?.Editor != null && AppState?.Active?.Request != null)
+        if (_currentPanelView == RequestPanelViewType.Body && CurrentBodyType == RequestBodyType.Raw && _editor?.Editor != null && AppState?.Active?.Request != null)
         {
             try
             {
