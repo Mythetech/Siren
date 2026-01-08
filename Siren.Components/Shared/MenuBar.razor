@@ -8,6 +8,7 @@
 @using System.Text.Json
 @using Microsoft.Extensions.Logging
 @using Mythetech.Framework.Infrastructure.MessageBus
+@using Mythetech.Framework.Infrastructure.Mcp.Components
 @using Mythetech.Framework.Infrastructure.Plugins
 @using Siren.Components.Settings
 @using MouseEvent = MudBlazor.MouseEvent
@@ -88,6 +89,8 @@
                     }
                 </MudMenu>
             </MudMenu>
+            <MudDivider />
+            <McpMenuItems />
         </ChildContent>
     </MudMenu>
     @if (Settings.PluginState)
