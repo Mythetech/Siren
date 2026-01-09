@@ -7,7 +7,15 @@ public static class McpServiceExtensions
 {
     public static IServiceCollection AddSirenMcp(this IServiceCollection services)
     {
-        services.AddMcp();
+        services.AddMcpHttpTransport();
+
+        services.AddMcp(options =>
+        {
+            options.ServerName = "Siren";
+            options.HttpPort = 3333;
+            options.HttpPath = "/mcp";
+        });
+
         services.AddMcpTools(typeof(McpServiceExtensions).Assembly);
         return services;
     }

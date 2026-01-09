@@ -6,6 +6,7 @@ using Mythetech.Framework.Desktop;
 using Mythetech.Framework.Desktop.Environment;
 using Mythetech.Framework.Desktop.Photino;
 using Mythetech.Framework.Infrastructure.Mcp;
+using Mythetech.Framework.Infrastructure.Mcp.Server;
 using Mythetech.Framework.Infrastructure.MessageBus;
 using Mythetech.Framework.Infrastructure.Plugins;
 using Photino.Blazor;
@@ -24,21 +25,10 @@ namespace Siren
         [STAThread]
         static async Task Main(string[] args)
         {
-            // Check for MCP server mode before starting the GUI app
-            if (await McpRegistrationExtensions.TryRunMcpServerAsync(
-                args,
-                options =>
-                {
-                    options.ServerName = "Siren";
-                },
-                services =>
-                {
-                    services.AddHttpClient();
-                    services.AddSirenComponents<HistoryService, CollectionsService, VariablesService, SettingsService>();
-                    services.AddSirenMcp();
-                },
-                typeof(McpServiceExtensions).Assembly))
+            // Check for --mcp flag for stdio-based MCP server mode (used by Claude Desktop)
+            if (args.Contains("--mcp"))
             {
+                await RunMcpServerAsync(args);
                 return;
             }
 
@@ -99,6 +89,40 @@ namespace Siren
             };
 
             app.Run();
+        }
+
+        /// <summary>
+        /// Runs Siren as a standalone MCP server using stdio transport.
+        /// This is used by Claude Desktop and other MCP clients.
+        /// </summary>
+        private static async Task RunMcpServerAsync(string[] _)
+        {
+            var services = new ServiceCollection();
+
+            services.AddLogging(builder => builder.AddConsole());
+            services.AddHttpClient();
+            services.AddMessageBus();
+
+            // Add Siren services needed by MCP tools
+            services.AddSirenComponents<HistoryService, CollectionsService, VariablesService, SettingsService>();
+
+            // Add MCP with stdio transport (default)
+            services.AddMcp(options =>
+            {
+                options.ServerName = "Siren";
+            });
+            services.AddMcpTools(typeof(McpServiceExtensions).Assembly);
+
+            var serviceProvider = services.BuildServiceProvider();
+
+            serviceProvider.UseMessageBus();
+            serviceProvider.UseMcp(typeof(McpServiceExtensions).Assembly);
+
+            var server = serviceProvider.GetRequiredService<IMcpServer>();
+
+            Console.Error.WriteLine("Siren MCP server starting...");
+            await server.RunAsync();
+            Console.Error.WriteLine("Siren MCP server stopped.");
         }
     }
 }
