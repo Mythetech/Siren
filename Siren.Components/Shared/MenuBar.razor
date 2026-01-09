@@ -47,7 +47,7 @@
     </MudMenu>
 
     <MudMenu ActivationEvent="MouseEvent.MouseOver" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft"
-             Dense="true" ListClass="pa-1 max-w-160">
+        Dense="true" ListClass="pa-1">
         <ActivatorContent>
             <MudButton Size="Size.Small" Variant="Variant.Text" Color="Color.Inherit" Class="text-transform-none">Tools
             </MudButton>
@@ -95,10 +95,7 @@
     </MudMenu>
     @if (Settings.PluginState)
     {
-        <StandardPluginMenu MenuText="Plugins"
-                            ListClass="pa-1"
-                            ItemClass="rounded"
-                            ButtonClass="text-transform-none"/>
+        <StandardPluginMenu MenuText="Plugins" ListClass="pa-1" ItemClass="rounded" ButtonClass="text-transform-none" />
     }
 </SirenStack>
 
