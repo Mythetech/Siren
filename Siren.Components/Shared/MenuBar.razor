@@ -8,6 +8,7 @@
 @using System.Text.Json
 @using Microsoft.Extensions.Logging
 @using Mythetech.Framework.Infrastructure.MessageBus
+@using Mythetech.Framework.Infrastructure.Mcp.Components
 @using Mythetech.Framework.Infrastructure.Plugins
 @using Siren.Components.Settings
 @using MouseEvent = MudBlazor.MouseEvent
@@ -46,7 +47,7 @@
     </MudMenu>
 
     <MudMenu ActivationEvent="MouseEvent.MouseOver" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft"
-             Dense="true" ListClass="pa-1 max-w-160">
+        Dense="true" ListClass="pa-1">
         <ActivatorContent>
             <MudButton Size="Size.Small" Variant="Variant.Text" Color="Color.Inherit" Class="text-transform-none">Tools
             </MudButton>
@@ -88,14 +89,13 @@
                     }
                 </MudMenu>
             </MudMenu>
+            <MudDivider />
+            <McpMenuItems />
         </ChildContent>
     </MudMenu>
     @if (Settings.PluginState)
     {
-        <StandardPluginMenu MenuText="Plugins"
-                            ListClass="pa-1"
-                            ItemClass="rounded"
-                            ButtonClass="text-transform-none"/>
+        <StandardPluginMenu MenuText="Plugins" ListClass="pa-1" ItemClass="rounded" ButtonClass="text-transform-none" />
     }
 </SirenStack>
 
