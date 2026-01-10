@@ -29,7 +29,7 @@
             <VariablesPanel />
         </PanelContent>
     </ContextPanelItem>
-    @if (Plugins.PluginsActive && Plugins.EnabledPlugins.Any(x => x.ContextPanelComponents.Count > 0))
+    @if (Settings.PluginState && Plugins.PluginsActive && Plugins.EnabledPlugins.Any(x => x.ContextPanelComponents.Count > 0))
     {
         <MudDivider Class="my-1" Style="max-height: 2px;" />
         @foreach (var plugin in Plugins.EnabledPlugins.Where(x => x.ContextPanelComponents.Count > 0))
@@ -108,6 +108,8 @@
 
     [Inject] protected PluginState Plugins { get; set; } = default!;
 
+    [Inject] protected SettingsState Settings { get; set; } = default!;
+
     [Inject]
     protected IDialogService DialogService { get; set; } = default!;
 
@@ -149,10 +151,13 @@
 
     private void PluginStateChanged(object? sender, EventArgs args) => StateHasChanged();
 
+    private void SettingsStateChanged(SettingsState s) => StateHasChanged();
+
     protected override void OnInitialized()
     {
         AppState.OnChange += SideBarChanged;
         Plugins.StateChanged += PluginStateChanged;
+        Settings.SettingsChanged += SettingsStateChanged;
     }
     protected void SideBarChanged()
     {
@@ -168,6 +173,7 @@
     {
         AppState.OnChange -= SideBarChanged;
         Plugins.StateChanged -= PluginStateChanged;
+        Settings.SettingsChanged -= SettingsStateChanged;
     }
 
     protected async Task CloseContextPanel()
