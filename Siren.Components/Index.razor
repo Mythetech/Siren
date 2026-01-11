@@ -295,6 +295,31 @@
             }
             content = new FormUrlEncodedContent(substitutedFormData);
         }
+        else if (bodyType == "multipart-form-data")
+        {
+            var multipartContent = new MultipartFormDataContent();
+
+            // Add form fields
+            var formData = active.Request?.FormData ?? new Dictionary<string, string>();
+            foreach (var kvp in formData)
+            {
+                var substitutedKey = VariableSubstitutionService.SubstituteVariables(kvp.Key, activeEnvironment);
+                var substitutedValue = VariableSubstitutionService.SubstituteVariables(kvp.Value, activeEnvironment);
+                multipartContent.Add(new StringContent(substitutedValue), substitutedKey);
+            }
+
+            // Add file attachments
+            var attachments = active.Request?.BinaryAttachments ?? new List<BinaryAttachment>();
+            foreach (var attachment in attachments)
+            {
+                var fileContent = new ByteArrayContent(attachment.Data ?? Array.Empty<byte>());
+                fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(attachment.ContentType);
+                multipartContent.Add(fileContent, "file", attachment.FileName);
+            }
+
+            contentType = multipartContent.Headers.ContentType?.ToString() ?? "multipart/form-data";
+            content = multipartContent;
+        }
         else if (bodyType == "raw")
         {
             if (active.Request?.Headers != null)

@@ -14,6 +14,7 @@
 @using Siren.Components.Settings
 @using Siren.Components.AppContextPanel
 @using Siren.Components.Configuration
+@using Microsoft.Extensions.Logging
 @using Mythetech.Framework.Infrastructure
 @using Mythetech.Framework.Infrastructure.Plugins
 @using MouseEvent = MudBlazor.MouseEvent
@@ -92,6 +93,8 @@
 
     [Inject] protected IPluginAssetLoader PluginLoader { get; set; } = default!;
 
+    [Inject] protected ILogger<MainLayout> Logger { get; set; } = default!;
+
     private Func<string> GetWidth => () => AppState.SideBarOpen ? "74vw" : "calc(100vw - 52px)";
 
     protected MudThemeProvider _theme { get; set; } = default!;
@@ -155,8 +158,11 @@
         {
             await BlazorMonaco.Editor.Global.SetTheme(JS, isDarkMode ? "vs-dark" : "vs");
             StateHasChanged();
-        } catch { }
-
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to set Monaco editor theme");
+        }
     }
 
     protected async Task OpenSettingsDialog()

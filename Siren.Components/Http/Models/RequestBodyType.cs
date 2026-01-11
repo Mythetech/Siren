@@ -5,7 +5,8 @@ namespace Siren.Components.Http.Models
         None,
         Raw,
         FormData,
-        Binary
+        Binary,
+        MultipartFormData
     }
 }
 

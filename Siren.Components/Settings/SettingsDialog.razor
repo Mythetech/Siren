@@ -40,6 +40,22 @@
                 </BaseSettingItem>
             </SettingsSection>
 
+            <SettingsSection Icon="@SirenIcons.Request" Title="Retry Settings">
+                <IntSettingItem Text="Retry Attempts"
+                                Label="Number of times to retry failed requests (0 = no retries)"
+                                Value="@Settings.RetryAttempts"
+                                ValueChanged="@OnRetryAttemptsChanged"
+                                Min="0"
+                                Max="10" />
+
+                <IntSettingItem Text="Retry Delay (ms)"
+                                Label="Delay in milliseconds between retry attempts"
+                                Value="@Settings.RetryDelayMs"
+                                ValueChanged="@OnRetryDelayChanged"
+                                Min="100"
+                                Max="30000" />
+            </SettingsSection>
+
             <SettingsSection Icon="@SirenIcons.Response" Title="Response">
                 <GenericArraySettingItem T="TimeDisplayOptions"
                                          Text="Time display"
@@ -167,6 +183,16 @@
     private void OnDefaultHttpMethodChanged(string? value)
     {
         Settings.DefaultHttpMethod = value;
+    }
+
+    private void OnRetryAttemptsChanged(int value)
+    {
+        Settings.RetryAttempts = value;
+    }
+
+    private void OnRetryDelayChanged(int value)
+    {
+        Settings.RetryDelayMs = value;
     }
 
     protected string DisplayFileSize(long size)

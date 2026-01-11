@@ -1,0 +1,116 @@
+@using Siren.Components.Services
+@using Siren.Components.Http.Models
+
+<MudDialog>
+    <TitleContent>
+        <SirenStack Row="true" AlignItems="AlignItems.Center">
+            <SirenIcon Icon="@SirenIcons.Code" Class="mr-3" />
+            <SirenText Typo="Typo.h6">Import from cURL</SirenText>
+        </SirenStack>
+    </TitleContent>
+    <DialogContent>
+        <SirenStack Spacing="4" Class="w-100">
+            <SirenText Typo="Typo.body2" Class="mud-text-secondary">
+                Paste a cURL command to import it as a request. Supports headers, data, and common options.
+            </SirenText>
+
+            <MudTextField T="string"
+                          @bind-Value="_curlCommand"
+                          Label="cURL Command"
+                          Placeholder="curl -X POST 'https://api.example.com/data' -H 'Content-Type: application/json' -d '{...}'"
+                          Lines="8"
+                          Variant="Variant.Outlined"
+                          Style="font-family: monospace;" />
+
+            @if (_parseError != null)
+            {
+                <MudAlert Severity="Severity.Error" Dense="true">@_parseError</MudAlert>
+            }
+
+            @if (_parsedRequest != null)
+            {
+                <MudAlert Severity="Severity.Success" Dense="true">
+                    <SirenStack Spacing="1">
+                        <SirenText Typo="Typo.body2">Preview:</SirenText>
+                        <SirenText Typo="Typo.body2">
+                            <strong>@_parsedRequest.Method</strong> @_parsedRequest.RequestUri
+                        </SirenText>
+                        @if (_parsedRequest.Headers?.Count > 0)
+                        {
+                            <SirenText Typo="Typo.caption" Class="mud-text-secondary">
+                                @_parsedRequest.Headers.Count header(s)
+                            </SirenText>
+                        }
+                        @if (_parsedRequest.BodyType != RequestBodyType.None)
+                        {
+                            <SirenText Typo="Typo.caption" Class="mud-text-secondary">
+                                Body: @_parsedRequest.BodyType
+                            </SirenText>
+                        }
+                    </SirenStack>
+                </MudAlert>
+            }
+        </SirenStack>
+    </DialogContent>
+    <DialogActions>
+        <SirenButton OnClick="Cancel" Variant="Variant.Text">Cancel</SirenButton>
+        <SirenButton OnClick="Parse" Variant="Variant.Text" Disabled="@string.IsNullOrWhiteSpace(_curlCommand)">
+            Preview
+        </SirenButton>
+        <SirenButton OnClick="Import" Variant="Variant.Filled" Color="Color.Primary"
+                     Disabled="@(_parsedRequest == null)">
+            Import
+        </SirenButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Inject]
+    private ICurlImporter CurlImporter { get; set; } = default!;
+
+    private string _curlCommand = "";
+    private string? _parseError;
+    private HttpRequest? _parsedRequest;
+
+    private void Parse()
+    {
+        _parseError = null;
+        _parsedRequest = null;
+
+        if (string.IsNullOrWhiteSpace(_curlCommand))
+        {
+            _parseError = "Please enter a cURL command";
+            return;
+        }
+
+        _parsedRequest = CurlImporter.ParseCurl(_curlCommand);
+
+        if (_parsedRequest == null)
+        {
+            _parseError = "Failed to parse cURL command. Please check the syntax.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_parsedRequest.RequestUri))
+        {
+            _parseError = "Could not find a URL in the cURL command.";
+            _parsedRequest = null;
+        }
+    }
+
+    private void Import()
+    {
+        if (_parsedRequest != null)
+        {
+            MudDialog.Close(DialogResult.Ok(_parsedRequest));
+        }
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Close(DialogResult.Cancel());
+    }
+}

@@ -26,7 +26,9 @@ namespace Siren.Components.Settings
         string DefaultUserAgent,
         string? DefaultHttpMethod,
         string? LastActiveEnvironment,
-        bool PluginState
+        bool PluginState,
+        int RetryAttempts = 0,
+        int RetryDelayMs = 1000
     );
 
     public class SettingsState
@@ -155,15 +157,49 @@ namespace Siren.Components.Settings
         }
 
         private bool _pluginState = false;
-        
+
         public bool PluginState
         {
             get => _pluginState;
             set
             {
                 if (_pluginState == value) return;
-                
+
                 _pluginState = value;
+                NotifyChangeSubscribersAsync();
+            }
+        }
+
+        private int _retryAttempts = 0;
+
+        /// <summary>
+        /// Number of retry attempts for failed requests (0 = no retries).
+        /// </summary>
+        public int RetryAttempts
+        {
+            get => _retryAttempts;
+            set
+            {
+                if (_retryAttempts == value) return;
+
+                _retryAttempts = Math.Max(0, Math.Min(value, 10)); // Clamp between 0 and 10
+                NotifyChangeSubscribersAsync();
+            }
+        }
+
+        private int _retryDelayMs = 1000;
+
+        /// <summary>
+        /// Delay in milliseconds between retry attempts.
+        /// </summary>
+        public int RetryDelayMs
+        {
+            get => _retryDelayMs;
+            set
+            {
+                if (_retryDelayMs == value) return;
+
+                _retryDelayMs = Math.Max(100, Math.Min(value, 30000)); // Clamp between 100ms and 30s
                 NotifyChangeSubscribersAsync();
             }
         }
@@ -183,7 +219,9 @@ namespace Siren.Components.Settings
                 DefaultUserAgent,
                 DefaultHttpMethod,
                 LastActiveEnvironment,
-                PluginState
+                PluginState,
+                RetryAttempts,
+                RetryDelayMs
             );
         }
 
@@ -203,7 +241,9 @@ namespace Siren.Components.Settings
             _defaultHttpMethod = snapshot.DefaultHttpMethod;
             _lastActiveEnvironment = snapshot.LastActiveEnvironment;
             _pluginState = snapshot.PluginState;
-            
+            _retryAttempts = snapshot.RetryAttempts;
+            _retryDelayMs = snapshot.RetryDelayMs;
+
             if (notify)
             {
                 NotifyChangeSubscribersAsync();
