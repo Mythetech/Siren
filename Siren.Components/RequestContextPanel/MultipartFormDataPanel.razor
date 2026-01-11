@@ -1,0 +1,298 @@
+@using Siren.Components.Http
+@using Siren.Components.Http.Models
+@using Siren.Components.Theme
+@using Siren.Components.Shared.Notifications
+@using System.IO
+@using Microsoft.Extensions.Logging
+@using Mythetech.Framework.Infrastructure.Files
+@using Orientation = Microsoft.FluentUI.AspNetCore.Components.Orientation
+
+<SirenStack Class="w-100 h-100 d-flex">
+    <SirenSplitter Orientation="Orientation.Vertical" Class="w-100">
+        <Panel1>
+            <SirenStack Spacing="3" Class="p-1 overflow-y-scroll d-flex h-100 w-100">
+                <SirenStack Row="true" Spacing="3" Class="w-100" AlignItems="AlignItems.Center">
+                    <SirenText Typo="Typo.body1">Form Fields</SirenText>
+                    <SirenSpacer />
+                    <SirenIconButton OnClick="@(() => AddFormDataEntry("Key", "Value"))"
+                                     Icon="@SirenIcons.Add"
+                                     Tooltip="Add Form Field"
+                                     Class="scale-75"
+                                     Size="Size.Medium"
+                                     Variant="Variant.Text"
+                                     Color="Color.Primary" />
+                </SirenStack>
+
+                @if (formDataEntries.Any())
+                {
+                    <MudDataGrid T="DictionaryViewModel"
+                                 Items="@formDataEntries"
+                                 Context="context"
+                                 Class="w-100"
+                                 Bordered="false"
+                                 Elevation="0"
+                                 RowClass="text-truncate hover-error-zone"
+                                 Style="overflow:hidden;"
+                                 EditMode="DataGridEditMode.Cell"
+                                 EditTrigger="DataGridEditTrigger.Manual"
+                                 CommittedItemChanges="UpdateFormDataEntry"
+                                 ReadOnly="false"
+                                 Dense="true"
+                                 Hover="true">
+                        <Columns>
+                            <MudBlazor.PropertyColumn Property="x => x.Key" Title="Key">
+                                <EditTemplate>
+                                    <SirenStack Row="true" Class="w-100 hover-zone">
+                                        <MudTextField @bind-Value="@context.Item.Key" OnBlur="(() => UpdateFormDataEntry(context.Item))" />
+                                    </SirenStack>
+                                </EditTemplate>
+                            </MudBlazor.PropertyColumn>
+
+                            <MudBlazor.PropertyColumn Property="x => x.Value" Title="Value">
+                                <EditTemplate>
+                                    <SirenStack Row="true" Class="w-100 hover-zone">
+                                        <MudTextField @bind-Value="@context.Item.Value" OnBlur="(() => UpdateFormDataEntry(context.Item))" />
+                                    </SirenStack>
+                                </EditTemplate>
+                            </MudBlazor.PropertyColumn>
+                            <MudBlazor.TemplateColumn>
+                                <CellTemplate>
+                                    <SirenSpacer />
+                                    <SirenIconButton OnClick="@(() => DeleteFormDataEntry(context.Item))"
+                                                     Icon="@SirenIcons.Delete"
+                                                     Class="hover-visible hover-visible-error scale-75"
+                                                     Tooltip="@($"Delete `{context?.Item.Key ?? "entry"}`")"
+                                                     Size="Size.Small"
+                                                     Variant="Variant.Text"
+                                                     Color="Color.Transparent" />
+                                </CellTemplate>
+                                <EditTemplate>
+                                    <SirenSpacer />
+                                    <SirenIconButton OnClick="@(() => DeleteFormDataEntry(context.Item))"
+                                                     Icon="@SirenIcons.Delete"
+                                                     Class="hover-visible hover-visible-error scale-75"
+                                                     Tooltip="@($"Delete `{context?.Item.Key ?? "entry"}`")"
+                                                     Size="Size.Small"
+                                                     Variant="Variant.Text"
+                                                     Color="Color.Transparent" />
+                                </EditTemplate>
+                            </MudBlazor.TemplateColumn>
+                        </Columns>
+                    </MudDataGrid>
+                }
+                else
+                {
+                    <SirenStack Spacing="2" Class="w-100 d-flex py-4" AlignItems="AlignItems.Center" Justify="Justify.Center">
+                        <SirenText Typo="Typo.body2" Class="mud-text-secondary">No form fields. Click + to add.</SirenText>
+                    </SirenStack>
+                }
+            </SirenStack>
+        </Panel1>
+        <Panel2>
+            <SirenStack Spacing="3" Class="p-1 overflow-y-scroll d-flex h-100 w-100">
+                <SirenStack Row="true" Spacing="3" Class="w-100" AlignItems="AlignItems.Center">
+                    <SirenText Typo="Typo.body1">File Attachments</SirenText>
+                    <SirenSpacer />
+                    <SirenIconButton OnClick="@AddFile"
+                                     Icon="@SirenIcons.Add"
+                                     Tooltip="Add File Attachment"
+                                     Class="scale-75"
+                                     Size="Size.Medium"
+                                     Variant="Variant.Text"
+                                     Color="Color.Primary" />
+                </SirenStack>
+
+                @if (attachments.Any())
+                {
+                    <MudDataGrid T="BinaryAttachment"
+                                 Items="@attachments"
+                                 Context="context"
+                                 Class="w-100"
+                                 Bordered="false"
+                                 Elevation="0"
+                                 RowClass="text-truncate hover-error-zone"
+                                 Style="overflow:hidden;"
+                                 Dense="true"
+                                 Hover="true">
+                        <Columns>
+                            <MudBlazor.PropertyColumn Property="x => x.FileName" Title="File Name" />
+                            <MudBlazor.PropertyColumn Property="x => x.ContentType" Title="Content Type" />
+                            <MudBlazor.TemplateColumn Title="Size">
+                                <CellTemplate>
+                                    <SirenText Typo="Typo.body2">@FormatFileSize(context.Item.Size)</SirenText>
+                                </CellTemplate>
+                            </MudBlazor.TemplateColumn>
+                            <MudBlazor.TemplateColumn>
+                                <CellTemplate>
+                                    <SirenSpacer />
+                                    <SirenIconButton OnClick="@(() => RemoveAttachment(context.Item))"
+                                                     Icon="@SirenIcons.Delete"
+                                                     Class="hover-visible hover-visible-error scale-75"
+                                                     Tooltip="@($"Remove `{context.Item.FileName}`")"
+                                                     Size="Size.Small"
+                                                     Variant="Variant.Text"
+                                                     Color="Color.Transparent" />
+                                </CellTemplate>
+                            </MudBlazor.TemplateColumn>
+                        </Columns>
+                    </MudDataGrid>
+                }
+                else
+                {
+                    <SirenStack Spacing="2" Class="w-100 d-flex py-4" AlignItems="AlignItems.Center" Justify="Justify.Center">
+                        <SirenText Typo="Typo.body2" Class="mud-text-secondary">No files. Click + to add attachments.</SirenText>
+                    </SirenStack>
+                }
+            </SirenStack>
+        </Panel2>
+    </SirenSplitter>
+</SirenStack>
+
+@code {
+    [Parameter]
+    public SirenNetworkRequest NetworkRequest { get; set; } = default!;
+
+    [Inject]
+    public IFileOpenService FileOpenService { get; set; } = default!;
+
+    [Inject]
+    public ISnackbar Snackbar { get; set; } = default!;
+
+    [Inject]
+    public ILogger<MultipartFormDataPanel> Logger { get; set; } = default!;
+
+    private List<DictionaryViewModel> formDataEntries = new();
+    private List<BinaryAttachment> attachments = new();
+
+    protected override void OnInitialized()
+    {
+        LoadFromNetworkRequest();
+    }
+
+    protected override void OnParametersSet()
+    {
+        LoadFromNetworkRequest();
+    }
+
+    private void LoadFromNetworkRequest()
+    {
+        if (NetworkRequest?.Request?.FormData != null)
+        {
+            formDataEntries = NetworkRequest.Request.FormData.ToViewModel();
+        }
+        if (NetworkRequest?.Request?.BinaryAttachments != null)
+        {
+            attachments = NetworkRequest.Request.BinaryAttachments.ToList();
+        }
+    }
+
+    private void AddFormDataEntry(string key, string value)
+    {
+        formDataEntries.Add(new() { Key = key, Value = value });
+        SyncToNetworkRequest();
+    }
+
+    protected void UpdateFormDataEntry(DictionaryViewModel m)
+    {
+        var entry = formDataEntries.Find(x => x.Id.Equals(m.Id));
+        if (entry != null)
+        {
+            entry.Key = m.Key;
+            entry.Value = m.Value;
+            SyncToNetworkRequest();
+        }
+        StateHasChanged();
+    }
+
+    protected void DeleteFormDataEntry(DictionaryViewModel m)
+    {
+        formDataEntries.Remove(m);
+        SyncToNetworkRequest();
+        StateHasChanged();
+    }
+
+    private async Task AddFile()
+    {
+        try
+        {
+            var filePaths = await FileOpenService.OpenFileAsync("Select File", "*");
+
+            var filePath = filePaths.FirstOrDefault();
+
+            if (!string.IsNullOrEmpty(filePath) && File.Exists(filePath))
+            {
+                var fileInfo = new FileInfo(filePath);
+                var fileData = await File.ReadAllBytesAsync(filePath);
+                var contentType = GetContentType(fileInfo.Extension);
+
+                var attachment = new BinaryAttachment
+                {
+                    FileName = fileInfo.Name,
+                    ContentType = contentType,
+                    Data = fileData,
+                    DataBase64 = Convert.ToBase64String(fileData),
+                    Size = fileInfo.Length
+                };
+
+                attachments.Add(attachment);
+                SyncToNetworkRequest();
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error adding file attachment");
+            Snackbar.AddSirenError("Error adding file attachment");
+        }
+    }
+
+    private void RemoveAttachment(BinaryAttachment attachment)
+    {
+        attachments.Remove(attachment);
+        SyncToNetworkRequest();
+        StateHasChanged();
+    }
+
+    private void SyncToNetworkRequest()
+    {
+        if (NetworkRequest?.Request != null)
+        {
+            NetworkRequest.Request.FormData = formDataEntries.ToSafeDictionary();
+            NetworkRequest.Request.BinaryAttachments = attachments.ToList();
+        }
+    }
+
+    private string FormatFileSize(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB" };
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len = len / 1024;
+        }
+        return $"{len:0.##} {sizes[order]}";
+    }
+
+    private string GetContentType(string extension)
+    {
+        return extension.ToLowerInvariant() switch
+        {
+            ".json" => "application/json",
+            ".xml" => "application/xml",
+            ".txt" => "text/plain",
+            ".html" => "text/html",
+            ".css" => "text/css",
+            ".js" => "application/javascript",
+            ".png" => "image/png",
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".gif" => "image/gif",
+            ".svg" => "image/svg+xml",
+            ".pdf" => "application/pdf",
+            ".zip" => "application/zip",
+            ".csv" => "text/csv",
+            _ => "application/octet-stream"
+        };
+    }
+}

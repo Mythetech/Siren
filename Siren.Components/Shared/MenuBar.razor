@@ -28,6 +28,8 @@
             </MudMenuItem>
             <MudMenuItem Class="rounded" Icon="@SirenIcons.UrlImport" OnClick="HandleImportRequest">Import Request
             </MudMenuItem>
+            <MudMenuItem Class="rounded" Icon="@SirenIcons.Code" OnClick="HandleImportFromCurl">Import from cURL
+            </MudMenuItem>
             <MudDivider />
             <MudMenuItem Class="rounded" Icon="@SirenIcons.Export" OnClick="@(async () => await HandleSaveResponse())"
                 Disabled="@(AppState.Active?.Response == null)">Save Response</MudMenuItem>
@@ -228,6 +230,27 @@
     private async Task HandleImportRequest()
     {
         await MessageBus.PublishAsync(new ImportRequest());
+    }
+
+    private async Task HandleImportFromCurl()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "siren-dialog", MaxWidth = MaxWidth.Medium };
+        var dialogRef = await DialogService.ShowAsync<CurlImportDialog>("Import from cURL", options);
+
+        var result = await dialogRef.Result;
+
+        if (result is { Canceled: false, Data: HttpRequest importedRequest })
+        {
+            var networkRequest = new SirenNetworkRequest()
+            {
+                Name = "Imported Request",
+                Request = importedRequest,
+            };
+
+            AppState.AddNetworkRequest(networkRequest);
+            AppState.SetActive(networkRequest.Id);
+            Snackbar.Add("Successfully imported cURL command", Severity.Success);
+        }
     }
 
     private async Task HandleSaveResponse()

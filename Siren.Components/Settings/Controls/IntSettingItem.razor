@@ -1,0 +1,32 @@
+<BaseSettingItem Text="@Text" Label="@Label" Spacing="@Spacing">
+    <MudNumericField T="int"
+                     Value="@Value"
+                     ValueChanged="@ValueChanged"
+                     Variant="Variant.Text"
+                     Margin="Margin.Dense"
+                     Min="@Min"
+                     Max="@Max" />
+</BaseSettingItem>
+
+@code {
+    [Parameter]
+    public string Text { get; set; } = "";
+
+    [Parameter]
+    public string? Label { get; set; }
+
+    [Parameter]
+    public int Value { get; set; }
+
+    [Parameter]
+    public EventCallback<int> ValueChanged { get; set; }
+
+    [Parameter]
+    public int Min { get; set; } = int.MinValue;
+
+    [Parameter]
+    public int Max { get; set; } = int.MaxValue;
+
+    [Parameter]
+    public int Spacing { get; set; } = 3;
+}

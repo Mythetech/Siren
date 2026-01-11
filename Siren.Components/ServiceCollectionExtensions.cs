@@ -65,6 +65,8 @@ namespace Siren.Components
 
             services.AddSingleton<AppConfiguration>();
 
+            services.AddSingleton<ICurlImporter, CurlImporter>();
+
             return services;
         }
     }

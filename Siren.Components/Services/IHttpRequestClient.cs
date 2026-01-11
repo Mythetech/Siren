@@ -36,12 +36,44 @@ namespace Siren.Components.Services
 
         public async Task<RequestResult> SendHttpRequestAsync(HttpRequest request, CancellationToken ct)
         {
+            var maxRetries = _settings.RetryAttempts;
+            var retryDelayMs = _settings.RetryDelayMs;
+            RequestResult? lastResult = null;
+
+            for (int attempt = 0; attempt <= maxRetries; attempt++)
+            {
+                if (attempt > 0)
+                {
+                    _logger.LogInformation("Retry attempt {Attempt} of {MaxRetries} for {Uri}", attempt, maxRetries, request.RequestUri);
+                    await Task.Delay(retryDelayMs, ct);
+                }
+
+                lastResult = await SendHttpRequestInternalAsync(request, ct);
+
+                // Don't retry on success or client errors (4xx)
+                if (lastResult.Error == null || (lastResult.StatusCode >= 400 && lastResult.StatusCode < 500))
+                {
+                    break;
+                }
+
+                // Don't retry if cancelled
+                if (ct.IsCancellationRequested)
+                {
+                    break;
+                }
+            }
+
+            return lastResult!;
+        }
+
+        private async Task<RequestResult> SendHttpRequestInternalAsync(HttpRequest request, CancellationToken ct)
+        {
             NetworkInfo? networkInfo = null;
             RequestTimeline? timeline = null;
-            
+
             Uri? uri = null;
             string? normalizedUri = null;
-            
+
             try
             {
                 normalizedUri = NormalizeUri(request.RequestUri);
@@ -56,7 +88,7 @@ namespace Siren.Components.Services
                     ResponseText = $"Invalid URL: {request.RequestUri}"
                 };
             }
-            
+
             var handler = new HttpClientHandler
             {
                 ServerCertificateCustomValidationCallback = (message, cert, chain, errors) =>
@@ -205,8 +237,9 @@ namespace Siren.Components.Services
                 var addresses = await Dns.GetHostAddressesAsync(host);
                 return addresses.FirstOrDefault()?.ToString();
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogDebug(ex, "Failed to resolve remote address for host: {Host}", host);
                 return null;
             }
         }
@@ -218,8 +251,9 @@ namespace Siren.Components.Services
                 var host = Dns.GetHostEntry(Dns.GetHostName());
                 return host.AddressList.FirstOrDefault(ip => ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)?.ToString();
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogDebug(ex, "Failed to resolve local address");
                 return null;
             }
         }
