@@ -4,6 +4,7 @@ using Microsoft.FluentUI.AspNetCore.Components;
 using MudBlazor;
 using MudBlazor.Services;
 using Mythetech.Framework.Infrastructure.MessageBus;
+using Mythetech.Framework.Infrastructure.Secrets;
 using Siren.Components.Collections;
 using Siren.Components.Configuration;
 using Siren.Components.History;
@@ -58,6 +59,12 @@ namespace Siren.Components
             services.AddSingleton<ICollectionsService, TCollectionsService>();
 
             services.AddSingleton<IVariableService, TVariablesService>();
+
+            // Variable value resolvers - order matters (more specific resolvers first)
+            services.AddSingleton<IVariableValueResolver, DynamicVariableResolver>();
+
+            // Secret manager framework (SecretManagerState will be registered by desktop project)
+            services.AddSecretManagerFramework();
 
             services.AddSingleton<IVariableSubstitutionService, VariableSubstitutionService>();
 

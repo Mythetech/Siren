@@ -1,0 +1,108 @@
+@using MudBlazor
+
+<MudDialog>
+    <TitleContent>
+        <SirenStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+            <SirenIcon Icon="@SirenIcons.Help" />
+            <SirenText Typo="Typo.h6">Variable Syntax Help</SirenText>
+        </SirenStack>
+    </TitleContent>
+    <DialogContent>
+        <SirenStack Spacing="4" Class="py-2" Style="min-width: 500px; max-height: 500px; overflow-y: auto;">
+
+            <MudPaper Elevation="0" Class="pa-3" Style="background-color: var(--mud-palette-background-grey);">
+                <SirenStack Spacing="2">
+                    <SirenText Typo="Typo.subtitle1" Color="Color.Primary">Basic Variable Syntax</SirenText>
+                    <SirenText Typo="Typo.body2">
+                        Use double curly braces to reference variables in URLs, headers, body, or form data:
+                    </SirenText>
+                    <MudPaper Elevation="0" Class="pa-2 rounded" Style="background-color: var(--mud-palette-surface);">
+                        <code>{{variableName}}</code>
+                    </MudPaper>
+                    <SirenText Typo="Typo.body2" Color="Color.Secondary">
+                        Example: <code>https://api.example.com/{{apiVersion}}/users</code>
+                    </SirenText>
+                </SirenStack>
+            </MudPaper>
+
+            <MudPaper Elevation="0" Class="pa-3" Style="background-color: var(--mud-palette-background-grey);">
+                <SirenStack Spacing="2">
+                    <SirenText Typo="Typo.subtitle1" Color="Color.Primary">Secret References</SirenText>
+                    <SirenText Typo="Typo.body2">
+                        Reference secrets stored in your secret manager (Keychain, 1Password, etc.):
+                    </SirenText>
+                    <MudPaper Elevation="0" Class="pa-2 rounded" Style="background-color: var(--mud-palette-surface);">
+                        <code>$secret:secretKeyName</code>
+                    </MudPaper>
+                    <SirenText Typo="Typo.body2" Color="Color.Secondary">
+                        Set this as a variable's value to pull from your secret manager at runtime.
+                    </SirenText>
+                </SirenStack>
+            </MudPaper>
+
+            <MudPaper Elevation="0" Class="pa-3" Style="background-color: var(--mud-palette-background-grey);">
+                <SirenStack Spacing="2">
+                    <SirenText Typo="Typo.subtitle1" Color="Color.Primary">Dynamic Variables</SirenText>
+                    <SirenText Typo="Typo.body2">
+                        These generate fresh values on each request:
+                    </SirenText>
+                    <MudSimpleTable Dense="true" Hover="true" Bordered="false" Class="mt-2">
+                        <thead>
+                            <tr>
+                                <th>Variable</th>
+                                <th>Description</th>
+                                <th>Example Output</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var variable in DynamicVariableResolver.GetVariableInfos())
+                            {
+                                <tr>
+                                    <td><code>{{@variable.Name}}</code></td>
+                                    <td>@variable.Description</td>
+                                    <td><code>@variable.ExampleOutput</code></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </MudSimpleTable>
+                </SirenStack>
+            </MudPaper>
+
+            <MudPaper Elevation="0" Class="pa-3" Style="background-color: var(--mud-palette-background-grey);">
+                <SirenStack Spacing="2">
+                    <SirenText Typo="Typo.subtitle1" Color="Color.Primary">Environments</SirenText>
+                    <SirenText Typo="Typo.body2">
+                        Variables are scoped to environments. When an environment is selected:
+                    </SirenText>
+                    <ul class="mud-typography-body2 ml-4">
+                        <li>Environment-specific variables take precedence</li>
+                        <li>Global variables are available as fallback</li>
+                        <li>Unresolved variables remain as <code>{{variableName}}</code></li>
+                    </ul>
+                </SirenStack>
+            </MudPaper>
+
+            <MudPaper Elevation="0" Class="pa-3" Style="background-color: var(--mud-palette-background-grey);">
+                <SirenStack Spacing="2">
+                    <SirenText Typo="Typo.subtitle1" Color="Color.Primary">Tips</SirenText>
+                    <ul class="mud-typography-body2 ml-4">
+                        <li>Use the <strong>Preview</strong> button to see resolved values before sending</li>
+                        <li>Mark sensitive variables as <strong>Secret</strong> to hide their values</li>
+                        <li>Dynamic variables show as <code>{{pending}}</code> in preview since they generate on send</li>
+                    </ul>
+                </SirenStack>
+            </MudPaper>
+
+        </SirenStack>
+    </DialogContent>
+    <DialogActions>
+        <SirenButton Variant="Variant.Filled" OnClick="Close">Close</SirenButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    private void Close() => MudDialog.Close();
+}
