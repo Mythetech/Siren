@@ -74,6 +74,7 @@ namespace Siren.Components
 
             services.AddSingleton<ICurlImporter, CurlImporter>();
             services.AddSingleton<ICurlGenerator, CurlGenerator>();
+            services.AddSingleton<IHarExporter, HarExporter>();
 
             return services;
         }

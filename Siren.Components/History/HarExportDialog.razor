@@ -1,0 +1,84 @@
+@using Siren.Components.Services
+@using Microsoft.JSInterop
+
+<MudDialog>
+    <TitleContent>
+        <SirenStack Row="true" AlignItems="AlignItems.Center">
+            <SirenIcon Icon="@SirenIcons.Export" Class="mr-3" />
+            <SirenText Typo="Typo.h6">Export as HAR</SirenText>
+        </SirenStack>
+    </TitleContent>
+    <DialogContent>
+        <SirenStack Spacing="4" Class="w-100" Style="min-width: 600px;">
+            <SirenText Typo="Typo.body2" Class="mud-text-secondary">
+                Export history as HTTP Archive (HAR) format. This format is compatible with browser developer tools and other HTTP analysis tools.
+            </SirenText>
+
+            <SirenStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                <SirenText Typo="Typo.body2">Exporting:</SirenText>
+                <MudChip T="string" Size="Size.Small" Color="Color.Primary">
+                    @(_records?.Count ?? 0) request(s)
+                </MudChip>
+            </SirenStack>
+
+            <MudTextField T="string"
+                          Value="@_harContent"
+                          ReadOnly="true"
+                          Lines="15"
+                          Variant="Variant.Outlined"
+                          FullWidth="true"
+                          Style="font-family: monospace; font-size: 12px;" />
+
+            @if (_copied)
+            {
+                <MudAlert Class="w-100" Severity="Severity.Success" Dense="true">Copied to clipboard!</MudAlert>
+            }
+        </SirenStack>
+    </DialogContent>
+    <DialogActions>
+        <SirenButton OnClick="Close" Variant="Variant.Text">Close</SirenButton>
+        <SirenButton OnClick="CopyToClipboard" Variant="Variant.Filled" Color="Color.Primary"
+                     StartIcon="@SirenIcons.Copy">
+            Copy
+        </SirenButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public List<HistoryRecord>? Records { get; set; }
+
+    [Inject]
+    private IHarExporter HarExporter { get; set; } = default!;
+
+    [Inject]
+    private IJsApiService JsApiService { get; set; } = default!;
+
+    private List<HistoryRecord>? _records;
+    private string _harContent = "";
+    private bool _copied;
+
+    protected override void OnInitialized()
+    {
+        _records = Records ?? new List<HistoryRecord>();
+        if (_records.Count > 0)
+        {
+            _harContent = HarExporter.GenerateHar(_records);
+        }
+    }
+
+    private async Task CopyToClipboard()
+    {
+        await JsApiService.CopyToClipboardAsync(_harContent);
+        _copied = true;
+        StateHasChanged();
+    }
+
+    private void Close()
+    {
+        MudDialog.Close(DialogResult.Cancel());
+    }
+}

@@ -4,6 +4,15 @@
 @using Mythetech.Framework.Infrastructure.Secrets
 @implements IDisposable
 
+@if (_loading)
+{
+    <SirenStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="h-100 w-100 py-8">
+        <MudProgressCircular Indeterminate="true" Size="Size.Medium" />
+        <SirenText Typo="Typo.body2" Color="Color.Secondary">Loading variables...</SirenText>
+    </SirenStack>
+}
+else
+{
 <SirenStack Spacing="9" Class="w-100">
     <SirenStack Row="true" Spacing="3" Class="w-100 px-3" AlignItems="AlignItems.Center">
         <SirenIcon Icon="@SirenIcons.Environment"
@@ -252,6 +261,7 @@
         }
     }
 </SirenStack>
+}
 
 @code {
     [Inject] public VariableState VariableState { get; set; } = default!;
@@ -265,6 +275,8 @@
     [Inject] public IDialogService DialogService { get; set; } = default!;
 
     [Inject] public SecretManagerState? SecretManagerState { get; set; }
+
+    private bool _loading = true;
 
     private List<Environment> Environments = new();
 
@@ -330,7 +342,15 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await InvokeAsync(LoadVariables);
+        _loading = true;
+        try
+        {
+            await InvokeAsync(LoadVariables);
+        }
+        finally
+        {
+            _loading = false;
+        }
     }
 
     private void HandleEnvironmentChanged(string? environment)

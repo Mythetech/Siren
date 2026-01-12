@@ -3,7 +3,14 @@
 @using Siren.Components.Shared.Notifications
 
 <SirenStack Spacing="6" Class="h-100 w-100 pa-1" AlignItems="AlignItems.Start">
-    @if (!_detailsOpen)
+    @if (_loading)
+    {
+        <SirenStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="h-100 w-100 py-8">
+            <MudProgressCircular Indeterminate="true" Size="Size.Medium" />
+            <SirenText Typo="Typo.body2" Color="Color.Secondary">Loading collections...</SirenText>
+        </SirenStack>
+    }
+    else if (!_detailsOpen)
     {
         <SirenStack Row="true" Spacing="3" AlignItems="AlignItems.Center" Class="w-100">
             <MudTextField @bind-Value="_searchString" Placeholder="Filter" Adornment="Adornment.Start" Immediate="true"
@@ -80,6 +87,8 @@
 
     private List<Collection> _collections;
 
+    private bool _loading = true;
+
     private bool _detailsOpen = false;
 
     private Collection? _selectedCollection;
@@ -99,7 +108,15 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _collections = await Task.Run(() => CollectionsService.GetCollections());
+        _loading = true;
+        try
+        {
+            _collections = await Task.Run(() => CollectionsService.GetCollections());
+        }
+        finally
+        {
+            _loading = false;
+        }
     }
 
     protected void ClearSelected()

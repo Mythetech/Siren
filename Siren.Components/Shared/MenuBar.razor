@@ -64,6 +64,12 @@
                 </MudMenuItem>
             </MudMenu>
             <MudMenu Label="History" StartIcon="@SirenIcons.History" Dense="true" ListClass="pa-1">
+                <MudMenuItem Class="rounded" Icon="@SirenIcons.Export" OnClick="HandleExportLastRequestToHar"
+                    Disabled="@(AppState.Active?.Response == null)">Export last request as HAR
+                </MudMenuItem>
+                <MudMenuItem Class="rounded" Icon="@SirenIcons.Export" OnClick="HandleExportAllToHar">Export all as HAR
+                </MudMenuItem>
+                <MudDivider />
                 <MudMenuItem Class="rounded" Icon="@SirenIcons.DeleteHistory" OnClick="HandleClearHistory">Clear
                 </MudMenuItem>
             </MudMenu>
@@ -379,6 +385,58 @@
                 Snackbar.Add("Error deleting history", Severity.Error);
             }
         }
+    }
+
+    private async Task HandleExportLastRequestToHar()
+    {
+        if (AppState.Active?.Request == null || AppState.Active?.Response == null)
+        {
+            Snackbar.Add("No request with response to export", Severity.Warning);
+            return;
+        }
+
+        var record = new HistoryRecord
+        {
+            Timestamp = DateTimeOffset.UtcNow,
+            HttpMethod = AppState.Active.Request.Method,
+            RequestUri = AppState.Active.Request.RequestUri,
+            StatusCode = AppState.Active.Response.HttpStatusCode,
+            Request = AppState.Active.Request,
+            Response = AppState.Active.Response
+        };
+
+        var parameters = new DialogParameters
+        {
+            { "Records", new List<HistoryRecord> { record } }
+        };
+        var options = new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "siren-dialog", MaxWidth = MaxWidth.Large };
+        await DialogService.ShowAsync<HarExportDialog>("Export as HAR", parameters, options);
+    }
+
+    private async Task HandleExportAllToHar()
+    {
+        var history = HistoryService.GetHistory();
+        if (history == null || history.Count == 0)
+        {
+            Snackbar.Add("No history to export", Severity.Warning);
+            return;
+        }
+
+        // Filter to only records that have response data (SaveHttpContent was enabled)
+        var recordsWithData = history.Where(r => r.Response != null).ToList();
+
+        if (recordsWithData.Count == 0)
+        {
+            Snackbar.Add("No history records with response data. Enable 'Save HTTP Content' in settings to capture full request/response data.", Severity.Warning);
+            return;
+        }
+
+        var parameters = new DialogParameters
+        {
+            { "Records", recordsWithData }
+        };
+        var options = new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "siren-dialog", MaxWidth = MaxWidth.Large };
+        await DialogService.ShowAsync<HarExportDialog>("Export as HAR", parameters, options);
     }
 
     private void HandleCreateCollection()

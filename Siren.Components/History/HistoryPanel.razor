@@ -2,6 +2,15 @@
 @using System.Net
 @using Siren.Components.Http.Models
 
+@if (_loading)
+{
+    <SirenStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="h-100 w-100 py-8">
+        <MudProgressCircular Indeterminate="true" Size="Size.Medium" />
+        <SirenText Typo="Typo.body2" Color="Color.Secondary">Loading history...</SirenText>
+    </SirenStack>
+}
+else
+{
 <MudTable OnRowMouseEnter="@((args) => _hoveredRecord = args.Item)" OnRowMouseLeave="@(() => _hoveredRecord = null)"
     Virtualize="true" T="HistoryRecord" Height="86dvh" Items="@HistoryRecords" Dense="true" Bordered="false"
     MultiSelection="false" SelectOnRowClick="false" Elevation="0" Class="w-100 siren-table" Striped="false" Hover="true"
@@ -50,6 +59,7 @@
         </MudTd>
     </RowTemplate>
 </MudTable>
+}
 
 @code {
     [Inject]
@@ -88,7 +98,15 @@
 
     protected override async Task OnInitializedAsync()
     {
-        HistoryRecords = await Task.Run(() => HistoryService.GetHistory().OrderByDescending(x => x.Timestamp).ToList());
+        _loading = true;
+        try
+        {
+            HistoryRecords = await Task.Run(() => HistoryService.GetHistory().OrderByDescending(x => x.Timestamp).ToList());
+        }
+        finally
+        {
+            _loading = false;
+        }
     }
 
     protected async Task PromptDeleteHistory()
