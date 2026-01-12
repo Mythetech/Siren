@@ -1,0 +1,75 @@
+@using Siren.Components.Services
+@using Siren.Components.Http.Models
+
+<MudDialog>
+    <TitleContent>
+        <SirenStack Row="true" AlignItems="AlignItems.Center">
+            <SirenIcon Icon="@SirenIcons.Code" Class="mr-3" />
+            <SirenText Typo="Typo.h6">Export as cURL</SirenText>
+        </SirenStack>
+    </TitleContent>
+    <DialogContent>
+        <SirenStack Spacing="4" Class="w-100">
+            <SirenText Typo="Typo.body2" Class="mud-text-secondary">
+                Copy this cURL command to use in your terminal or share with others.
+            </SirenText>
+
+            <MudTextField T="string"
+                          Value="@_curlCommand"
+                          ReadOnly="true"
+                          Lines="12"
+                          Variant="Variant.Outlined"
+                          FullWidth="true"
+                          Style="font-family: monospace;" />
+
+            @if (_copied)
+            {
+                <MudAlert Class="w-100" Severity="Severity.Success" Dense="true">Copied to clipboard!</MudAlert>
+            }
+        </SirenStack>
+    </DialogContent>
+    <DialogActions>
+        <SirenButton OnClick="Close" Variant="Variant.Text">Close</SirenButton>
+        <SirenButton OnClick="CopyToClipboard" Variant="Variant.Filled" Color="Color.Primary"
+                     StartIcon="@SirenIcons.Copy">
+            Copy
+        </SirenButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public HttpRequest? Request { get; set; }
+
+    [Inject]
+    private ICurlGenerator CurlGenerator { get; set; } = default!;
+
+    [Inject]
+    private IJsApiService JsApiService { get; set; } = default!;
+
+    private string _curlCommand = "";
+    private bool _copied;
+
+    protected override void OnInitialized()
+    {
+        if (Request != null)
+        {
+            _curlCommand = CurlGenerator.GenerateCurl(Request);
+        }
+    }
+
+    private async Task CopyToClipboard()
+    {
+        await JsApiService.CopyToClipboardAsync(_curlCommand);
+        _copied = true;
+        StateHasChanged();
+    }
+
+    private void Close()
+    {
+        MudDialog.Close(DialogResult.Cancel());
+    }
+}

@@ -45,6 +45,8 @@
         {
             <SirenIconButton Icon="@SirenIcons.Format" Size="Size.Small" Tooltip="Format"
                              OnClick="@(async () => await FormatDocumentAsync())"/>
+            <SirenIconButton Icon="@SirenIcons.Search" Size="Size.Small" Tooltip="Search"
+                             OnClick="@(async () => await OpenSearchAsync())"/>
         }
         @if (_panelViewType == ResponsePanelViewType.Body)
         {
@@ -276,6 +278,18 @@
         catch (Exception ex)
         {
             Logger.LogWarning(ex, "Failed to format response document");
+        }
+    }
+
+    private async Task OpenSearchAsync()
+    {
+        try
+        {
+            await _editor.Editor.Trigger("siren-response-editor", "actions.find", "");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to open search dialog");
         }
     }
 

@@ -4,6 +4,7 @@
 @using Siren.Components.Collections
 @using Siren.Components.Variables
 @using Siren.Components.History
+@using Siren.Components.Services
 @using Mythetech.Framework.Infrastructure
 @using System.Text.Json
 @using Microsoft.Extensions.Logging
@@ -30,8 +31,6 @@
             </MudMenuItem>
             <MudMenuItem Class="rounded" Icon="@SirenIcons.UrlImport" OnClick="HandleImportRequest">Import Request
             </MudMenuItem>
-            <MudMenuItem Class="rounded" Icon="@SirenIcons.Code" OnClick="HandleImportFromCurl">Import from cURL
-            </MudMenuItem>
             <MudDivider />
             <MudMenuItem Class="rounded" Icon="@SirenIcons.Export" OnClick="@(async () => await HandleSaveResponse())"
                 Disabled="@(AppState.Active?.Response == null)">Save Response</MudMenuItem>
@@ -57,6 +56,13 @@
             </MudButton>
         </ActivatorContent>
         <ChildContent>
+            <MudMenu Label="cURL" StartIcon="@SirenIcons.Code" Dense="true" ListClass="pa-1">
+                <MudMenuItem Class="rounded" Icon="@SirenIcons.UrlImport" OnClick="HandleImportFromCurl">Import request from cURL
+                </MudMenuItem>
+                <MudMenuItem Class="rounded" Icon="@SirenIcons.Export" OnClick="HandleExportToCurl"
+                    Disabled="@(AppState.Active?.Request == null)">Export request as cURL
+                </MudMenuItem>
+            </MudMenu>
             <MudMenu Label="History" StartIcon="@SirenIcons.History" Dense="true" ListClass="pa-1">
                 <MudMenuItem Class="rounded" Icon="@SirenIcons.DeleteHistory" OnClick="HandleClearHistory">Clear
                 </MudMenuItem>
@@ -171,6 +177,8 @@
     [Inject] protected PluginContext PluginContext { get; set; } = default!;
 
     [Inject] protected IFileOpenService FileOpenService { get; set; } = default!;
+
+    [Inject] protected ICurlGenerator CurlGenerator { get; set; } = default!;
 
     private List<string> AvailableEnvironments = new();
 
@@ -290,6 +298,32 @@
             AppState.SetActive(networkRequest.Id);
             Snackbar.Add("Successfully imported cURL command", Severity.Success);
         }
+    }
+
+    private async Task HandleExportToCurl()
+    {
+        if (AppState.Active?.Request == null)
+        {
+            Snackbar.Add("No active request to export", Severity.Warning);
+            return;
+        }
+
+        var request = AppState.Active.Request;
+
+        // Get the latest body content from the editor if it's a raw body
+        var (editorBody, _) = await AppState.RequestBodyContentAsync();
+        if (request.BodyType == RequestBodyType.Raw && !string.IsNullOrEmpty(editorBody))
+        {
+            request = request.Copy();
+            request.RawBody = editorBody;
+        }
+
+        var parameters = new DialogParameters
+        {
+            { "Request", request }
+        };
+        var options = new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "siren-dialog", MaxWidth = MaxWidth.Medium };
+        await DialogService.ShowAsync<CurlExportDialog>("Export as cURL", parameters, options);
     }
 
     private async Task HandleSaveResponse()
