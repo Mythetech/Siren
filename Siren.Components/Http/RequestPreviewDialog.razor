@@ -1,0 +1,395 @@
+@using MudBlazor
+@using Siren.Components.Services
+@using Siren.Components.Http.Models
+@using Siren.Components.RequestContextPanel.Authentication
+@using Siren.Components.Variables
+
+<MudDialog>
+    <TitleContent>
+        <SirenStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+            <SirenIcon Icon="@SirenIcons.Preview" />
+            <SirenText Typo="Typo.h6">Request Preview</SirenText>
+        </SirenStack>
+    </TitleContent>
+    <DialogContent>
+        <SirenStack Spacing="3" Class="py-2" Style="min-width: 600px; max-height: 500px; overflow-y: auto;">
+            <SirenStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="w-100">
+                <SirenText Typo="Typo.body2" Color="Color.Secondary">
+                    Environment: <strong>@(Environment ?? "None")</strong>
+                </SirenText>
+                <MudDivider Vertical="true" FlexItem="true" Class="mx-2" Style="height: 20px;" />
+                <SirenText Typo="Typo.body2" Color="Color.Secondary">
+                    Auth: <strong>@AuthType</strong>
+                </SirenText>
+                <MudDivider Vertical="true" FlexItem="true" Class="mx-2" Style="height: 20px;" />
+                <SirenStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                    <SirenText Typo="Typo.body2">Show secrets</SirenText>
+                    <SirenSwitch Value="_showSecrets" ValueChanged="@((bool value) => OnShowSecretsToggled(value))" Size="Size.Small" Color="Color.Primary" />
+                    @if (_hasAnySecrets)
+                    {
+                        <MudTooltip Text="Contains secrets">
+                         <Badge Color="Color.Warning" Icon="@SirenIcons.Key" />
+                        </MudTooltip>
+                    }
+                    else
+                    {
+                        <MudTooltip Text="No secrets">
+                            <Badge Color="Color.Primary" Icon="@SirenIcons.NoSecrets" />
+                        </MudTooltip>
+                    }
+                </SirenStack>
+            </SirenStack>
+
+            @if (_isLoading)
+            {
+                <SirenStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="py-4">
+                    <MudProgressCircular Indeterminate="true" Size="Size.Medium" />
+                    <SirenText Typo="Typo.body2" Color="Color.Secondary">Resolving variables...</SirenText>
+                </SirenStack>
+            }
+            else
+            {
+                @if (_errors.Any())
+                {
+                    <MudAlert Severity="Severity.Warning" Dense="true">
+                        @_errors.Count error(s) during variable resolution
+                    </MudAlert>
+                }
+
+                <MudPaper Elevation="0" Class="pa-3" Style="background-color: var(--mud-palette-background-grey);">
+                    <SirenStack Spacing="2">
+                        <SirenText Typo="Typo.subtitle2" Color="Color.Primary">URL</SirenText>
+                        <SirenStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                            <MudChip T="string" Size="Size.Small" Color="Color.Info">@Method</MudChip>
+                            <code style="word-break: break-all;">@_resolvedUrl</code>
+                        </SirenStack>
+                    </SirenStack>
+                </MudPaper>
+
+                @if (_resolvedHeaders.Any())
+                {
+                    <MudPaper Elevation="0" Class="pa-3" Style="background-color: var(--mud-palette-background-grey);">
+                        <SirenStack Spacing="2">
+                            <SirenText Typo="Typo.subtitle2" Color="Color.Primary">Headers</SirenText>
+                            <MudSimpleTable Dense="true" Hover="true" Bordered="false">
+                                <tbody>
+                                    @foreach (var header in _resolvedHeaders)
+                                    {
+                                        <tr>
+                                            <td style="width: 200px;"><code>@header.Key</code></td>
+                                            <td>
+                                                @if (header.HasSecrets && !_showSecrets)
+                                                {
+                                                    <span class="mud-text-secondary">********</span>
+                                                }
+                                                else
+                                                {
+                                                    <code>@header.Value</code>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </MudSimpleTable>
+                        </SirenStack>
+                    </MudPaper>
+                }
+
+                @if (!string.IsNullOrEmpty(_resolvedBody))
+                {
+                    <MudPaper Elevation="0" Class="pa-3" Style="background-color: var(--mud-palette-background-grey);">
+                        <SirenStack Spacing="2">
+                            <SirenText Typo="Typo.subtitle2" Color="Color.Primary">Body</SirenText>
+                            <pre style="max-height: 200px; overflow: auto; margin: 0; white-space: pre-wrap; word-break: break-word;">@(_bodyHasSecrets && !_showSecrets ? "********" : _resolvedBody)</pre>
+                        </SirenStack>
+                    </MudPaper>
+                }
+
+                @if (_resolvedFormData.Any())
+                {
+                    <MudPaper Elevation="0" Class="pa-3" Style="background-color: var(--mud-palette-background-grey);">
+                        <SirenStack Spacing="2">
+                            <SirenText Typo="Typo.subtitle2" Color="Color.Primary">Form Data</SirenText>
+                            <MudSimpleTable Dense="true" Hover="true" Bordered="false">
+                                <tbody>
+                                    @foreach (var field in _resolvedFormData)
+                                    {
+                                        <tr>
+                                            <td style="width: 200px;"><code>@field.Key</code></td>
+                                            <td>
+                                                @if (field.HasSecrets && !_showSecrets)
+                                                {
+                                                    <span class="mud-text-secondary">********</span>
+                                                }
+                                                else
+                                                {
+                                                    <code>@field.Value</code>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </MudSimpleTable>
+                        </SirenStack>
+                    </MudPaper>
+                }
+            }
+        </SirenStack>
+    </DialogContent>
+    <DialogActions>
+        <SirenButton Variant="Variant.Filled" OnClick="Close">Close</SirenButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public string? Environment { get; set; }
+
+    [Parameter]
+    public string Url { get; set; } = "";
+
+    [Parameter]
+    public string Method { get; set; } = "GET";
+
+    [Parameter]
+    public List<KeyValuePair<string, string>> Headers { get; set; } = new();
+
+    [Parameter]
+    public string? Body { get; set; }
+
+    [Parameter]
+    public Dictionary<string, string>? FormData { get; set; }
+
+    [Parameter]
+    public AuthenticationType AuthType { get; set; } = AuthenticationType.None;
+
+    [Parameter]
+    public Dictionary<string, string> AuthParams { get; set; } = new();
+
+    [Inject]
+    public IVariableSubstitutionService VariableSubstitutionService { get; set; } = default!;
+
+    private bool _isLoading;
+    private bool _showSecrets;
+    private string _resolvedUrl = "";
+    private bool _urlHasSecrets;
+    private string _resolvedBody = "";
+    private bool _bodyHasSecrets;
+    private bool _hasAnySecrets;
+    private List<ResolvedHeader> _resolvedHeaders = new();
+    private List<ResolvedFormField> _resolvedFormData = new();
+    private List<string> _errors = new();
+
+    private async Task OnShowSecretsToggled(bool value)
+    {
+        _showSecrets = value;
+        await RefreshPreview();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshPreview();
+    }
+
+    private async Task RefreshPreview()
+    {
+        _isLoading = true;
+        _errors.Clear();
+        _resolvedHeaders.Clear();
+        _resolvedFormData.Clear();
+        StateHasChanged();
+
+        try
+        {
+            // Resolve URL (with dynamic vars shown as pending)
+            var urlResult = await VariableSubstitutionService.SubstituteVariablesAsync(
+                ReplaceDynamicVarsWithPending(Url), Environment, maskSecrets: !_showSecrets);
+            _resolvedUrl = urlResult.Value;
+            _urlHasSecrets = urlResult.HasSecrets;
+            _errors.AddRange(urlResult.Errors);
+
+            // Resolve Headers
+            foreach (var header in Headers)
+            {
+                var keyResult = await VariableSubstitutionService.SubstituteVariablesAsync(
+                    ReplaceDynamicVarsWithPending(header.Key), Environment, maskSecrets: !_showSecrets);
+                var valueResult = await VariableSubstitutionService.SubstituteVariablesAsync(
+                    ReplaceDynamicVarsWithPending(header.Value), Environment, maskSecrets: !_showSecrets);
+                _errors.AddRange(keyResult.Errors);
+                _errors.AddRange(valueResult.Errors);
+
+                _resolvedHeaders.Add(new ResolvedHeader
+                {
+                    Key = keyResult.Value,
+                    Value = valueResult.Value,
+                    HasSecrets = keyResult.HasSecrets || valueResult.HasSecrets
+                });
+            }
+
+            // Add auth header preview if auth is configured
+            AddAuthHeaderPreview();
+
+            // Resolve Body
+            if (!string.IsNullOrEmpty(Body))
+            {
+                var bodyResult = await VariableSubstitutionService.SubstituteVariablesAsync(
+                    ReplaceDynamicVarsWithPending(Body), Environment, maskSecrets: !_showSecrets);
+                _resolvedBody = bodyResult.Value;
+                _bodyHasSecrets = bodyResult.HasSecrets;
+                _errors.AddRange(bodyResult.Errors);
+            }
+
+            // Resolve Form Data
+            if (FormData != null)
+            {
+                foreach (var field in FormData)
+                {
+                    var keyResult = await VariableSubstitutionService.SubstituteVariablesAsync(
+                        ReplaceDynamicVarsWithPending(field.Key), Environment, maskSecrets: !_showSecrets);
+                    var valueResult = await VariableSubstitutionService.SubstituteVariablesAsync(
+                        ReplaceDynamicVarsWithPending(field.Value), Environment, maskSecrets: !_showSecrets);
+                    _errors.AddRange(keyResult.Errors);
+                    _errors.AddRange(valueResult.Errors);
+
+                    _resolvedFormData.Add(new ResolvedFormField
+                    {
+                        Key = keyResult.Value,
+                        Value = valueResult.Value,
+                        HasSecrets = keyResult.HasSecrets || valueResult.HasSecrets
+                    });
+                }
+            }
+
+            // Compute overall secrets flag
+            _hasAnySecrets = _urlHasSecrets || _bodyHasSecrets ||
+                _resolvedHeaders.Any(h => h.HasSecrets) ||
+                _resolvedFormData.Any(f => f.HasSecrets);
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void Close() => MudDialog.Close();
+
+    private class ResolvedHeader
+    {
+        public string Key { get; set; } = "";
+        public string Value { get; set; } = "";
+        public bool HasSecrets { get; set; }
+    }
+
+    private class ResolvedFormField
+    {
+        public string Key { get; set; } = "";
+        public string Value { get; set; } = "";
+        public bool HasSecrets { get; set; }
+    }
+
+    private static readonly System.Text.RegularExpressions.Regex DynamicVarRegex =
+        new(@"\{\{\$\w+\}\}", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+    /// <summary>
+    /// Checks if input contains dynamic variable patterns
+    /// </summary>
+    private static bool ContainsDynamicVars(string input)
+    {
+        if (string.IsNullOrEmpty(input))
+            return false;
+        return DynamicVarRegex.IsMatch(input);
+    }
+
+    /// <summary>
+    /// Replaces dynamic variable patterns with {{pending}} placeholder
+    /// Dynamic vars like {{$timestamp}}, {{$uuid}}, etc. generate new values on each send
+    /// </summary>
+    private static string ReplaceDynamicVarsWithPending(string input)
+    {
+        if (string.IsNullOrEmpty(input))
+            return input;
+
+        // Replace {{$varname}} patterns with {{pending}}
+        return DynamicVarRegex.Replace(input, "{{pending}}");
+    }
+
+    /// <summary>
+    /// Adds auth header preview based on configured authentication
+    /// </summary>
+    private void AddAuthHeaderPreview()
+    {
+        if (AuthType == AuthenticationType.None)
+            return;
+
+        string headerValue;
+        bool hasSecrets = false;
+        bool hasDynamicVars = false;
+
+        switch (AuthType)
+        {
+            case AuthenticationType.Bearer:
+                var token = AuthParams.GetValueOrDefault("token", "");
+                hasDynamicVars = ContainsDynamicVars(token);
+                var processedToken = ReplaceDynamicVarsWithPending(token);
+                hasSecrets = !string.IsNullOrEmpty(token) && !hasDynamicVars;
+                headerValue = $"Bearer {(hasSecrets && !_showSecrets ? "********" : (string.IsNullOrEmpty(processedToken) ? "{{pending}}" : processedToken))}";
+                _resolvedHeaders.Insert(0, new ResolvedHeader
+                {
+                    Key = "Authorization",
+                    Value = headerValue,
+                    HasSecrets = hasSecrets
+                });
+                break;
+
+            case AuthenticationType.Basic:
+                var username = ReplaceDynamicVarsWithPending(AuthParams.GetValueOrDefault("username", ""));
+                var password = ReplaceDynamicVarsWithPending(AuthParams.GetValueOrDefault("password", ""));
+                hasDynamicVars = ContainsDynamicVars(AuthParams.GetValueOrDefault("username", "")) ||
+                                 ContainsDynamicVars(AuthParams.GetValueOrDefault("password", ""));
+                hasSecrets = !hasDynamicVars;
+                headerValue = _showSecrets && !hasDynamicVars
+                    ? $"Basic {Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes($"{username}:{password}"))}"
+                    : (hasDynamicVars ? $"Basic {{{{pending}}}}" : "Basic ********");
+                _resolvedHeaders.Insert(0, new ResolvedHeader
+                {
+                    Key = "Authorization",
+                    Value = headerValue,
+                    HasSecrets = hasSecrets
+                });
+                break;
+
+            case AuthenticationType.ApiKey:
+                var apiKeyHeader = ReplaceDynamicVarsWithPending(AuthParams.GetValueOrDefault("header", "X-API-Key"));
+                var apiKeyValue = AuthParams.GetValueOrDefault("value", "");
+                hasDynamicVars = ContainsDynamicVars(apiKeyValue);
+                var processedApiKeyValue = ReplaceDynamicVarsWithPending(apiKeyValue);
+                hasSecrets = !string.IsNullOrEmpty(apiKeyValue) && !hasDynamicVars;
+                _resolvedHeaders.Insert(0, new ResolvedHeader
+                {
+                    Key = apiKeyHeader,
+                    Value = hasSecrets && !_showSecrets ? "********" : processedApiKeyValue,
+                    HasSecrets = hasSecrets
+                });
+                break;
+
+            case AuthenticationType.OAuth2:
+                // OAuth2 tokens are typically generated at send time
+                _resolvedHeaders.Insert(0, new ResolvedHeader
+                {
+                    Key = "Authorization",
+                    Value = "Bearer {{pending}}",
+                    HasSecrets = false
+                });
+                break;
+        }
+
+        if (hasSecrets)
+        {
+            _hasAnySecrets = true;
+        }
+    }
+}

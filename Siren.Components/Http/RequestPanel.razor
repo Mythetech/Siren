@@ -6,6 +6,7 @@
 @using Siren.Components.Http.Headers
 @using Siren.Components.Http.QueryParams
 @using Siren.Components.Variables
+@using Siren.Components.RequestContextPanel.Authentication
 @implements IDisposable
 
 <SirenStack Spacing="3" Class="h-100">
@@ -49,6 +50,10 @@
         }
         <SirenSpacer />
         <EnvironmentDropdown />
+        <SirenIconButton Icon="@SirenIcons.Preview"
+            Tooltip="Preview resolved request"
+            OnClick="@OnPreviewClicked"
+            Size="Size.Small" />
         @if (_currentPanelView == RequestPanelViewType.Body && CurrentBodyType == RequestBodyType.Raw)
         {
             <SirenIconButton Icon="@SirenIcons.Format" Size="Size.Small" Tooltip="Format"
@@ -121,6 +126,10 @@
     public ISnackbar Snackbar { get; set; } = default!;
 
     [Inject] protected ILogger<RequestPanel> Logger { get; set; } = default!;
+
+    [Inject] public IDialogService DialogService { get; set; } = default!;
+
+    [Inject] public RequestAuthenticationState AuthState { get; set; } = default!;
 
     [Parameter] public bool Loading { get; set; } = false;
 
@@ -349,6 +358,34 @@
     public async Task OnSendClicked()
     {
         await SendClicked.InvokeAsync();
+    }
+
+    private async Task OnPreviewClicked()
+    {
+        var request = AppState?.Active?.Request;
+        if (request == null)
+            return;
+
+        // Sync editor content before preview if we're in raw body mode
+        if (CurrentBodyType == RequestBodyType.Raw)
+        {
+            await SyncEditorToModel();
+        }
+
+        var parameters = new DialogParameters
+        {
+            { "Environment", AppState.ActiveEnvironment },
+            { "Url", request.RequestUri ?? "" },
+            { "Method", request.Method?.Method ?? "GET" },
+            { "Headers", request.Headers ?? new List<KeyValuePair<string, string>>() },
+            { "Body", CurrentBodyType == RequestBodyType.Raw ? request.RawBody : null },
+            { "FormData", (CurrentBodyType == RequestBodyType.FormData || CurrentBodyType == RequestBodyType.MultipartFormData) ? request.FormData : null },
+            { "AuthType", AuthState.AuthType },
+            { "AuthParams", AuthState.AuthParams }
+        };
+
+        var options = new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "siren-dialog", MaxWidth = MaxWidth.Large };
+        await DialogService.ShowAsync<RequestPreviewDialog>("Request Preview", parameters, options);
     }
 
     [Inject] public SirenAppState AppState { get; set; } = default!;

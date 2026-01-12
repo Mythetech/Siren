@@ -13,6 +13,8 @@
 @using Siren.Components.Settings
 @using MouseEvent = MudBlazor.MouseEvent
 @using Mythetech.Framework.Infrastructure.Plugins.Components
+@using Mythetech.Framework.Components.Secrets
+@using Mythetech.Framework.Infrastructure.Files
 @implements IDisposable
 
 <SirenStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
@@ -92,13 +94,44 @@
                 </MudMenu>
             </MudMenu>
             <MudDivider />
+            <MudMenuItem Class="rounded" Icon="@SirenIcons.Secrets" OnClick="HandleOpenSecretManager">Secret Manager</MudMenuItem>
+            <MudDivider />
             <McpMenuItems />
+            @if (Settings.PluginState)
+            {
+                <MudDivider />
+                <MudMenu Label="Plugins" StartIcon="@SirenIcons.Plugins" Dense="true" ListClass="pa-1">
+                    @foreach (var plugin in PluginState.Plugins)
+                    {
+                        <MudMenu ActivationEvent="MouseEvent.MouseOver"
+                                 AnchorOrigin="Origin.TopRight"
+                                 TransformOrigin="Origin.TopLeft"
+                                 Dense="true"
+                                 Label="@plugin.Manifest?.Name"
+                                 StartIcon="@(plugin.Manifest?.Icon ?? PluginIcons.DefaultPluginIcon)"
+                                 ListClass="pa-1">
+                            @foreach (var menuType in plugin.MenuComponents)
+                            {
+                                <PluginMenuItemsRenderer MenuType="@menuType" ItemClass="rounded" PluginContext="@PluginContext" />
+                            }
+                            @if (plugin.MenuComponents.Any())
+                            {
+                                <MudDivider />
+                            }
+                            <MudMenuItem Class="rounded" Icon="@Icons.Material.Filled.Info" OnClick="@(() => HandleAboutPlugin(plugin))">About...</MudMenuItem>
+                            <MudMenuItem Class="rounded" Icon="@(plugin.IsEnabled ? Icons.Material.Filled.Block : Icons.Material.Filled.CheckCircle)" OnClick="@(() => HandleTogglePlugin(plugin))">@(plugin.IsEnabled ? "Disable" : "Enable")</MudMenuItem>
+                        </MudMenu>
+                    }
+                    @if (PluginState.Plugins.Any())
+                    {
+                        <MudDivider />
+                    }
+                    <MudMenuItem Class="rounded" Icon="@Icons.Material.Filled.Apps" OnClick="HandleViewPlugins">View Plugins</MudMenuItem>
+                    <MudMenuItem Class="rounded" Icon="@Icons.Material.Filled.FileUpload" OnClick="HandleImportPlugin">Import Plugin...</MudMenuItem>
+                </MudMenu>
+            }
         </ChildContent>
     </MudMenu>
-    @if (Settings.PluginState)
-    {
-        <StandardPluginMenu MenuText="Plugins" ListClass="pa-1" ItemClass="rounded" ButtonClass="text-transform-none" />
-    }
 </SirenStack>
 
 @code {
@@ -132,6 +165,12 @@
     [Inject] protected PluginState PluginState { get; set; } = default!;
 
     [Inject] protected SettingsState Settings { get; set; } = default!;
+
+    [Inject] protected PluginLoader PluginLoader { get; set; } = default!;
+
+    [Inject] protected PluginContext PluginContext { get; set; } = default!;
+
+    [Inject] protected IFileOpenService FileOpenService { get; set; } = default!;
 
     private List<string> AvailableEnvironments = new();
 
@@ -426,6 +465,79 @@
             {
                 opts.SuccessIcon = SirenIcons.Variables;
             });
+        }
+    }
+
+    private async Task HandleOpenSecretManager()
+    {
+        var options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            BackgroundClass = "siren-dialog",
+            MaxWidth = MaxWidth.Large,
+            FullWidth = true
+        };
+        await DialogService.ShowAsync<SecretManagerDialog>("Secret Manager", options);
+    }
+
+    private async Task HandleAboutPlugin(PluginInfo plugin)
+    {
+        var options = new DialogOptions
+        {
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true,
+            CloseOnEscapeKey = true,
+            BackgroundClass = "siren-dialog"
+        };
+
+        var parameters = new DialogParameters
+        {
+            { "Plugin", plugin }
+        };
+
+        await DialogService.ShowAsync<AboutPluginDialog>($"About {plugin.Manifest?.Name}", parameters, options);
+    }
+
+    private void HandleTogglePlugin(PluginInfo plugin)
+    {
+        if (plugin.IsEnabled)
+        {
+            PluginState.DisablePlugin(plugin.Manifest?.Id ?? "");
+        }
+        else
+        {
+            PluginState.EnablePlugin(plugin.Manifest?.Id ?? "");
+        }
+    }
+
+    private async Task HandleViewPlugins()
+    {
+        var options = new DialogOptions
+        {
+            MaxWidth = MaxWidth.Large,
+            FullWidth = true,
+            CloseOnEscapeKey = true,
+            BackgroundClass = "siren-dialog"
+        };
+
+        await DialogService.ShowAsync<PluginManagementDialog>("Plugin Management", options);
+    }
+
+    private async Task HandleImportPlugin()
+    {
+        var files = await FileOpenService.OpenFileAsync(
+            title: "Select Plugin DLL",
+            filters: [new FileFilter("Plugin DLLs", ["*.dll"])]);
+
+        if (files.Length == 0) return;
+
+        foreach (var dllPath in files)
+        {
+            var pluginInfo = PluginLoader.LoadPlugin(dllPath);
+            if (pluginInfo is not null)
+            {
+                PluginState.RegisterPlugin(pluginInfo);
+            }
         }
     }
 }

@@ -282,6 +282,9 @@
         var contentType = "application/json";
         HttpContent? content = null;
 
+        // Track any variable resolution errors
+        var resolutionErrors = new List<string>();
+
         if (bodyType == "form-data")
         {
             contentType = "application/x-www-form-urlencoded";
@@ -289,9 +292,11 @@
             var substitutedFormData = new Dictionary<string, string>();
             foreach (var kvp in formData)
             {
-                var substitutedKey = VariableSubstitutionService.SubstituteVariables(kvp.Key, activeEnvironment);
-                var substitutedValue = VariableSubstitutionService.SubstituteVariables(kvp.Value, activeEnvironment);
-                substitutedFormData[substitutedKey] = substitutedValue;
+                var keyResult = await VariableSubstitutionService.SubstituteVariablesAsync(kvp.Key, activeEnvironment);
+                var valueResult = await VariableSubstitutionService.SubstituteVariablesAsync(kvp.Value, activeEnvironment);
+                resolutionErrors.AddRange(keyResult.Errors);
+                resolutionErrors.AddRange(valueResult.Errors);
+                substitutedFormData[keyResult.Value] = valueResult.Value;
             }
             content = new FormUrlEncodedContent(substitutedFormData);
         }
@@ -303,9 +308,11 @@
             var formData = active.Request?.FormData ?? new Dictionary<string, string>();
             foreach (var kvp in formData)
             {
-                var substitutedKey = VariableSubstitutionService.SubstituteVariables(kvp.Key, activeEnvironment);
-                var substitutedValue = VariableSubstitutionService.SubstituteVariables(kvp.Value, activeEnvironment);
-                multipartContent.Add(new StringContent(substitutedValue), substitutedKey);
+                var keyResult = await VariableSubstitutionService.SubstituteVariablesAsync(kvp.Key, activeEnvironment);
+                var valueResult = await VariableSubstitutionService.SubstituteVariablesAsync(kvp.Value, activeEnvironment);
+                resolutionErrors.AddRange(keyResult.Errors);
+                resolutionErrors.AddRange(valueResult.Errors);
+                multipartContent.Add(new StringContent(valueResult.Value), keyResult.Value);
             }
 
             // Add file attachments
@@ -332,8 +339,9 @@
                 }
             }
             var payload = await _requestPanel.GetPayload();
-            var substitutedPayload = VariableSubstitutionService.SubstituteVariables(payload, activeEnvironment);
-            content = new StringContent(substitutedPayload, System.Text.Encoding.UTF8, contentType);
+            var payloadResult = await VariableSubstitutionService.SubstituteVariablesAsync(payload, activeEnvironment);
+            resolutionErrors.AddRange(payloadResult.Errors);
+            content = new StringContent(payloadResult.Value, System.Text.Encoding.UTF8, contentType);
         }
         else if (bodyType == "binary")
         {
@@ -368,16 +376,29 @@
             content = null;
         }
 
-        var requestUri = VariableSubstitutionService.SubstituteVariables(active.Request?.RequestUri ?? "", activeEnvironment);
+        var uriResult = await VariableSubstitutionService.SubstituteVariablesAsync(active.Request?.RequestUri ?? "", activeEnvironment);
+        resolutionErrors.AddRange(uriResult.Errors);
+        var requestUri = uriResult.Value;
+
         var substitutedHeaders = new List<KeyValuePair<string, string>>();
         if (active.Request?.Headers != null)
         {
             foreach (var header in active.Request.Headers)
             {
-                var substitutedKey = VariableSubstitutionService.SubstituteVariables(header.Key, activeEnvironment);
-                var substitutedValue = VariableSubstitutionService.SubstituteVariables(header.Value, activeEnvironment);
-                substitutedHeaders.Add(new KeyValuePair<string, string>(substitutedKey, substitutedValue));
+                var keyResult = await VariableSubstitutionService.SubstituteVariablesAsync(header.Key, activeEnvironment);
+                var valueResult = await VariableSubstitutionService.SubstituteVariablesAsync(header.Value, activeEnvironment);
+                resolutionErrors.AddRange(keyResult.Errors);
+                resolutionErrors.AddRange(valueResult.Errors);
+                substitutedHeaders.Add(new KeyValuePair<string, string>(keyResult.Value, valueResult.Value));
             }
+        }
+
+        // Show warning if there were resolution errors but still proceed with request
+        if (resolutionErrors.Count > 0)
+        {
+            var distinctErrors = resolutionErrors.Distinct().ToList();
+            Logger.LogWarning("Variable resolution errors: {Errors}", string.Join("; ", distinctErrors));
+            Snackbar.Add($"Warning: {distinctErrors.Count} variable(s) could not be fully resolved", Severity.Warning);
         }
 
         var req = new HttpRequest()

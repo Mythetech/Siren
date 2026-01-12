@@ -9,7 +9,9 @@ using Mythetech.Framework.Infrastructure.Mcp;
 using Mythetech.Framework.Infrastructure.Mcp.Server;
 using Mythetech.Framework.Infrastructure.MessageBus;
 using Mythetech.Framework.Infrastructure.Plugins;
+using Mythetech.Framework.Infrastructure.Secrets;
 using Photino.Blazor;
+using Siren.Components.Variables;
 using Siren.Collections;
 using Siren.Components;
 using Siren.History;
@@ -52,9 +54,13 @@ namespace Siren
 
             appBuilder.Services.AddDesktopServices();
 
+            // Register desktop secret managers (Keychain, 1Password, etc.)
+            appBuilder.Services.AddAllDesktopSecretManagers("siren");
+            appBuilder.Services.AddSingleton<IVariableValueResolver, SecretReferenceResolver>();
+
             appBuilder.Services.AddPluginFramework();
             
-            appBuilder.Services.AddRuntimeEnvironment(Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")?.Equals("Production", StringComparison.OrdinalIgnoreCase) ?? false ? DesktopRuntimeEnvironment.Production() : DesktopRuntimeEnvironment.Development()); 
+            appBuilder.Services.AddRuntimeEnvironment(System.Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")?.Equals("Production", StringComparison.OrdinalIgnoreCase) ?? false ? DesktopRuntimeEnvironment.Production() : DesktopRuntimeEnvironment.Development()); 
 
             // register root component and selector
             appBuilder.RootComponents.Add<Components.App>("app");
@@ -70,6 +76,9 @@ namespace Siren
             app.Services.UseMessageBus(typeof(App).Assembly);
 
             app.Services.UseSirenMcp();
+
+            // Initialize secret managers
+            app.Services.UseSecretManager();
 
             app.Services.UsePlugins();
 

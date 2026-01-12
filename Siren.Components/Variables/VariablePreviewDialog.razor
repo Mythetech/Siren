@@ -1,0 +1,198 @@
+@using MudBlazor
+@using Siren.Components.Services
+@using Mythetech.Framework.Infrastructure.Secrets
+
+<MudDialog>
+    <TitleContent>
+        <SirenStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+            <SirenIcon Icon="@SirenIcons.Preview" />
+            <SirenText Typo="Typo.h6">Variable Preview</SirenText>
+        </SirenStack>
+    </TitleContent>
+    <DialogContent>
+        <SirenStack Spacing="3" Class="py-2" Style="min-width: 500px; max-height: 400px;">
+            <SirenStack Class="w-100" Row="true" Spacing="2" AlignItems="AlignItems.Center"
+                Justify="Justify.SpaceBetween">
+                <SirenText Typo="Typo.body2" Color="Color.Secondary">
+                    Showing resolved values for environment: <strong>@(Environment ?? "None")</strong>
+                </SirenText>
+                <SirenStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                    <SirenText Typo="Typo.body2">Show secrets</SirenText>
+                    <SirenSwitch @bind-Value="_showSecrets" Size="Size.Small" Color="Color.Primary" />
+                    <SirenIconButton Icon="@SirenIcons.Refresh" OnClick="RefreshPreview" Tooltip="Refresh"
+                        Size="Size.Small" />
+                </SirenStack>
+            </SirenStack>
+
+            @if (_isLoading)
+            {
+                <SirenStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="py-4">
+                    <MudProgressCircular Indeterminate="true" Size="Size.Medium" />
+                    <SirenText Typo="Typo.body2" Color="Color.Secondary">Resolving variables...</SirenText>
+                </SirenStack>
+            }
+            else if (_previewItems.Count == 0)
+            {
+                <SirenStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="py-4">
+                    <SirenIcon Icon="@SirenIcons.Empty" Style="font-size: 2em;" Color="Color.Secondary" />
+                    <SirenText Typo="Typo.body2" Color="Color.Secondary">No variables to preview</SirenText>
+                </SirenStack>
+            }
+            else
+            {
+                <MudSimpleTable Dense="true" Hover="true" Bordered="true" Class="overflow-auto" Style="max-height: 300px;">
+                    <thead>
+                        <tr>
+                            <th>Variable</th>
+                            <th>Raw Value</th>
+                            <th>Resolved Value</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in _previewItems)
+                        {
+                            <tr>
+                                <td><code>@("{{" + item.Key + "}}")</code></td>
+                                <td>
+                                    @if (item.IsSecret && !_showSecrets)
+                                    {
+                                        <span class="mud-text-secondary">********</span>
+                                    }
+                                    else
+                                    {
+                                        <code>@item.RawValue</code>
+                                    }
+                                </td>
+                                <td>
+                                    @if (item.IsSecret && !_showSecrets)
+                                    {
+                                        <span class="mud-text-secondary">********</span>
+                                    }
+                                    else
+                                    {
+                                        <code>@item.ResolvedValue</code>
+                                    }
+                                </td>
+                                <td>
+                                    @if (item.HasError)
+                                    {
+                                        <MudTooltip Text="@item.ErrorMessage">
+                                            <Badge Size="Size.Small" Color="Color.Error">Error</Badge>
+                                        </MudTooltip>
+                                    }
+                                    else if (item.IsSecret)
+                                    {
+                                        <Badge Size="Size.Small" Color="Color.Warning" Icon="@SirenIcons.Key">Secret
+                                        </Badge>
+                                    }
+                                    else if (item.IsDynamic)
+                                    {
+                                        <Badge Size="Size.Small" Color="Color.Info">Dynamic</Badge>
+                                    }
+                                    else
+                                    {
+                                        <Badge T="string" Size="Size.Small" Color="Color.Success">OK</Badge>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </MudSimpleTable>
+
+                @if (_errors.Any())
+                {
+                    <MudAlert Severity="Severity.Warning" Dense="true">
+                        @_errors.Count error(s) occurred during resolution. Check the status column for details.
+                    </MudAlert>
+                }
+            }
+        </SirenStack>
+    </DialogContent>
+    <DialogActions>
+        <SirenButton Variant="Variant.Filled" OnClick="Close">Close</SirenButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public string? Environment { get; set; }
+
+    [Parameter]
+    public List<Variable> Variables { get; set; } = new();
+
+    [Inject]
+    public IVariableSubstitutionService VariableSubstitutionService { get; set; } = default!;
+
+    private bool _isLoading;
+    private bool _showSecrets;
+    private List<PreviewItem> _previewItems = new();
+    private List<string> _errors = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshPreview();
+    }
+
+    private async Task RefreshPreview()
+    {
+        _isLoading = true;
+        _previewItems.Clear();
+        _errors.Clear();
+        StateHasChanged();
+
+        try
+        {
+            foreach (var variable in Variables)
+            {
+                var item = new PreviewItem
+                {
+                    Key = variable.Key,
+                    RawValue = variable.Value,
+                    IsSecret = variable.Secret || variable.Value.StartsWith("$secret:", StringComparison.OrdinalIgnoreCase),
+                    IsDynamic = variable.Value.StartsWith('$') && DynamicVariableResolver.SupportedVariables.Contains(variable.Value)
+                };
+
+                // Resolve the variable value
+                var result = await VariableSubstitutionService.SubstituteVariablesAsync(
+                "{{" + variable.Key + "}}",
+                Environment,
+                maskSecrets: false
+                                );
+
+                item.ResolvedValue = result.Value;
+                item.IsSecret = item.IsSecret || result.HasSecrets;
+
+                if (result.HasErrors)
+                {
+                    item.HasError = true;
+                    item.ErrorMessage = string.Join("; ", result.Errors);
+                    _errors.AddRange(result.Errors);
+                }
+
+                _previewItems.Add(item);
+            }
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void Close() => MudDialog.Close();
+
+    private class PreviewItem
+    {
+        public string Key { get; set; } = "";
+        public string RawValue { get; set; } = "";
+        public string ResolvedValue { get; set; } = "";
+        public bool IsSecret { get; set; }
+        public bool IsDynamic { get; set; }
+        public bool HasError { get; set; }
+        public string? ErrorMessage { get; set; }
+    }
+}

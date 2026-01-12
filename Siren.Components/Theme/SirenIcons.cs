@@ -73,6 +73,8 @@ namespace Siren.Components.Theme
         public static string Key => Round("key");
 
         public static string Value => Round("123");
+        
+        public static string NoSecrets => Round("key_off");
 
         public static string Time => Round("more_time");
 
@@ -107,5 +109,15 @@ namespace Siren.Components.Theme
         public static string GitHub => Icons.Custom.Brands.GitHub;
 
         public static string Plugins => Round("extension");
+
+        public static string Preview => Round("visibility");
+
+        public static string Search => Round("search");
+
+        public static string Secrets => Round("lock");
+
+        public static string Unlocked => Round("lock_open_right");
+
+        public static string Help => Round("help");
     }
 }
