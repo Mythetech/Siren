@@ -1,0 +1,57 @@
+@using MudBlazor
+@using Siren.Components.Services
+@using Siren.Components.Theme
+
+@inject IAppDataService AppDataService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<div class="mf-setting-item">
+    <div class="mf-dynamic-setting-control">
+        <div class="mf-setting-label-row">
+            <MudText Class="mf-setting-label">Delete saved data</MudText>
+            <MudText Typo="Typo.caption" Class="mud-text-secondary mf-setting-description">
+                @DisplayFileSize(_appdataSize)
+            </MudText>
+        </div>
+        <div class="mf-setting-control">
+            <SirenButton Color="Color.Error"
+                         Variant="Variant.Outlined"
+                         StartIcon="@SirenIcons.Delete"
+                         OnClick="DeleteAppData">
+                Delete
+            </SirenButton>
+        </div>
+    </div>
+</div>
+
+@code {
+    private long _appdataSize;
+
+    protected override void OnInitialized()
+    {
+        _appdataSize = AppDataService.GetAppDataSize();
+    }
+
+    private async Task DeleteAppData()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "siren-dialog" };
+        var dialogRef = await DialogService.ShowAsync<DeleteAppDataDialog>("Delete App Data", options);
+        var result = await dialogRef.Result;
+
+        if (result is { Canceled: false })
+        {
+            AppDataService.PurgeSavedData();
+            Snackbar.Add("Purged app data", Severity.Success);
+            _appdataSize = AppDataService.GetAppDataSize();
+            StateHasChanged();
+        }
+    }
+
+    private static string DisplayFileSize(long size)
+    {
+        double kilobytes = size / 1024.0;
+        double megabytes = kilobytes / 1024.0;
+        return megabytes > 0.1 ? $"{megabytes:F2} MB" : $"{kilobytes:F2} KB";
+    }
+}

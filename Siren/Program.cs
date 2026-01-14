@@ -1,4 +1,3 @@
-﻿using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -10,10 +9,14 @@ using Mythetech.Framework.Infrastructure.Mcp.Server;
 using Mythetech.Framework.Infrastructure.MessageBus;
 using Mythetech.Framework.Infrastructure.Plugins;
 using Mythetech.Framework.Infrastructure.Secrets;
+using Mythetech.Framework.Infrastructure.Settings;
 using Photino.Blazor;
-using Siren.Components.Variables;
 using Siren.Collections;
 using Siren.Components;
+using Siren.Components.History;
+using Siren.Components.Http;
+using Siren.Components.Settings;
+using Siren.Components.Variables;
 using Siren.History;
 using Siren.Infrastructure;
 using Siren.Mcp;
@@ -65,7 +68,10 @@ namespace Siren
             // register root component and selector
             appBuilder.RootComponents.Add<Components.App>("app");
 
-            appBuilder.Services.AddSirenComponents<HistoryService, CollectionsService, VariablesService, SettingsService>();
+            appBuilder.Services.AddSirenComponents<HistoryService, CollectionsService, VariablesService, AppDataService>();
+
+            // Settings storage for framework
+            appBuilder.Services.AddSettingsStorage<LiteDbSettingsStorage>();
 
             appBuilder.Services.AddSirenMcp();
 
@@ -74,6 +80,19 @@ namespace Siren
             var app = appBuilder.Build();
 
             app.Services.UseMessageBus(typeof(App).Assembly);
+
+            // Initialize settings framework - all settings auto-registered
+            app.Services
+                .RegisterSettings<HttpSettings>()
+                .RegisterSettings<ResponseSettings>()
+                .RegisterSettings<HistorySettings>()
+                .RegisterSettings<EnvironmentSettings>()
+                .RegisterSettings<PluginSettings>()
+                .UseSettingsFramework();
+
+            // Migrate and load settings
+            await SettingsMigration.MigrateIfNeededAsync(app.Services);
+            await app.Services.LoadPersistedSettingsAsync();
 
             app.Services.UseSirenMcp();
 
@@ -113,7 +132,8 @@ namespace Siren
             services.AddMessageBus();
 
             // Add Siren services needed by MCP tools
-            services.AddSirenComponents<HistoryService, CollectionsService, VariablesService, SettingsService>();
+            services.AddSirenComponents<HistoryService, CollectionsService, VariablesService, AppDataService>();
+            services.AddSettingsStorage<LiteDbSettingsStorage>();
 
             // Add MCP with stdio transport (default)
             services.AddMcp(options =>
@@ -125,6 +145,19 @@ namespace Siren
             var serviceProvider = services.BuildServiceProvider();
 
             serviceProvider.UseMessageBus();
+
+            // Initialize settings for MCP mode - all settings auto-registered
+            serviceProvider
+                .RegisterSettings<HttpSettings>()
+                .RegisterSettings<ResponseSettings>()
+                .RegisterSettings<HistorySettings>()
+                .RegisterSettings<EnvironmentSettings>()
+                .RegisterSettings<PluginSettings>()
+                .UseSettingsFramework();
+
+            await SettingsMigration.MigrateIfNeededAsync(serviceProvider);
+            await serviceProvider.LoadPersistedSettingsAsync();
+
             serviceProvider.UseMcp(typeof(McpServiceExtensions).Assembly);
 
             var server = serviceProvider.GetRequiredService<IMcpServer>();

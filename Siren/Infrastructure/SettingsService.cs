@@ -1,59 +1,42 @@
-﻿using System;
 using Siren.Components.Services;
-using Siren.Components.Settings;
 
-namespace Siren.Infrastructure
+namespace Siren.Infrastructure;
+
+/// <summary>
+/// Service for managing application data (purge, size queries).
+/// Settings are now managed by Mythetech.Framework settings infrastructure.
+/// </summary>
+public class AppDataService : IAppDataService
 {
-    public class SettingsService : ISettingsService
+    private const string DatabaseName = "siren.db";
+
+    private static string GetDatabaseFilePath()
     {
-        private static readonly string DatabaseName = "siren.db";
+        var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        return Path.Combine(appDataPath, DatabaseName);
+    }
 
-        private static string GetPath()
+    public void PurgeSavedData()
+    {
+        var dbFilePath = GetDatabaseFilePath();
+
+        if (File.Exists(dbFilePath))
         {
-            return Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            File.Delete(dbFilePath);
+        }
+    }
+
+    public long GetAppDataSize()
+    {
+        var dbFilePath = GetDatabaseFilePath();
+
+        if (File.Exists(dbFilePath))
+        {
+            var fileInfo = new FileInfo(dbFilePath);
+            return fileInfo.Length;
         }
 
-        private static string GetDatabaseFilePath()
-        {
-            return Path.Combine(GetPath(), DatabaseName);
-        }
-
-        public SettingsService()
-        {
-        }
-
-        public void PurgeSavedData()
-        {
-            var dbFilePath = GetDatabaseFilePath();
-
-            if (File.Exists(dbFilePath))
-            {
-                File.Delete(dbFilePath);
-            }
-        }
-
-        public long GetAppDataSize()
-        {
-            var dbFilePath = GetDatabaseFilePath();
-
-            if (File.Exists(dbFilePath))
-            {
-                var fileInfo = new FileInfo(dbFilePath);
-                return fileInfo.Length;
-            }
-
-            return 0;
-        }
-
-        public SettingsStateSnapshot? LoadSettings()
-        {
-            return SettingsRepository.LoadSettings();
-        }
-
-        public void SaveSettings(SettingsStateSnapshot snapshot)
-        {
-            SettingsRepository.SaveSettings(snapshot);
-        }
+        return 0;
     }
 }
 

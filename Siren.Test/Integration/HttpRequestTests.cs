@@ -3,6 +3,7 @@ using System.Text.Json;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Mythetech.Framework.Infrastructure.Settings;
 using NSubstitute;
 using Siren.Components.Http;
 using Siren.Components.RequestContextPanel.Authentication;
@@ -22,16 +23,29 @@ public class HttpRequestTests
     private SettingsState _settings;
     private ICookieService _cookieService;
     private RequestAuthenticationState _authState;
-    
+
     public HttpRequestTests()
     {
         _httpClientFactory = new MockHttpClientFactory();
         _historyService = Substitute.For<IHistoryService>();
         _logger = new NullLogger<HttpRequestClient>();
-        _settings = new SettingsState { SaveHttpContent = true };
+
+        // Create mock settings provider with test settings
+        var settingsProvider = Substitute.For<ISettingsProvider>();
+        var httpSettings = new HttpSettings();
+        var responseSettings = new ResponseSettings();
+        var historySettings = new HistorySettings { SaveHttpContent = true };
+        var environmentSettings = new EnvironmentSettings();
+
+        settingsProvider.GetSettings<HttpSettings>().Returns(httpSettings);
+        settingsProvider.GetSettings<ResponseSettings>().Returns(responseSettings);
+        settingsProvider.GetSettings<HistorySettings>().Returns(historySettings);
+        settingsProvider.GetSettings<EnvironmentSettings>().Returns(environmentSettings);
+
+        _settings = new SettingsState(settingsProvider);
         _cookieService = new CookieService();
         _authState = new RequestAuthenticationState();
-        
+
         _client = new HttpRequestClient(
             _httpClientFactory,
             _historyService,

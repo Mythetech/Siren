@@ -1,8 +1,10 @@
-﻿@using Siren.Components.Services
-@using Siren.Components.Settings.Controls
+@using MudBlazor
+@using Mythetech.Framework.Components.Settings
+@using Mythetech.Framework.Infrastructure.Settings
+@using Siren.Components.Services
 @using Siren.Components.Infrastructure.Keyboard
-@using Siren.Components.Http
-<MudDialog Class="w-75 h-75">
+
+<MudDialog Class="mf-settings-dialog">
     <TitleContent>
         <SirenStack Row="true">
             <SirenText Typo="Typo.h6">
@@ -10,206 +12,80 @@
                 Settings
             </SirenText>
             <SirenSpacer />
-            <SirenText Typo="Typo.h6">
-                <MudIconButton Icon="@SirenIcons.Close" OnClick="Close" />
-            </SirenText>
+            <MudIconButton Icon="@SirenIcons.Close" OnClick="Cancel" />
         </SirenStack>
     </TitleContent>
     <DialogContent>
-        <SirenStack Spacing="12" Class="w-100">
-            <SettingsSection Icon="@SirenIcons.Request" Title="Requests">
-                <BooleanSettingItem Text="Send with Siren Token header"
-                                    Label="Recommended to easily flag requests as test requests"
-                                    Value="@true" />
-
-                <BooleanSettingItem Text="Save http response content"
-                                          Label="This allows requests to be restored from history, but takes more space on disk."
-                                          @bind-Value="@Settings.SaveHttpContent"/>
-
-                <StringSettingItem Text="Default User-Agent"
-                                   Label="Sent with requests unless a custom User-Agent header is specified"
-                                   @bind-Value="@Settings.DefaultUserAgent" />
-
-                <BaseSettingItem Text="Default HTTP Method"
-                                 Label="HTTP method to use when creating new requests">
-                    <SimpleHttpRequestMethodSelector AllowNone="true"
-                                                     Label=""
-                                                     Placeholder="Select default method..."
-                                                     SelectedMethod="@Settings.DefaultHttpMethod"
-                                                     SelectedMethodChanged="@OnDefaultHttpMethodChanged" />
-                </BaseSettingItem>
-            </SettingsSection>
-
-            <SettingsSection Icon="@SirenIcons.Request" Title="Retry Settings">
-                <IntSettingItem Text="Retry Attempts"
-                                Label="Number of times to retry failed requests (0 = no retries)"
-                                Value="@Settings.RetryAttempts"
-                                ValueChanged="@OnRetryAttemptsChanged"
-                                Min="0"
-                                Max="10" />
-
-                <IntSettingItem Text="Retry Delay (ms)"
-                                Label="Delay in milliseconds between retry attempts"
-                                Value="@Settings.RetryDelayMs"
-                                ValueChanged="@OnRetryDelayChanged"
-                                Min="100"
-                                Max="30000" />
-            </SettingsSection>
-
-            <SettingsSection Icon="@SirenIcons.Response" Title="Response">
-                <GenericArraySettingItem T="TimeDisplayOptions"
-                                         Text="Time display"
-                                         Items="@TimeDisplayOptionsArray"
-                                         Value="@Settings.TimeDisplay"
-                                         ValueChanged="@OnTimeDisplayChanged"
-                                         DisplayTextSelector="@(opt => opt.ToString())" />
-                <GenericArraySettingItem T="SizeDisplayOptions"
-                                         Text="Size display"
-                                         Items="@SizeDisplayOptionsArray"
-                                         Value="@Settings.SizeDisplay"
-                                         ValueChanged="@OnSizeDisplayChanged"
-                                         DisplayTextSelector="@(opt => opt.ToString())" />
-            </SettingsSection>
-
-            <SettingsSection Icon="@SirenIcons.AppData" Title="Application Data">
-                <ActionSettingItem Text="Delete saved data"
-                                   ToolChip="@(new BaseSettingItem.ToolChipData(DisplayFileSize(_appdataSize), $"{_appdataSize} bytes"))"
-                                   ButtonText="Delete"
-                                   ButtonIcon="@SirenIcons.Delete"
-                                   ButtonColor="Color.Error"
-                                   ButtonIconColor="Color.Error"
-                                   OnButtonClick="DeleteAppData" />
-            </SettingsSection>
-
-            <SettingsSection Icon="@SirenIcons.Key" Title="Keyboard Shortcuts">
-                @foreach (var shortcut in KeyboardShortcutsService.GetAllShortcuts())
-                {
-                    <KeyboardShortcutDisplay Shortcut="@shortcut" />
-                }
-            </SettingsSection>
-
-            <SettingsSection Icon="@SirenIcons.Plugins" Title="Plugins">
-                <BooleanSettingItem Text="Enable plugins"
-                                    Label="Allow plugins to extend Siren functionality"
-                                    @bind-Value="@Settings.PluginState" />
-            </SettingsSection>
-        </SirenStack>
+        <div class="mf-settings-dialog-content">
+            <SettingsPanel @ref="_settingsPanel" ShowTitle="false" AdditionalSectionIds="@(new[] { "Keyboard" })" @bind-ActiveSection="_activeSection">
+            <ContentSuffix>
+                @* Keyboard Shortcuts section - display only, no editable settings *@
+                <div id="section-Keyboard" class="mf-settings-section">
+                    <div class="mf-settings-section-header">
+                        <SirenIcon Icon="@SirenIcons.Key" Class="mr-2" />
+                        <MudText Typo="Typo.h6">Keyboard Shortcuts</MudText>
+                    </div>
+                    <div class="mf-settings-group">
+                        @foreach (var shortcut in KeyboardShortcutsService.GetAllShortcuts())
+                        {
+                            <div class="mf-setting-item">
+                                <div class="mf-dynamic-setting-control">
+                                    <div class="mf-setting-label-row">
+                                        <MudText Class="mf-setting-label">@shortcut.Description</MudText>
+                                    </div>
+                                    <div class="mf-setting-control">
+                                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Primary">
+                                            @shortcut.GetDisplayString()
+                                        </MudChip>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </ContentSuffix>
+            <NavSuffix>
+                <SettingsNavLink SettingsId="Keyboard"
+                                 DisplayName="Shortcuts"
+                                 Icon="@SirenIcons.Key"
+                                 IsActive="@(_activeSection == "Keyboard")"
+                                 OnClick="@(() => ScrollToSection("Keyboard"))" />
+            </NavSuffix>
+            </SettingsPanel>
+        </div>
     </DialogContent>
     <DialogActions>
-        <SirenButton OnClick="Close" Variant=" Variant.Text">Cancel</SirenButton>
-        <SirenButton Variant="Variant.Filled" OnClick="Save">
-            Save
-        </SirenButton>
+        <SirenButton OnClick="Cancel" Variant="Variant.Text">Cancel</SirenButton>
+        <SirenButton Variant="Variant.Filled" OnClick="Save">Done</SirenButton>
     </DialogActions>
 </MudDialog>
 
 @code {
-    [Inject]
-    SettingsState Settings { get; set; } = default!;
-
-    [Inject]
-    ISettingsService SettingsService { get; set; } = default!;
-
-    [Inject]
-    ISnackbar Snackbar { get; set; } = default!;
-
-    [Inject]
-    IDialogService DialogService { get; set; } = default!;
-
     [CascadingParameter]
     private IMudDialogInstance MudDialog { get; set; } = default!;
 
-    private long _appdataSize = 0;
-    private SettingsStateSnapshot? _snapshot;
+    [Inject]
+    SettingsState Settings { get; set; } = default!;
 
-    private TimeDisplayOptions[] TimeDisplayOptionsArray => Enum.GetValues<TimeDisplayOptions>();
-    private SizeDisplayOptions[] SizeDisplayOptionsArray => Enum.GetValues<SizeDisplayOptions>();
+    private SettingsPanel _settingsPanel = default!;
+    private string _activeSection = "";
 
-    private void Close()
+    private void Cancel()
     {
-        if (_snapshot != null)
-        {
-            Settings.RestoreFromSnapshot(_snapshot, notify: false);
-        }
-        MudDialog.Close(DialogResult.Cancel);
+        _settingsPanel.RevertChanges();
+        MudDialog.Close(DialogResult.Cancel());
     }
 
-    protected override void OnInitialized()
+    private async Task Save()
     {
-        _appdataSize = SettingsService.GetAppDataSize();
-        _snapshot = Settings.CreateSnapshot();
-    }
-
-    public void OnNotify(SettingsState state)
-    {
-        StateHasChanged();
-    }
-
-
-    private void Save()
-    {
+        await _settingsPanel.CommitChangesAsync();
+        await Settings.NotifyChangedAsync();
         MudDialog.Close(DialogResult.Ok(true));
     }
 
-    protected async Task DeleteAppData()
+    private async Task ScrollToSection(string sectionId)
     {
-        var options = new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "siren-dialog" };
-
-        var dialogRef = await DialogService.ShowAsync<DeleteAppDataDialog>("Delete App Data", options);
-
-        var result = await dialogRef.Result;
-
-        if (!result.Canceled)
-        {
-            SettingsService.PurgeSavedData();
-
-            Snackbar.Add("Purged app data", Severity.Success);
-            
-            _appdataSize = SettingsService.GetAppDataSize();
-            StateHasChanged();
-        }
-    }
-
-    private void OnTimeDisplayChanged(TimeDisplayOptions value)
-    {
-        Settings.TimeDisplay = value;
-    }
-
-    private void OnSizeDisplayChanged(SizeDisplayOptions value)
-    {
-        Settings.SizeDisplay = value;
-    }
-
-    private void OnDefaultHttpMethodChanged(string? value)
-    {
-        Settings.DefaultHttpMethod = value;
-    }
-
-    private void OnRetryAttemptsChanged(int value)
-    {
-        Settings.RetryAttempts = value;
-    }
-
-    private void OnRetryDelayChanged(int value)
-    {
-        Settings.RetryDelayMs = value;
-    }
-
-    protected string DisplayFileSize(long size)
-    {
-        double kilobytes = size / 1024.0; // 1 KB = 1024 bytes
-        double megabytes = kilobytes / 1024.0; // 1 MB = 1024 KB
-
-        if (megabytes > 0.1)
-        {
-            return $"{megabytes:F2} MB";
-        }
-        else
-        {
-            return $"{kilobytes:F2} KB";
-        }
-        return $"{kilobytes:F2} KB";
+        _activeSection = sectionId;
+        await _settingsPanel.ScrollToSection(sectionId);
     }
 }
-
-

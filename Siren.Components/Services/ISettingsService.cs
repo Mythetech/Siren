@@ -1,17 +1,12 @@
-﻿using System;
-using Siren.Components.Settings;
+namespace Siren.Components.Services;
 
-namespace Siren.Components.Services
+/// <summary>
+/// Service for managing application data (purge, size queries).
+/// Settings are now managed by Mythetech.Framework.
+/// </summary>
+public interface IAppDataService
 {
-    public interface ISettingsService
-    {
-        public void PurgeSavedData();
-
-        public long GetAppDataSize();
-        
-        public SettingsStateSnapshot? LoadSettings();
-        
-        public void SaveSettings(SettingsStateSnapshot snapshot);
-    }
+    void PurgeSavedData();
+    long GetAppDataSize();
 }
 

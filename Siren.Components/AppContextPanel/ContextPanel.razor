@@ -29,7 +29,7 @@
             <VariablesPanel />
         </PanelContent>
     </ContextPanelItem>
-    @if (Settings.PluginState && Plugins.PluginsActive && Plugins.EnabledPlugins.Any(x => x.ContextPanelComponents.Count > 0))
+    @if (Plugins.PluginsActive && Plugins.EnabledPlugins.Any(x => x.ContextPanelComponents.Count > 0))
     {
         <MudDivider Class="my-1" Style="max-height: 2px;" />
         @foreach (var plugin in Plugins.EnabledPlugins.Where(x => x.ContextPanelComponents.Count > 0))
@@ -208,7 +208,7 @@
         {
             CloseOnEscapeKey = true,
             BackgroundClass = "siren-dialog",
-            MaxWidth = MaxWidth.Medium
+            MaxWidth = MaxWidth.Large
         };
 
         var dialog = await DialogService.ShowAsync<SettingsDialog>("Settings", options);

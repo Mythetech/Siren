@@ -1,0 +1,43 @@
+@using System.Reflection
+@using MudBlazor
+@using Mythetech.Framework.Infrastructure.Settings
+@using Siren.Components.Variables
+
+@inject VariableState VariableState
+
+<MudSelect T="string"
+           Value="@GetValue()"
+           ValueChanged="@OnValueChangedAsync"
+           Variant="Variant.Outlined"
+           Margin="Margin.Dense"
+           Dense="true"
+           Style="width: 200px;"
+           Class="mf-setting-select">
+    <MudSelectItem T="string" Value="@((string?)null)">None</MudSelectItem>
+    @foreach (var env in VariableState.Environments)
+    {
+        <MudSelectItem T="string" Value="@env.Name">@env.Name</MudSelectItem>
+    }
+</MudSelect>
+
+@code {
+    [Parameter, EditorRequired]
+    public SettingsBase Settings { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public PropertyInfo Property { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public SettingAttribute Attribute { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnValueChanged { get; set; }
+
+    private string? GetValue() => (string?)Property.GetValue(Settings);
+
+    private async Task OnValueChangedAsync(string? value)
+    {
+        Property.SetValue(Settings, value);
+        await OnValueChanged.InvokeAsync();
+    }
+}
