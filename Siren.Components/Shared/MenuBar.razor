@@ -109,7 +109,7 @@
             <MudMenuItem Class="rounded" Icon="@SirenIcons.Secrets" OnClick="HandleOpenSecretManager">Secret Manager</MudMenuItem>
             <MudDivider />
             <McpMenuItems />
-            @if (Settings.PluginState)
+            @if (PluginState.PluginsActive)
             {
                 <MudDivider />
                 <MudMenu Label="Plugins" StartIcon="@SirenIcons.Plugins" Dense="true" ListClass="pa-1">

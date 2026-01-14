@@ -1,53 +1,44 @@
 using System.Text.Json;
 using Mythetech.Framework.Infrastructure.Mcp;
-using Siren.Components.Services;
+using Mythetech.Framework.Infrastructure.Plugins;
+using Mythetech.Framework.Infrastructure.Settings;
+using Siren.Components.History;
+using Siren.Components.Http;
+using Siren.Components.Settings;
 
 namespace Siren.Mcp.Tools;
 
 [McpTool(Name = "list_settings", Description = "List the current Siren application settings including request timeout, display preferences, and default values")]
 public class ListSettingsTool : IMcpTool
 {
-    private readonly ISettingsService _settingsService;
+    private readonly ISettingsProvider _settingsProvider;
 
-    public ListSettingsTool(ISettingsService settingsService)
+    public ListSettingsTool(ISettingsProvider settingsProvider)
     {
-        _settingsService = settingsService;
+        _settingsProvider = settingsProvider;
     }
 
     public Task<McpToolResult> ExecuteAsync(object? input, CancellationToken cancellationToken = default)
     {
         try
         {
-            var settings = _settingsService.LoadSettings();
-
-            if (settings == null)
-            {
-                return Task.FromResult(McpToolResult.Text(JsonSerializer.Serialize(new
-                {
-                    message = "No settings found, using defaults",
-                    requestTimeout = 10,
-                    sendRequestsWithSystemToken = true,
-                    saveHttpContent = false,
-                    timeDisplay = "Milliseconds",
-                    sizeDisplay = "Bytes",
-                    defaultUserAgent = "siren/0.1",
-                    defaultHttpMethod = (string?)null,
-                    lastActiveEnvironment = (string?)null,
-                    pluginState = false
-                }, new JsonSerializerOptions { WriteIndented = true })));
-            }
+            var httpSettings = _settingsProvider.GetSettings<HttpSettings>();
+            var responseSettings = _settingsProvider.GetSettings<ResponseSettings>();
+            var historySettings = _settingsProvider.GetSettings<HistorySettings>();
+            var environmentSettings = _settingsProvider.GetSettings<EnvironmentSettings>();
+            var pluginSettings = _settingsProvider.GetSettings<PluginSettings>();
 
             var result = new
             {
-                requestTimeout = settings.RequestTimeout,
-                sendRequestsWithSystemToken = settings.SendRequestsWithSystemToken,
-                saveHttpContent = settings.SaveHttpContent,
-                timeDisplay = settings.TimeDisplay.ToString(),
-                sizeDisplay = settings.SizeDisplay.ToString(),
-                defaultUserAgent = settings.DefaultUserAgent,
-                defaultHttpMethod = settings.DefaultHttpMethod,
-                lastActiveEnvironment = settings.LastActiveEnvironment,
-                pluginState = settings.PluginState
+                requestTimeout = httpSettings?.RequestTimeout ?? 10,
+                sendRequestsWithSystemToken = httpSettings?.SendRequestsWithSystemToken ?? true,
+                saveHttpContent = historySettings?.SaveHttpContent ?? false,
+                timeDisplay = responseSettings?.TimeDisplay.ToString() ?? "Milliseconds",
+                sizeDisplay = responseSettings?.SizeDisplay.ToString() ?? "Bytes",
+                defaultUserAgent = httpSettings?.DefaultUserAgent ?? "siren/0.1",
+                defaultHttpMethod = httpSettings?.DefaultHttpMethod,
+                defaultEnvironment = environmentSettings?.DefaultEnvironment,
+                pluginsActive = pluginSettings?.PluginsActive ?? false
             };
 
             return Task.FromResult(McpToolResult.Text(JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true })));
