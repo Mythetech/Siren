@@ -41,7 +41,7 @@ namespace Siren
             VelopackApp.Build().Run();
 
             var appBuilder = PhotinoBlazorAppBuilder.CreateDefault(args);
-            
+
             var configuration = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
@@ -60,7 +60,10 @@ namespace Siren
 
             appBuilder.Services.AddUpdateService(options =>
             {
-                options.UpdateUrl = "https://stsirendownloads.blob.core.windows.net/releases";
+                var platform = OperatingSystem.IsWindows() ? "windows"
+                    : OperatingSystem.IsMacOS() ? "macos"
+                    : "linux";
+                options.UpdateUrl = $"{Configuration.SirenDownloadConfiguration.UpdateBaseUrl}/{platform}";
             });
 
             appBuilder.Services.AddDesktopSettingsStorage("Siren");
@@ -70,8 +73,8 @@ namespace Siren
             appBuilder.Services.AddSingleton<IVariableValueResolver, SecretReferenceResolver>();
 
             appBuilder.Services.AddPluginFramework();
-            
-            appBuilder.Services.AddRuntimeEnvironment(System.Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")?.Equals("Production", StringComparison.OrdinalIgnoreCase) ?? false ? DesktopRuntimeEnvironment.Production() : DesktopRuntimeEnvironment.Development()); 
+
+            appBuilder.Services.AddRuntimeEnvironment(System.Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")?.Equals("Production", StringComparison.OrdinalIgnoreCase) ?? false ? DesktopRuntimeEnvironment.Production() : DesktopRuntimeEnvironment.Development());
 
             appBuilder.RootComponents.Add<Components.App>("app");
 
