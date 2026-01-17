@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Mythetech.Framework.Desktop;
@@ -10,6 +10,7 @@ using Mythetech.Framework.Infrastructure.MessageBus;
 using Mythetech.Framework.Infrastructure.Plugins;
 using Mythetech.Framework.Infrastructure.Secrets;
 using Mythetech.Framework.Infrastructure.Settings;
+using Mythetech.Framework.Desktop.Updates;
 using Photino.Blazor;
 using Siren.Collections;
 using Siren.Components;
@@ -57,7 +58,14 @@ namespace Siren
 
             appBuilder.Services.AddDesktopServices();
 
-            // Register desktop secret managers (Keychain, 1Password, etc.)
+            appBuilder.Services.AddUpdateService(options =>
+            {
+                options.UpdateUrl = "https://stsirendownloads.blob.core.windows.net/releases";
+            });
+
+            appBuilder.Services.AddDesktopSettingsStorage("Siren");
+            appBuilder.Services.AddPluginStateProvider("Siren");
+
             appBuilder.Services.AddAllDesktopSecretManagers("siren");
             appBuilder.Services.AddSingleton<IVariableValueResolver, SecretReferenceResolver>();
 
@@ -65,7 +73,6 @@ namespace Siren
             
             appBuilder.Services.AddRuntimeEnvironment(System.Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")?.Equals("Production", StringComparison.OrdinalIgnoreCase) ?? false ? DesktopRuntimeEnvironment.Production() : DesktopRuntimeEnvironment.Development()); 
 
-            // register root component and selector
             appBuilder.RootComponents.Add<Components.App>("app");
 
             appBuilder.Services.AddSirenComponents<HistoryService, CollectionsService, VariablesService, AppDataService>();
@@ -81,27 +88,27 @@ namespace Siren
 
             app.Services.UseMessageBus(typeof(App).Assembly);
 
-            // Initialize settings framework - all settings auto-registered
             app.Services
                 .RegisterSettings<HttpSettings>()
                 .RegisterSettings<ResponseSettings>()
                 .RegisterSettings<HistorySettings>()
                 .RegisterSettings<EnvironmentSettings>()
                 .RegisterSettings<PluginSettings>()
+                .RegisterSettings<UpdateSettings>()
                 .UseSettingsFramework();
 
             // Migrate and load settings
             await SettingsMigration.MigrateIfNeededAsync(app.Services);
             await app.Services.LoadPersistedSettingsAsync();
 
+            await app.Services.UseUpdateServiceAsync();
+
             app.Services.UseSirenMcp();
 
-            // Initialize secret managers
             app.Services.UseSecretManager();
 
             app.Services.UsePlugins();
 
-            // customize window
             app.MainWindow
                 .SetSize(1920, 1080)
                 .SetUseOsDefaultSize(false)
@@ -131,7 +138,6 @@ namespace Siren
             services.AddHttpClient();
             services.AddMessageBus();
 
-            // Add Siren services needed by MCP tools
             services.AddSirenComponents<HistoryService, CollectionsService, VariablesService, AppDataService>();
             services.AddSettingsStorage<LiteDbSettingsStorage>();
 
@@ -146,7 +152,6 @@ namespace Siren
 
             serviceProvider.UseMessageBus();
 
-            // Initialize settings for MCP mode - all settings auto-registered
             serviceProvider
                 .RegisterSettings<HttpSettings>()
                 .RegisterSettings<ResponseSettings>()

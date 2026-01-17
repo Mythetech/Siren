@@ -23,7 +23,7 @@ jobs:
     - name: Install .NET Core
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 9.0.x
+        dotnet-version: 10.0.x
 
     - name: Setup GitHub Package Authentication
       run: dotnet nuget add source --username USERNAME --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/mythetech/index.json"
@@ -410,10 +410,10 @@ jobs:
         else
           ZIP_FILE="${{ steps.prepare_zip_unix.outputs.ZIP_FILE }}"
         fi
-        
+
         BLOB_PATH="latest/$BLOB_PLATFORM/$ZIP_NAME"
         echo "Uploading to: $BLOB_PATH"
-        
+
         az storage blob upload \
           --account-name stsirendownloads \
           --container-name release \
@@ -422,7 +422,30 @@ jobs:
           --overwrite \
           --sas-token "${{ secrets.SIREN_BLOB_SAS_TOKEN }}"
       shell: bash
-      
+
+    - name: Upload Velopack release files for auto-updates
+      run: |
+        BLOB_PLATFORM="${{ steps.platform_map.outputs.BLOB_PLATFORM }}"
+        RELEASE_DIR="releases/${{ matrix.platform }}"
+
+        echo "Uploading Velopack release files from $RELEASE_DIR to releases/$BLOB_PLATFORM"
+
+        # Upload all files in the release directory (RELEASES, nupkg, etc.)
+        for file in "$RELEASE_DIR"/*; do
+          if [ -f "$file" ]; then
+            filename=$(basename "$file")
+            echo "Uploading: $filename"
+            az storage blob upload \
+              --account-name stsirendownloads \
+              --container-name releases \
+              --name "$BLOB_PLATFORM/$filename" \
+              --file "$file" \
+              --overwrite \
+              --sas-token "${{ secrets.SIREN_BLOB_SAS_TOKEN }}"
+          fi
+        done
+      shell: bash
+
     - name: Upload Release Artifacts
       uses: actions/upload-artifact@v4
       with:
