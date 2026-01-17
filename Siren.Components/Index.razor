@@ -18,6 +18,8 @@
 @using MudBlazor
 @using System.Net.Sockets
 @using System.Reflection
+@using System.Runtime.InteropServices
+@using Mythetech.Framework.Desktop.Updates
 @using Mythetech.Framework.Infrastructure.Plugins
 @using Siren.Components.Settings
 
@@ -85,6 +87,8 @@
 
     [Inject] protected PluginState PluginState { get; set; } = default!;
     [Inject] protected PluginLoader PluginLoader { get; set; } = default!;
+
+    [Inject] protected IUpdateService UpdateService { get; set; } = default!;
 
 
     private IJSObjectReference? _module;
@@ -188,7 +192,7 @@
         if (firstRender)
         {
             _module = await JS.InvokeAsync<IJSObjectReference>("import", "./app.js");
-
+            await UpdateService.CheckForUpdatesOnStartupAsync();
         }
     }
 

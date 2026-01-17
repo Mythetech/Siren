@@ -100,12 +100,9 @@ namespace Siren
                 .RegisterSettings<UpdateSettings>()
                 .UseSettingsFramework();
 
-            // Migrate and load settings
             await SettingsMigration.MigrateIfNeededAsync(app.Services);
             await app.Services.LoadPersistedSettingsAsync();
-
-            await app.Services.UseUpdateServiceAsync();
-
+            
             app.Services.UseSirenMcp();
 
             app.Services.UseSecretManager();
