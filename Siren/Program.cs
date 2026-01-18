@@ -66,7 +66,7 @@ namespace Siren
                 var channel = OperatingSystem.IsWindows() ? "win"
                     : OperatingSystem.IsMacOS() ? "osx"
                     : "linux";
-                options.UpdateUrl = $"{Configuration.SirenDownloadConfiguration.UpdateBaseUrl}/{platform}/release.{channel}.json";
+                options.UpdateUrl = $"{Configuration.SirenDownloadConfiguration.UpdateBaseUrl}/{platform}/releases.{channel}.json";
             });
 
             appBuilder.Services.AddDesktopSettingsStorage("Siren");
