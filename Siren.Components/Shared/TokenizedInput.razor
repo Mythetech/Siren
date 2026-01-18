@@ -1,0 +1,130 @@
+@inherits SirenBaseComponent
+
+<div class="tokenized-input-container @Class" style="@Style">
+    <div class="tokenized-overlay" @ref="_overlayRef">
+        @foreach (var segment in _segments)
+        {
+            @if (segment.Type == TokenSegmentType.Variable)
+            {
+                <span class="token-variable" @onclick="() => HandleTokenClick(segment)" @onclick:stopPropagation="true">
+                    <span class="token-bracket">{{</span><span class="token-name">@segment.VariableName</span><span class="token-bracket">}}</span>
+                </span>
+            }
+            else
+            {
+                <span class="token-text">@segment.Text</span>
+            }
+        }
+        @if (string.IsNullOrEmpty(Value))
+        {
+            <span class="token-placeholder">@Placeholder</span>
+        }
+    </div>
+    <input type="text"
+           class="tokenized-input"
+           value="@Value"
+           placeholder=""
+           @oninput="HandleInput"
+           @onfocus="HandleFocus"
+           @onblur="HandleBlur"
+           @ref="_inputRef" />
+</div>
+
+@code {
+    private ElementReference _inputRef;
+    private ElementReference _overlayRef;
+    private List<TokenSegment> _segments = new();
+    private bool _isFocused;
+
+    [Parameter]
+    public string? Value { get; set; }
+
+    [Parameter]
+    public EventCallback<string> ValueChanged { get; set; }
+
+    [Parameter]
+    public string Placeholder { get; set; } = "";
+
+    [Parameter]
+    public EventCallback<TokenSegment> TokenClicked { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+        _segments = Tokenize(Value);
+    }
+
+    private async Task HandleInput(ChangeEventArgs e)
+    {
+        var newValue = e.Value?.ToString() ?? "";
+        _segments = Tokenize(newValue);
+        await ValueChanged.InvokeAsync(newValue);
+    }
+
+    private void HandleFocus(FocusEventArgs e)
+    {
+        _isFocused = true;
+    }
+
+    private void HandleBlur(FocusEventArgs e)
+    {
+        _isFocused = false;
+    }
+
+    private async Task HandleTokenClick(TokenSegment segment)
+    {
+        if (TokenClicked.HasDelegate)
+        {
+            await TokenClicked.InvokeAsync(segment);
+        }
+    }
+
+    public async Task FocusAsync()
+    {
+        await _inputRef.FocusAsync();
+    }
+
+    private static readonly System.Text.RegularExpressions.Regex VarPattern =
+        new(@"\{\{(\$?\w+(?::\S+)?)\}\}", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+    private static List<TokenSegment> Tokenize(string? text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return new List<TokenSegment>();
+
+        var segments = new List<TokenSegment>();
+        var lastIndex = 0;
+
+        foreach (System.Text.RegularExpressions.Match match in VarPattern.Matches(text))
+        {
+            if (match.Index > lastIndex)
+            {
+                segments.Add(new TokenSegment(
+                    text.Substring(lastIndex, match.Index - lastIndex),
+                    TokenSegmentType.Text,
+                    null));
+            }
+
+            segments.Add(new TokenSegment(
+                match.Value,
+                TokenSegmentType.Variable,
+                match.Groups[1].Value));
+
+            lastIndex = match.Index + match.Length;
+        }
+
+        if (lastIndex < text.Length)
+        {
+            segments.Add(new TokenSegment(
+                text.Substring(lastIndex),
+                TokenSegmentType.Text,
+                null));
+        }
+
+        return segments;
+    }
+
+    public record TokenSegment(string Text, TokenSegmentType Type, string? VariableName);
+
+    public enum TokenSegmentType { Text, Variable }
+}

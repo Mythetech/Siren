@@ -1,0 +1,75 @@
+.tokenized-input-container {
+    position: relative;
+    display: flex;
+    flex: 1 1 0;
+    min-width: 0;
+    height: 45px;
+    align-self: stretch;
+}
+
+.tokenized-overlay {
+    position: absolute;
+    inset: 0;
+    padding: 0 0.5em;
+    pointer-events: none;
+    white-space: pre;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: normal;
+    color: var(--mud-palette-text-primary);
+}
+
+.tokenized-input {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    padding: 0 0.5em;
+    border: none;
+    background: transparent;
+    color: transparent;
+    caret-color: var(--mud-palette-text-primary);
+    font-family: inherit;
+    font-size: inherit;
+    line-height: normal;
+    outline: none;
+}
+
+.tokenized-input::placeholder {
+    color: transparent;
+}
+
+.tokenized-input:focus {
+    outline: none;
+}
+
+.token-text {
+    pointer-events: none;
+}
+
+.token-placeholder {
+    color: var(--mud-palette-text-disabled);
+    pointer-events: none;
+}
+
+.token-variable {
+    pointer-events: auto;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: background-color 0.15s ease;
+}
+
+.token-variable:hover {
+    background-color: rgba(156, 39, 176, 0.15);
+}
+
+.token-bracket {
+    color: #9C27B0;
+    font-weight: 600;
+}
+
+.token-name {
+    color: var(--mud-palette-text-primary);
+}

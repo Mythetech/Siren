@@ -15,11 +15,12 @@
             <SirenStack Row="true" Class="w-100 http-request-group"
                 Style="border-bottom: solid 1px var(--http-request-dropdown-color); border-top: solid 1px var(--http-request-dropdown-color); border-right: solid 1px var(--http-request-dropdown-color); ">
                 <HttpRequestMethodDropdown @ref="_httpMethodDropdown" SelectedMethodChanged="UpdateHttpMethod" />
-                <MudTextField Variant="Variant.Text" Underline="false"
-                              FullWidth="true"
-                              Style="border-left:solid 1px var(--mud-palette-tertiary);border-right:none;border-top-right-radius:0px;border-bottom-right-radius:0px;padding-left:0.5em;"
-                    T="string" Placeholder="Enter Request URL... e.g., `https://api.example.com/v1/resource`"
-                    Value="@AppState?.Active?.Request?.RequestUri" Class="http-request-input" @ref="_requestUriInput"
+                <TokenizedInput
+                    Style="border-left:solid 1px var(--mud-palette-tertiary);border-right:none;border-top-right-radius:0px;border-bottom-right-radius:0px;"
+                    Placeholder="Enter Request URL... e.g., https://api.example.com/v1/resource"
+                    Value="@AppState?.Active?.Request?.RequestUri"
+                    Class="http-request-input"
+                    @ref="_requestUriInput"
                     ValueChanged="UpdateRequestUri" />
 
                 <MudButton OnClick="@OnSendClicked" Variant="Variant.Text"
@@ -108,7 +109,7 @@
 
 @code {
     private string? _requestUri = default!;
-    private MudTextField<string>? _requestUriInput = default!;
+    private TokenizedInput? _requestUriInput = default!;
 
     private HttpRequestMethodDropdown _httpMethodDropdown = default!;
 

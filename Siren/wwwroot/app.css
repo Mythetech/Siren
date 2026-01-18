@@ -1275,3 +1275,7 @@ button:focus {
 .CodeMirror span[cm-text] {
     font-size: 0;
 }
+
+.mud-switch-base-m3 {
+    width: 32px;
+}
