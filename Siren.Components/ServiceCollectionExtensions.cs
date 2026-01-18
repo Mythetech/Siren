@@ -11,6 +11,7 @@ using Siren.Components.History;
 using Siren.Components.RequestContextPanel.Authentication;
 using Siren.Components.Services;
 using Siren.Components.Settings;
+using Siren.Components.SessionStats;
 using Siren.Components.Variables;
 
 namespace Siren.Components;
@@ -78,6 +79,14 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ICurlImporter, CurlImporter>();
         services.AddSingleton<ICurlGenerator, CurlGenerator>();
         services.AddSingleton<IHarExporter, HarExporter>();
+
+        // Session stats
+        services.AddSingleton<SessionStatsState>();
+        services.AddSingleton<SessionStatsSettings>(sp =>
+        {
+            var settingsProvider = sp.GetRequiredService<ISettingsProvider>();
+            return settingsProvider.GetSettings<SessionStatsSettings>()!;
+        });
 
         return services;
     }

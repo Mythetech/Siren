@@ -119,5 +119,13 @@ namespace Siren.Components.Theme
         public static string Unlocked => Round("lock_open_right");
 
         public static string Help => Round("help");
+
+        public static string Fire => Round("local_fire_department");
+
+        public static string Bolt => Round("bolt");
+
+        public static string Trending => Round("trending_up");
+
+        public static string Stats => Round("leaderboard");
     }
 }

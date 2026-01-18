@@ -1,0 +1,125 @@
+@implements IDisposable
+
+<SirenStack Class="pa-2 w-100" Spacing="3">
+    <SirenStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="w-100">
+        <SirenText Typo="Typo.subtitle2" Class="mud-text-secondary">This Session</SirenText>
+        <SirenSpacer />
+        <SirenIconButton Tooltip="Reset Stats" Size="Size.Small" Icon="@SirenIcons.Refresh" OnClick="Reset" />
+    </SirenStack>
+
+    @if (Stats.TotalRequests == 0)
+    {
+        <SirenStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="py-8">
+            <SirenIcon Icon="@SirenIcons.Stats" Size="Size.Large" Color="Color.Secondary" />
+            <SirenText Typo="Typo.body2" Class="mud-text-secondary">No requests yet</SirenText>
+            <SirenText Typo="Typo.caption" Class="mud-text-secondary">Send a request to start tracking</SirenText>
+        </SirenStack>
+    }
+    else
+    {
+        <SirenStack Spacing="2">
+            @* Streak stat *@
+            <MudPaper Elevation="0" Class="pa-3 rounded stat-card">
+                <SirenStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                    <SirenIcon Icon="@SirenIcons.Fire" Color="@(Stats.SuccessStreak >= 3 ? Color.Warning : Color.Default)" />
+                    <SirenStack Spacing="0">
+                        <SirenText Typo="Typo.caption" Class="mud-text-secondary">Success Streak</SirenText>
+                        <SirenText Typo="Typo.h6">@Stats.SuccessStreak</SirenText>
+                    </SirenStack>
+                </SirenStack>
+            </MudPaper>
+
+            @* Fastest response stat *@
+            <MudPaper Elevation="0" Class="pa-3 rounded stat-card">
+                <SirenStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                    <SirenIcon Icon="@SirenIcons.Bolt" Color="Color.Info" />
+                    <SirenStack Spacing="0">
+                        <SirenText Typo="Typo.caption" Class="mud-text-secondary">Fastest Response</SirenText>
+                        @if (Stats.FastestResponseMs.HasValue)
+                        {
+                            <MudTooltip Text="@Stats.FastestResponseUrl">
+                                <SirenText Typo="Typo.h6">@FormatTime(Stats.FastestResponseMs.Value)</SirenText>
+                            </MudTooltip>
+                        }
+                        else
+                        {
+                            <SirenText Typo="Typo.h6">--</SirenText>
+                        }
+                    </SirenStack>
+                </SirenStack>
+            </MudPaper>
+
+            @* Top domain stat *@
+            <MudPaper Elevation="0" Class="pa-3 rounded stat-card">
+                <SirenStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                    <SirenIcon Icon="@SirenIcons.Trending" Color="Color.Success" />
+                    <SirenStack Spacing="0">
+                        <SirenText Typo="Typo.caption" Class="mud-text-secondary">Top Domain</SirenText>
+                        @{
+                            var (domain, count) = Stats.GetTopDomain();
+                        }
+                        @if (domain != null)
+                        {
+                            <SirenText Typo="Typo.body1" Style="max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                @domain <span class="mud-text-secondary">(@count)</span>
+                            </SirenText>
+                        }
+                        else
+                        {
+                            <SirenText Typo="Typo.h6">--</SirenText>
+                        }
+                    </SirenStack>
+                </SirenStack>
+            </MudPaper>
+
+            @* Total requests *@
+            <MudPaper Elevation="0" Class="pa-3 rounded stat-card">
+                <SirenStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                    <SirenIcon Icon="@SirenIcons.Request" Color="Color.Primary" />
+                    <SirenStack Spacing="0">
+                        <SirenText Typo="Typo.caption" Class="mud-text-secondary">Total Requests</SirenText>
+                        <SirenText Typo="Typo.h6">@Stats.TotalRequests</SirenText>
+                    </SirenStack>
+                </SirenStack>
+            </MudPaper>
+        </SirenStack>
+    }
+</SirenStack>
+
+<style>
+    .stat-card {
+        background-color: var(--mud-palette-background-grey);
+    }
+</style>
+
+@code {
+    [Inject]
+    private SessionStatsState Stats { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        Stats.OnStatsChanged += HandleStatsChanged;
+    }
+
+    public void Dispose()
+    {
+        Stats.OnStatsChanged -= HandleStatsChanged;
+    }
+
+    private void HandleStatsChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void Reset()
+    {
+        Stats.Reset();
+    }
+
+    private string FormatTime(double ms)
+    {
+        if (ms < 1000)
+            return $"{ms:F0}ms";
+        return $"{ms / 1000:F2}s";
+    }
+}

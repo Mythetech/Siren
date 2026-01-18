@@ -22,6 +22,7 @@
 @using Mythetech.Framework.Desktop.Updates
 @using Mythetech.Framework.Infrastructure.Plugins
 @using Siren.Components.Settings
+@using Siren.Components.SessionStats
 
 <MudStack Row="true" Class="w-100 h-100 ml-1" Spacing="0">
     <FluentMultiSplitter BarSize="1" @ref="_primarySplitter" OnResize="@SplitterResized"
@@ -90,6 +91,7 @@
 
     [Inject] protected IUpdateService UpdateService { get; set; } = default!;
 
+    [Inject] protected SessionStatsState SessionStats { get; set; } = default!;
 
     private IJSObjectReference? _module;
 
@@ -467,6 +469,9 @@
         state.Response = r;
         state.Name = active.Request?.RequestUri ?? req.RequestUri;
         state.DisplayText = _responseText;
+
+        // Record session stats
+        SessionStats.RecordRequest(req.RequestUri, r.StatusCode, r.Duration.TotalMilliseconds);
 
         AppState.SetActive(state.Id);
 

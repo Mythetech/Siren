@@ -5,6 +5,7 @@
 @using Siren.Components.History
 @using Siren.Components.Collections
 @using Siren.Components.Variables
+@using Siren.Components.SessionStats
 @using MouseEvent = MudBlazor.MouseEvent
 
 <SirenStack Spacing="1" Class="app-context-panel" Style="" AlignItems="MudBlazor.AlignItems.Center">
@@ -29,6 +30,15 @@
             <VariablesPanel />
         </PanelContent>
     </ContextPanelItem>
+    @if (SessionStatsSettings.ShowSessionStats)
+    {
+        <ContextPanelItem Active="@(_activeItem?.Title == "Session Stats")" @ref="@_contextPanelItems["Session Stats"]"
+            Title="Session Stats" Icon="@SirenIcons.Stats" ContextPanelItemClicked="HandleContextPanelItemClicked">
+            <PanelContent>
+                <SessionStatsPanel />
+            </PanelContent>
+        </ContextPanelItem>
+    }
     @if (Plugins.PluginsActive && Plugins.EnabledPlugins.Any(x => x.ContextPanelComponents.Count > 0))
     {
         <MudDivider Class="my-1" Style="max-height: 2px;" />
@@ -109,6 +119,8 @@
     [Inject] protected PluginState Plugins { get; set; } = default!;
 
     [Inject] protected SettingsState Settings { get; set; } = default!;
+
+    [Inject] protected SessionStatsSettings SessionStatsSettings { get; set; } = default!;
 
     [Inject]
     protected IDialogService DialogService { get; set; } = default!;
