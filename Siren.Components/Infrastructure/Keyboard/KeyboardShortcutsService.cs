@@ -32,6 +32,24 @@ namespace Siren.Components.Infrastructure.Keyboard
                     Description: "Focus HTTP method",
                     Key: KeyCode.KeyM,
                     RequiresCtrl: true
+                ),
+                new KeyboardShortcut(
+                    Description: "Open history panel",
+                    Key: KeyCode.KeyH,
+                    RequiresCtrl: true,
+                    RequiresShift: true
+                ),
+                new KeyboardShortcut(
+                    Description: "Open collections panel",
+                    Key: KeyCode.KeyC,
+                    RequiresCtrl: true,
+                    RequiresShift: true
+                ),
+                new KeyboardShortcut(
+                    Description: "Open variables panel",
+                    Key: KeyCode.KeyV,
+                    RequiresCtrl: true,
+                    RequiresShift: true
                 )
             }.AsReadOnly();
         }

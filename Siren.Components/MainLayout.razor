@@ -52,7 +52,7 @@
         </SirenStack>
     </MudAppBar>
     <MudDrawer @bind-Open="@AppState.SideBarOpen" Variant="DrawerVariant.Mini" Style="overflow: hidden;">
-        <ContextPanel IsDarkMode="@AppState.IsDarkMode" DrawerBackgroundColor="@_backgroundColor"
+        <ContextPanel @ref="_contextPanel" IsDarkMode="@AppState.IsDarkMode" DrawerBackgroundColor="@_backgroundColor"
             DrawerToggled="@(() => AppState.ToggleSideBar())"
             DarkModeToggled="@(() => AppState.IsDarkMode = !AppState.IsDarkMode)" />
         <div class="@($"resizer {(!AppState.SideBarOpen ? "d-none" : "")}")"></div>
@@ -63,7 +63,10 @@
             @Body
         </MudContainer>
     </MudMainContent>
-    <KeyboardShortcuts OnOpenSettings="OpenSettingsDialog" />
+    <KeyboardShortcuts OnOpenSettings="OpenSettingsDialog"
+        OnOpenHistory="@(() => _contextPanel?.OpenHistoryPanel())"
+        OnOpenCollections="@(() => _contextPanel?.OpenCollectionsPanel())"
+        OnOpenVariables="@(() => _contextPanel?.OpenVariablesPanel())" />
 </MudLayout>
 
 
@@ -98,6 +101,8 @@
     private Func<string> GetWidth => () => AppState.SideBarOpen ? "74vw" : "calc(100vw - 52px)";
 
     protected MudThemeProvider _theme { get; set; } = default!;
+
+    private ContextPanel? _contextPanel;
 
     public bool _isDarkMode = false;
     

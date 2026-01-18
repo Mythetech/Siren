@@ -21,21 +21,33 @@
     [Parameter]
     public EventCallback OnFocusMethod { get; set; }
 
-    private Dictionary<FluentKeyCode, EventCallback> _shortcutHandlers = new();
+    [Parameter]
+    public EventCallback OnOpenHistory { get; set; }
+
+    [Parameter]
+    public EventCallback OnOpenCollections { get; set; }
+
+    [Parameter]
+    public EventCallback OnOpenVariables { get; set; }
+
+    private Dictionary<string, EventCallback> _shortcutHandlers = new();
 
     protected override void OnInitialized()
     {
         var shortcuts = KeyboardShortcutsService.GetAllShortcuts();
-        
+
         foreach (var shortcut in shortcuts)
         {
-            _shortcutHandlers[shortcut.Key] = shortcut.Description switch
+            _shortcutHandlers[shortcut.Description] = shortcut.Description switch
             {
                 "Run active request" => OnRunRequest,
                 "New request tab" => OnNewTab,
                 "Focus URI input" => OnFocusUri,
                 "Open settings" => OnOpenSettings,
                 "Focus HTTP method" => OnFocusMethod,
+                "Open history panel" => OnOpenHistory,
+                "Open collections panel" => OnOpenCollections,
+                "Open variables panel" => OnOpenVariables,
                 _ => default
             };
         }
@@ -46,12 +58,12 @@
     public async Task OnKeyDownAsync(FluentKeyCodeEventArgs args)
     {
         var shortcut = KeyboardShortcutsService.GetAllShortcuts()
-            .FirstOrDefault(s => s.Key == args.Key && 
+            .FirstOrDefault(s => s.Key == args.Key &&
                                s.RequiresCtrl == (args.CtrlKey || args.MetaKey) &&
                                s.RequiresShift == args.ShiftKey &&
                                s.RequiresAlt == args.AltKey);
 
-        if (shortcut != null && _shortcutHandlers.TryGetValue(shortcut.Key, out var handler))
+        if (shortcut != null && _shortcutHandlers.TryGetValue(shortcut.Description, out var handler))
         {
             await handler.InvokeAsync();
         }

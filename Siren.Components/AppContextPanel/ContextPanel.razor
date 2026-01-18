@@ -239,4 +239,16 @@
         var dialog = await DialogService.ShowAsync<AboutSiren>("About", options);
         var result = await dialog.Result;
     }
+
+    public async Task OpenHistoryPanel() => await OpenPanel("History");
+    public async Task OpenCollectionsPanel() => await OpenPanel("Collections");
+    public async Task OpenVariablesPanel() => await OpenPanel("Variables");
+
+    private async Task OpenPanel(string panelName)
+    {
+        if (_contextPanelItems.TryGetValue(panelName, out var item))
+        {
+            await HandleContextPanelItemClicked(item);
+        }
+    }
 }
