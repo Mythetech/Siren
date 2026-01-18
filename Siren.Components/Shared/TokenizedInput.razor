@@ -6,9 +6,55 @@
         {
             @if (segment.Type == TokenSegmentType.Variable)
             {
-                <span class="token-variable" @onclick="() => HandleTokenClick(segment)" @onclick:stopPropagation="true">
-                    <span class="token-bracket">{{</span><span class="token-name">@segment.VariableName</span><span class="token-bracket">}}</span>
-                </span>
+                @if (VariableInfoProvider != null)
+                {
+                    var info = VariableInfoProvider(segment.VariableName);
+                    <MudMenu Dense="true" ListClass="rounded pa-1"
+                             AnchorOrigin="Origin.BottomLeft"
+                             TransformOrigin="Origin.TopLeft">
+                        <ActivatorContent>
+                            <span class="token-variable">
+                                <span class="token-bracket">{{</span><span class="token-name">@segment.VariableName</span><span class="token-bracket">}}</span>
+                            </span>
+                        </ActivatorContent>
+                        <ChildContent>
+                            <div class="pa-2" style="min-width: 200px;">
+                                <SirenText Typo="Typo.caption" Class="mud-text-secondary">Variable</SirenText>
+                                <SirenText Typo="Typo.body2" Class="mb-2">@($"{{{{{info?.Key}}}}}")</SirenText>
+                                @if (info?.IsFound == true)
+                                {
+                                    <SirenText Typo="Typo.caption" Class="mud-text-secondary">Value</SirenText>
+                                    <SirenText Typo="Typo.body2" Class="mb-2">@info.Value</SirenText>
+                                    <SirenText Typo="Typo.caption" Class="mud-text-secondary">Source</SirenText>
+                                    <SirenStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                                        <SirenText Typo="Typo.body2">@info.Group</SirenText>
+                                        @if (info.IsSecret)
+                                        {
+                                            <Badge Size="Size.Small" Color="Color.Warning" Icon="@SirenIcons.Key">Secret</Badge>
+                                        }
+                                        else if (info.IsDynamic)
+                                        {
+                                            <Badge Size="Size.Small" Color="Color.Info">Dynamic</Badge>
+                                        }
+                                    </SirenStack>
+                                }
+                                else
+                                {
+                                    <SirenStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="mud-text-warning">
+                                        <MudIcon Icon="@Icons.Material.Filled.Warning" Size="Size.Small" />
+                                        <SirenText Typo="Typo.body2">Not defined in current environment</SirenText>
+                                    </SirenStack>
+                                }
+                            </div>
+                        </ChildContent>
+                    </MudMenu>
+                }
+                else
+                {
+                    <span class="token-variable" @onclick="() => HandleTokenClick(segment)" @onclick:stopPropagation="true">
+                        <span class="token-bracket">{{</span><span class="token-name">@segment.VariableName</span><span class="token-bracket">}}</span>
+                    </span>
+                }
             }
             else
             {
@@ -47,6 +93,9 @@
 
     [Parameter]
     public EventCallback<TokenSegment> TokenClicked { get; set; }
+
+    [Parameter]
+    public Func<string?, VariableDisplayInfo?>? VariableInfoProvider { get; set; }
 
     protected override void OnParametersSet()
     {
@@ -127,4 +176,13 @@
     public record TokenSegment(string Text, TokenSegmentType Type, string? VariableName);
 
     public enum TokenSegmentType { Text, Variable }
+
+    public record VariableDisplayInfo(
+        string Key,
+        string? Value,
+        string? Group,
+        bool IsSecret,
+        bool IsDynamic,
+        bool IsFound
+    );
 }

@@ -21,7 +21,8 @@
                     Value="@AppState?.Active?.Request?.RequestUri"
                     Class="http-request-input"
                     @ref="_requestUriInput"
-                    ValueChanged="UpdateRequestUri" />
+                    ValueChanged="UpdateRequestUri"
+                    VariableInfoProvider="GetVariableInfo" />
 
                 <MudButton OnClick="@OnSendClicked" Variant="Variant.Text"
                     Color="@(Loading? Color.Dark: Color.Inherit)" Class="send-request-button">
@@ -131,6 +132,8 @@
     [Inject] public IDialogService DialogService { get; set; } = default!;
 
     [Inject] public RequestAuthenticationState AuthState { get; set; } = default!;
+
+    [Inject] public IVariableService VariableService { get; set; } = default!;
 
     [Parameter] public bool Loading { get; set; } = false;
 
@@ -511,6 +514,36 @@
             "HEAD" => "#009688",
             _ => "var(--mud-palette-surface)",
         };
+    }
+
+    private TokenizedInput.VariableDisplayInfo? GetVariableInfo(string? variableName)
+    {
+        if (string.IsNullOrEmpty(variableName)) return null;
+
+        var variables = VariableService.GetVariables();
+        var env = AppState.ActiveEnvironment;
+
+        // Find variable matching key and environment (or Global)
+        var variable = variables
+            .Where(v => v.Key.Equals(variableName, StringComparison.OrdinalIgnoreCase))
+            .Where(v => v.Group == env || v.Group == VariableGroups.SystemGroup || string.IsNullOrEmpty(env))
+            .OrderByDescending(v => v.Group == env) // Prefer env-specific
+            .FirstOrDefault();
+
+        if (variable == null)
+            return new TokenizedInput.VariableDisplayInfo(variableName, null, null, false, false, IsFound: false);
+
+        var isDynamic = variable.Value.StartsWith('$');
+        var isSecret = variable.Secret || variable.Value.StartsWith("$secret:", StringComparison.OrdinalIgnoreCase);
+
+        return new TokenizedInput.VariableDisplayInfo(
+            variable.Key,
+            isSecret ? "********" : variable.Value,
+            variable.Group,
+            isSecret,
+            isDynamic,
+            IsFound: true
+        );
     }
 
 }
