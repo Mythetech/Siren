@@ -294,7 +294,6 @@
         var contentType = "application/json";
         HttpContent? content = null;
 
-        // Track any variable resolution errors
         var resolutionErrors = new List<string>();
 
         if (bodyType == "form-data")
@@ -316,7 +315,6 @@
         {
             var multipartContent = new MultipartFormDataContent();
 
-            // Add form fields
             var formData = active.Request?.FormData ?? new Dictionary<string, string>();
             foreach (var kvp in formData)
             {
@@ -327,7 +325,6 @@
                 multipartContent.Add(new StringContent(valueResult.Value), keyResult.Value);
             }
 
-            // Add file attachments
             var attachments = active.Request?.BinaryAttachments ?? new List<BinaryAttachment>();
             foreach (var attachment in attachments)
             {
