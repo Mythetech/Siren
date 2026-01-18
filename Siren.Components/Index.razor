@@ -61,7 +61,7 @@
             <SirenIconButton Tooltip="Cookies" Icon="@SirenIcons.Cookies" OnClick="@(() => ToggleSidePanel("Cookies"))" />
         </MudStack>
     }
-    <KeyboardShortcuts OnRunRequest="HandleSendClicked" OnNewTab="HandleNewTab" OnFocusUri="HandleFocusUri" />
+    <KeyboardShortcuts OnRunRequest="HandleSendClicked" OnNewTab="HandleNewTab" OnFocusUri="HandleFocusUri" OnFocusMethod="HandleFocusMethod" />
 </MudStack>
 
 @code {
@@ -241,6 +241,14 @@
         if (_requestPanel != null)
         {
             await _requestPanel.FocusUriInputAsync();
+        }
+    }
+
+    protected async Task HandleFocusMethod()
+    {
+        if (_requestPanel != null)
+        {
+            await _requestPanel.FocusHttpMethodDropdownAsync();
         }
     }
 

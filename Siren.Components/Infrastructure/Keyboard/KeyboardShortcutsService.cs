@@ -27,6 +27,11 @@ namespace Siren.Components.Infrastructure.Keyboard
                     Description: "Open settings",
                     Key: KeyCode.KeyS,
                     RequiresCtrl: true
+                ),
+                new KeyboardShortcut(
+                    Description: "Focus HTTP method",
+                    Key: KeyCode.KeyM,
+                    RequiresCtrl: true
                 )
             }.AsReadOnly();
         }
