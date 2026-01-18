@@ -20,10 +20,13 @@
                 </ChildContent>
             </Tab>
         </SimpleTabs>
-        <MudTooltip Text="Close" RootClass="absolute mt-n2" RootStyle="right:0">
-            <MudIconButton Icon="@SirenIcons.Close" Color="Color.Surface" Variant="Variant.Text"
-                OnClick="@PanelClosed" />
-        </MudTooltip>
+        @if (IsOpen)
+        {
+            <MudTooltip Text="Close" RootClass="absolute mt-n2" RootStyle="right:0">
+                <MudIconButton Icon="@SirenIcons.Close" Color="Color.Surface" Variant="Variant.Text"
+                    OnClick="@PanelClosed" />
+            </MudTooltip>
+        }
     </SirenStack>
     @if (string.IsNullOrWhiteSpace(_openTab))
     {

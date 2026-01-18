@@ -12,7 +12,7 @@ using Siren.Components.Collections.Commands;
 using Siren.Components.Collections.Consumers;
 using Siren.Components.Http.Models;
 using Siren.Components.Shared.Dialogs.Commands;
-using Siren.Components.Shared.Notifications.Commands;
+using AddNotification = Mythetech.Framework.Infrastructure.Commands.AddNotification;
 
 namespace Siren.Test.Collections
 {

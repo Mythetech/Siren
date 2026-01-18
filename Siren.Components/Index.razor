@@ -46,7 +46,7 @@
         <FluentMultiSplitterPane Id="request-context-panel" Collapsed="@sidePanelClosed" Collapsible="true"
             Size="@(!sidePanelClosed ? "20%" :"12%")" Min="50px" Max="50%">
             <MudPaper Height="100%" Width="100%">
-                <RequestContextPanel @ref="_requestContextPanel" PanelClosed="@(() => ToggleSidePanel())" /> 
+                <RequestContextPanel @ref="_requestContextPanel" IsOpen="@(!sidePanelClosed)" PanelClosed="@(() => ToggleSidePanel())" /> 
             </MudPaper>
         </FluentMultiSplitterPane>
     </FluentMultiSplitter>

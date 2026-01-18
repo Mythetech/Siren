@@ -16,7 +16,10 @@
 @using Mythetech.Framework.Infrastructure.Plugins.Components
 @using Mythetech.Framework.Components.Secrets
 @using Mythetech.Framework.Infrastructure.Files
+@using Mythetech.Framework.Desktop.Updates
+@using Mythetech.Framework.Desktop.Updates.Events
 @implements IDisposable
+@implements IConsumer<UpdateAvailable>
 
 <SirenStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
     <MudMenu ActivationEvent="MouseEvent.MouseOver" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft"
@@ -144,6 +147,16 @@
             }
         </ChildContent>
     </MudMenu>
+
+    @if (UpdateService.AvailableUpdate is not null)
+    {
+        <MudBadge Color="Color.Primary" Dot="true" Overlap="true">
+            <MudIconButton Icon="@Icons.Material.Filled.SystemUpdate"
+                           OnClick="HandleOpenUpdates"
+                           Size="Size.Small"
+                           Title="@($"Update available: v{UpdateService.AvailableUpdate.TargetVersion}")" />
+        </MudBadge>
+    }
 </SirenStack>
 
 @code {
@@ -186,6 +199,8 @@
 
     [Inject] protected ICurlGenerator CurlGenerator { get; set; } = default!;
 
+    [Inject] protected IUpdateService UpdateService { get; set; } = default!;
+
     private List<string> AvailableEnvironments = new();
 
     protected override void OnInitialized()
@@ -195,6 +210,7 @@
         VariableState.StateChanged += HandleStateChanged;
         PluginState.StateChanged += HandlePluginStateChanged;
         Settings.SettingsChanged += HandleSettingsStateChanged;
+        MessageBus.Subscribe<UpdateAvailable>(this);
     }
 
     private void HandleSettingsStateChanged(SettingsState s) => StateHasChanged();
@@ -223,6 +239,24 @@
         VariableState.StateChanged -= HandleStateChanged;
         PluginState.StateChanged -= HandlePluginStateChanged;
         Settings.SettingsChanged -= HandleSettingsStateChanged;
+        MessageBus.Unsubscribe<UpdateAvailable>(this);
+    }
+
+    Task IConsumer<UpdateAvailable>.Consume(UpdateAvailable message)
+    {
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandleOpenUpdates()
+    {
+        var options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            BackgroundClass = "siren-dialog",
+            MaxWidth = MaxWidth.Large
+        };
+
+        await DialogService.ShowAsync<SettingsDialog>("Settings", options);
     }
 
     private void HandleNewRequest()

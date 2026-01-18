@@ -4,7 +4,7 @@ using MudBlazor;
 using Mythetech.Framework.Infrastructure.Files;
 using Mythetech.Framework.Infrastructure.MessageBus;
 using Siren.Components.Http.Commands;
-using Siren.Components.Shared.Notifications.Commands;
+using Mythetech.Framework.Infrastructure.Commands;
 
 namespace Siren.Components.Http.Consumers
 {

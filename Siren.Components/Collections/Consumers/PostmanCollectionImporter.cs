@@ -6,7 +6,7 @@ using Mythetech.Framework.Infrastructure.MessageBus;
 using Siren.Components.Collections.Commands;
 using Siren.Components.Http.Models;
 using Siren.Components.Shared.Dialogs.Commands;
-using Siren.Components.Shared.Notifications.Commands;
+using Mythetech.Framework.Infrastructure.Commands;
 
 namespace Siren.Components.Collections.Consumers
 {
@@ -74,7 +74,7 @@ namespace Siren.Components.Collections.Consumers
                 var parameters = new DialogParameters();
                 parameters.Add("Collection", collection);
 
-                await _bus.PublishAsync(new ShowDialog(typeof(CollectionImportDialog), "Import Postman Collection", options, parameters));
+                await _bus.PublishAsync(new Siren.Components.Shared.Dialogs.Commands.ShowDialog(typeof(CollectionImportDialog), "Import Postman Collection", options, parameters));
             }
             catch (Exception ex)
             {
