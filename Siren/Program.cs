@@ -95,7 +95,7 @@ namespace Siren
             app.Services.UseMessageBus(typeof(App).Assembly);
 
             app.Services
-                .RegisterSettingsFromAssemblies(typeof(App).Assembly, typeof(SettingsBase).Assembly)
+                .RegisterSettingsFromAssemblies(typeof(App).Assembly, typeof(DesktopHost).Assembly, typeof(SettingsBase).Assembly)
                 .UseSettingsFramework();
 
             await SettingsMigration.MigrateIfNeededAsync(app.Services);
