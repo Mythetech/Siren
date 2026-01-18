@@ -12,7 +12,7 @@ public class ResponseSettings : SettingsBase
     public override string SettingsId => "Response";
     public override string DisplayName => "Display";
     public override string Icon => SirenIcons.Preview;
-    public override int Order => 20;
+    public override int Order => 16;
 
     [Setting(Label = "Time Display",
         Group = "Response",

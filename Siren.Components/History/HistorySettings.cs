@@ -12,7 +12,7 @@ public class HistorySettings : SettingsBase
     public override string SettingsId => "History";
     public override string DisplayName => "Storage";
     public override string Icon => SirenIcons.AppData;
-    public override int Order => 30;
+    public override int Order => 15;
 
     /// <summary>
     /// Adds the delete app data button after the settings.
