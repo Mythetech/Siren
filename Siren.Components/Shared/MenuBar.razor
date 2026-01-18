@@ -18,6 +18,7 @@
 @using Mythetech.Framework.Infrastructure.Files
 @using Mythetech.Framework.Desktop.Updates
 @using Mythetech.Framework.Desktop.Updates.Events
+@using Mythetech.Framework.Desktop.Updates.Components
 @implements IDisposable
 @implements IConsumer<UpdateAvailable>
 
@@ -151,10 +152,10 @@
     @if (UpdateService.AvailableUpdate is not null)
     {
         <MudBadge Color="Color.Primary" Dot="true" Overlap="true">
-            <MudIconButton Icon="@Icons.Material.Filled.SystemUpdate"
+            <SirenIconButton Icon="@Icons.Material.Filled.SystemUpdate"
                            OnClick="HandleOpenUpdates"
                            Size="Size.Small"
-                           Title="@($"Update available: v{UpdateService.AvailableUpdate.TargetVersion}")" />
+                           Tooltip="@($"Update available: v{UpdateService.AvailableUpdate.TargetVersion}")" />
         </MudBadge>
     }
 </SirenStack>
@@ -253,10 +254,10 @@
         {
             CloseOnEscapeKey = true,
             BackgroundClass = "siren-dialog",
-            MaxWidth = MaxWidth.Large
+            MaxWidth = MaxWidth.Medium
         };
 
-        await DialogService.ShowAsync<SettingsDialog>("Settings", options);
+        await DialogService.ShowAsync<UpdateProgressDialog>("Update Available", options);
     }
 
     private void HandleNewRequest()
