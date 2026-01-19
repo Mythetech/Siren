@@ -5,11 +5,11 @@ Siren is an open source cross-platform desktop http testing application built wi
 
 [![MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-<img width="1728" alt="Siren Light Mode" src="https://github.com/user-attachments/assets/89c4ef7b-517e-41b2-a505-1b4aa57c33a3" />
+<img width="1728" height="1052" alt="Siren" src="https://github.com/user-attachments/assets/f97287a8-03b2-40b5-a48f-580ef56638da" />
 
 ---
 
-<img width="1728" alt="Siren Dark Mode" src="https://github.com/user-attachments/assets/85c0f7cf-a99f-4777-a51a-acbd47d2608a" />
+<img width="1728" height="1052" alt="Siren Dark Mode" src="https://github.com/user-attachments/assets/2d305365-176e-4153-adf2-c7c18cbe465e" />
 
 
 ## Features
@@ -83,3 +83,4 @@ Please see our [Roadmap](Roadmap.md) for details
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. 
+
