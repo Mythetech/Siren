@@ -90,7 +90,7 @@
         OnClick="@DrawerToggled" />
 </SirenStack>
 
-<MudStack Class="p-0 mud-width-full" Style="@($"{(!AppState.SideBarOpen ? "width:0px;" : "")}")">
+<MudStack Class="p-0 mud-width-full" Style="@($"overflow:hidden;transition:width 0.2s ease;{(!AppState.SideBarOpen ? "width:0px;" : "")}")">
     <MudPaper Class="h-100 w-100"
         Style="@($"max-width:calc(var(--mud-drawer-width-left) - var(--mud-drawer-width-mini-left));max-height:100dvh")"
         Square="true">

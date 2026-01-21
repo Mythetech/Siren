@@ -92,13 +92,18 @@ namespace Siren
 
             appBuilder.Services.AddMessageBus(typeof(App).Assembly);
 
+            // Settings framework registration (new DI-friendly API)
+            appBuilder.Services.AddSettingsFramework();
+            appBuilder.Services.RegisterSettingsFromAssemblies(
+                typeof(App).Assembly,
+                typeof(DesktopHost).Assembly,
+                typeof(SettingsBase).Assembly);
+
             var app = appBuilder.Build();
 
             app.Services.UseMessageBus(typeof(App).Assembly);
 
-            app.Services
-                .RegisterSettingsFromAssemblies(typeof(App).Assembly, typeof(DesktopHost).Assembly, typeof(SettingsBase).Assembly)
-                .UseSettingsFramework();
+            app.Services.UseSettingsFramework();
 
             await SettingsMigration.MigrateIfNeededAsync(app.Services);
             await app.Services.LoadPersistedSettingsAsync();
@@ -107,7 +112,7 @@ namespace Siren
 
             app.Services.UseSecretManager();
 
-            app.Services.UsePlugins();
+            app.Services.UsePluginFramework();
 
             app.MainWindow
                 .SetSize(1920, 1080)
@@ -148,17 +153,15 @@ namespace Siren
             });
             services.AddMcpTools(typeof(McpServiceExtensions).Assembly);
 
+            // Settings framework registration (new DI-friendly API)
+            services.AddSettingsFramework();
+            services.RegisterSettingsFromAssembly(typeof(HttpSettings).Assembly);
+
             var serviceProvider = services.BuildServiceProvider();
 
             serviceProvider.UseMessageBus();
 
-            serviceProvider
-                .RegisterSettings<HttpSettings>()
-                .RegisterSettings<ResponseSettings>()
-                .RegisterSettings<HistorySettings>()
-                .RegisterSettings<EnvironmentSettings>()
-                .RegisterSettings<PluginSettings>()
-                .UseSettingsFramework();
+            serviceProvider.UseSettingsFramework();
 
             await SettingsMigration.MigrateIfNeededAsync(serviceProvider);
             await serviceProvider.LoadPersistedSettingsAsync();

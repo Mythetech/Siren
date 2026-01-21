@@ -17,6 +17,7 @@
 @using Microsoft.Extensions.Logging
 @using Mythetech.Framework.Infrastructure
 @using Mythetech.Framework.Infrastructure.Plugins
+@using Mythetech.Framework.Infrastructure.Settings
 @using Microsoft.AspNetCore.Components.Routing
 @using MouseEvent = MudBlazor.MouseEvent
 @inject NavigationManager NavigationManager
@@ -104,6 +105,8 @@
 
     [Inject] protected ILogger<MainLayout> Logger { get; set; } = default!;
 
+    [Inject] protected ISettingsProvider SettingsProvider { get; set; } = default!;
+
     private Func<string> GetWidth => () => AppState.SideBarOpen ? "74vw" : "calc(100vw - 52px)";
 
     private bool IsOnHomePage => NavigationManager.Uri == NavigationManager.BaseUri
@@ -118,6 +121,8 @@
     public bool _isDarkMode = false;
     
     private bool _assetsLoaded = false;
+
+    private bool _pluginLoadingStarted = false;
 
     private string _backgroundColor => (!AppState.IsDarkMode ? $"background-color:{_theme.Theme.PaletteLight.OverlayLight}"
     : $"background-color:{_theme.Theme.PaletteDark.Black}");
@@ -163,8 +168,15 @@
                 _hasRestoredEnvironment = true;
             }
         }
-        
-        if (firstRender || !_assetsLoaded)
+
+        // Initialize plugins on first render (deferred from Program.cs)
+        if (firstRender && !_pluginLoadingStarted && !PluginState.PluginsLoaded)
+        {
+            _pluginLoadingStarted = true;
+            await InitializePluginsAsync();
+        }
+
+        if (!_assetsLoaded)
         {
             await LoadAllPluginAssetsAsync();
             _assetsLoaded = true;
@@ -277,6 +289,28 @@
         foreach (var plugin in PluginState.EnabledPlugins)
         {
             await PluginLoader.LoadPluginAssetsAsync(plugin);
+        }
+    }
+
+    private async Task InitializePluginsAsync()
+    {
+        try
+        {
+            var pluginSettings = SettingsProvider.GetSettings<PluginSettings>();
+            string? pluginDirectory = null;
+
+            if (!string.IsNullOrWhiteSpace(pluginSettings?.CustomPluginDirectory)
+                && Directory.Exists(pluginSettings.CustomPluginDirectory))
+            {
+                pluginDirectory = pluginSettings.CustomPluginDirectory;
+            }
+
+            await PluginState.InitializePluginsAsync(pluginDirectory);
+            await PluginState.LoadStateAsync();
+        }
+        catch
+        {
+            // Silently handle errors - plugin loading is optional
         }
     }
 
