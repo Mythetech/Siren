@@ -7,6 +7,7 @@
            T="string" 
            Label="@Label" 
            Placeholder="@Placeholder"
+           Variant="@Variant"
            Value="selectedMethod" 
            ValueChanged="@(async (s) => { selectedMethod = s; await SelectedMethodChanged.InvokeAsync(s); })" 
            Style="@($"color:{GetColor(selectedMethod)};width:140px;")">
@@ -38,6 +39,8 @@
 
     [Parameter]
     public string Placeholder { get; set; } = "";
+
+    [Parameter] public Variant Variant { get; set; } = Variant.Text;
 
     [Parameter]
     public string? SelectedMethod 

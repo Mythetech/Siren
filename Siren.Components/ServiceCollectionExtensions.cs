@@ -8,6 +8,7 @@ using Mythetech.Framework.Infrastructure.Settings;
 using Siren.Components.Collections;
 using Siren.Components.Configuration;
 using Siren.Components.History;
+using Siren.Components.MockServer;
 using Siren.Components.RequestContextPanel.Authentication;
 using Siren.Components.Services;
 using Siren.Components.Settings;
@@ -18,11 +19,12 @@ namespace Siren.Components;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddSirenComponents<THistoryService, TCollectionsService, TVariablesService, TAppDataService>(this IServiceCollection services)
+    public static IServiceCollection AddSirenComponents<THistoryService, TCollectionsService, TVariablesService, TAppDataService, TMockServerService>(this IServiceCollection services)
         where THistoryService : class, IHistoryService
         where TCollectionsService : class, ICollectionsService
         where TVariablesService : class, IVariableService
         where TAppDataService : class, IAppDataService
+        where TMockServerService : class, IMockServerService
     {
         services.AddMudServices(config =>
         {
@@ -87,6 +89,10 @@ public static class ServiceCollectionExtensions
             var settingsProvider = sp.GetRequiredService<ISettingsProvider>();
             return settingsProvider.GetSettings<SessionStatsSettings>()!;
         });
+
+        // Mock server
+        services.AddSingleton<IMockServerService, TMockServerService>();
+        services.AddSingleton<MockServerState>();
 
         return services;
     }

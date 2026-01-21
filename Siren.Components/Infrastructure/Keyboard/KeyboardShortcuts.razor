@@ -30,6 +30,12 @@
     [Parameter]
     public EventCallback OnOpenVariables { get; set; }
 
+    [Parameter]
+    public EventCallback OnGoToRequests { get; set; }
+
+    [Parameter]
+    public EventCallback OnGoToMockServer { get; set; }
+
     private Dictionary<string, EventCallback> _shortcutHandlers = new();
 
     protected override void OnInitialized()
@@ -48,6 +54,8 @@
                 "Open history panel" => OnOpenHistory,
                 "Open collections panel" => OnOpenCollections,
                 "Open variables panel" => OnOpenVariables,
+                "Go to requests page" => OnGoToRequests,
+                "Go to mock server page" => OnGoToMockServer,
                 _ => default
             };
         }

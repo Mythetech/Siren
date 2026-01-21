@@ -1,4 +1,6 @@
 ﻿@using Siren.Components.Http.Models
+@using Siren.Components.MockServer
+@using Siren.Components.MockServer.Models
 
 <SirenStack Row="true" Spacing="3" Class="w-100 px-4">
     <SirenClearableTextField Input="@_searchString"
@@ -41,6 +43,7 @@ else
                 <SirenIconButton Style="display:none;" Class="hover-visible" Tooltip="Edit" Size="@Size.Small" OnClick="@(async () => await EditRequested.InvokeAsync(new CollectionDetailPanelEventArgs(Collection.Id, req)))" Icon="@SirenIcons.Edit" />
                 <SirenIconButton Style="display:none;" Class="hover-visible" Tooltip="Copy uri" Size="@Size.Small" OnClick="@(async () => await HandleCopy(req))" Icon="@SirenIcons.Copy" />
                 <SirenIconButton Style="display:none;" Class="hover-visible" Tooltip="Load request" Size="@Size.Small" OnClick="@(() => LoadRequest(req))" Icon="@SirenIcons.Load" />
+                <SirenIconButton Style="display:none;" Class="hover-visible" Tooltip="Create mock endpoint" Size="@Size.Small" OnClick="@(() => CreateMockFromRequest(req))" Icon="@SirenIcons.MockServer" />
 
             </SirenStack>
         }
@@ -92,6 +95,12 @@ else
     [Inject]
     public IJsApiService JsApiService { get; set; } = default!;
 
+    [Inject]
+    public MockServerState MockServerState { get; set; } = default!;
+
+    [Inject]
+    public NavigationManager NavigationManager { get; set; } = default!;
+
     private string? _searchString = "";
 
     protected void LoadRequest(HttpRequest req)
@@ -137,6 +146,51 @@ else
         {
             opts.VisibleStateDuration = 2000;
         });
+    }
+
+    private void CreateMockFromRequest(HttpRequest req)
+    {
+        // Get or create a configuration
+        var config = MockServerState.ActiveConfiguration
+            ?? MockServerState.Configurations.FirstOrDefault();
+
+        if (config == null)
+        {
+            config = MockServerState.CreateConfiguration("Mock Server");
+        }
+
+        // Create the endpoint from the request
+        string path = "/api/endpoint";
+        try
+        {
+            var uri = new Uri(req.RequestUri);
+            path = uri.AbsolutePath;
+        }
+        catch
+        {
+            // Use default path if URI parsing fails
+        }
+
+        var endpoint = new MockEndpoint
+        {
+            Name = $"From collection: {req.DisplayUri ?? req.RequestUri}",
+            Method = req.Method.Method,
+            RoutePattern = path,
+            SourceRequestId = req.Id,
+            Response = new MockResponse
+            {
+                StatusCode = 200,
+                Body = "{\n  \n}",
+                Headers = new Dictionary<string, string> { ["Content-Type"] = "application/json" }
+            }
+        };
+
+        MockServerState.AddEndpoint(config.Id, endpoint);
+
+        Snackbar.Add("Mock endpoint created", Severity.Success);
+
+        // Navigate to the configuration edit page
+        NavigationManager.NavigateTo($"/mock-server/{config.Id}");
     }
 }
 

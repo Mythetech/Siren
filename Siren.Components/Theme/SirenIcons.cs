@@ -127,5 +127,17 @@ namespace Siren.Components.Theme
         public static string Trending => Round("trending_up");
 
         public static string Stats => Round("leaderboard");
+
+        public static string MockServer => Round("dns");
+
+        public static string Home => Round("home");
+
+        public static string Play => Round("play_arrow");
+
+        public static string Stop => Round("stop");
+
+        public static string Pause => Round("pause");
+
+        public static string Save => Round("save");
     }
 }

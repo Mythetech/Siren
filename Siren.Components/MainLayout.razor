@@ -17,7 +17,9 @@
 @using Microsoft.Extensions.Logging
 @using Mythetech.Framework.Infrastructure
 @using Mythetech.Framework.Infrastructure.Plugins
+@using Microsoft.AspNetCore.Components.Routing
 @using MouseEvent = MudBlazor.MouseEvent
+@inject NavigationManager NavigationManager
 @implements IDisposable
 
 <MudThemeProvider @ref="_theme" @bind-IsDarkMode="@AppState.IsDarkMode" Theme="@Theme" />
@@ -32,7 +34,11 @@
 <MudLayout>
     <MudAppBar Class="pl-4"
         Style="border-bottom-left-radius:3em;box-shadow:1px 1px 4px 0px var(--mud-palette-primary);border-bottom-right-radius:1.5em;">
-        <SirenStack Row="true" Class="w-100" AlignItems="@AlignItems.Center" Spacing="6">
+        <SirenStack Row="true" Class="w-100" AlignItems="@AlignItems.Center" Spacing="3">
+            <MudTooltip Text="Back to Requests" Disabled="@IsOnHomePage">
+                <MudIconButton Icon="@SirenIcons.Home" Color="Color.Secondary" Class="mb-1"
+                    Disabled="@IsOnHomePage" OnClick="NavigateToHome" />
+            </MudTooltip>
             <MudMenu ActivationEvent="MouseEvent.MouseOver" AnchorOrigin="Origin.BottomLeft"
                 TransformOrigin="Origin.TopLeft" Dense="true" ListClass="pa-1">
                 <ActivatorContent>
@@ -40,10 +46,8 @@
                 </ActivatorContent>
                 <ChildContent>
                     <MudMenuItem Class="rounded" Icon="@SirenIcons.About" OnClick="OpenAboutSiren">About</MudMenuItem>
-                    <MudMenuItem Class="rounded" Icon="@SirenIcons.Settings" OnClick="OpenSettingsDialog">Settings
-                    </MudMenuItem>
-                    <MudMenuItem Class="rounded" Icon="@SirenIcons.Bug" OnClick="OpenReportIssue">Report Issue
-                    </MudMenuItem>
+                    <MudMenuItem Class="rounded" Icon="@SirenIcons.Settings" OnClick="OpenSettingsDialog">Settings</MudMenuItem>
+                    <MudMenuItem Class="rounded" Icon="@SirenIcons.Bug" OnClick="OpenReportIssue">Report Issue</MudMenuItem>
                 </ChildContent>
             </MudMenu>
             <MenuBar />
@@ -66,7 +70,9 @@
     <KeyboardShortcuts OnOpenSettings="OpenSettingsDialog"
         OnOpenHistory="@(() => _contextPanel?.OpenHistoryPanel())"
         OnOpenCollections="@(() => _contextPanel?.OpenCollectionsPanel())"
-        OnOpenVariables="@(() => _contextPanel?.OpenVariablesPanel())" />
+        OnOpenVariables="@(() => _contextPanel?.OpenVariablesPanel())"
+        OnGoToRequests="NavigateToHome"
+        OnGoToMockServer="NavigateToMockServer" />
 </MudLayout>
 
 
@@ -100,6 +106,11 @@
 
     private Func<string> GetWidth => () => AppState.SideBarOpen ? "74vw" : "calc(100vw - 52px)";
 
+    private bool IsOnHomePage => NavigationManager.Uri == NavigationManager.BaseUri
+        || NavigationManager.ToBaseRelativePath(NavigationManager.Uri) == ""
+        || NavigationManager.ToBaseRelativePath(NavigationManager.Uri) == "/"
+        || NavigationManager.ToBaseRelativePath(NavigationManager.Uri) == "index";
+
     protected MudThemeProvider _theme { get; set; } = default!;
 
     private ContextPanel? _contextPanel;
@@ -123,6 +134,12 @@
         AppState.OnActiveEnvironmentChanged += HandleActiveEnvironmentChanged;
         VariableState.StateChanged += HandleVariableStateChanged;
         PluginState.StateChanged += OnPluginStateChanged;
+        NavigationManager.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        StateHasChanged();
     }
 
     protected override void OnAfterRender(bool firstRender)
@@ -269,6 +286,15 @@
         InvokeAsync(StateHasChanged);
     }
 
+    private void NavigateToHome()
+    {
+        NavigationManager.NavigateTo("/");
+    }
+
+    private void NavigateToMockServer()
+    {
+        NavigationManager.NavigateTo("/mock-server");
+    }
 
     public void Dispose()
     {
@@ -276,6 +302,7 @@
         AppState.OnActiveEnvironmentChanged -= HandleActiveEnvironmentChanged;
         VariableState.StateChanged -= HandleVariableStateChanged;
         PluginState.StateChanged -= OnPluginStateChanged;
+        NavigationManager.LocationChanged -= OnLocationChanged;
     }
 
 }

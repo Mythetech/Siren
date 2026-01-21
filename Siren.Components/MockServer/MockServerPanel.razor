@@ -1,0 +1,246 @@
+@using MudBlazor
+@using Siren.Components.MockServer.Models
+@using Siren.Components.Theme
+@using Siren.Components.Shared
+@using Siren.Components.Http
+@implements IDisposable
+
+<SirenStack Class="pa-2 w-100 h-100" Spacing="0">
+    @if (!MockServerState.Configurations.Any())
+    {
+        <!-- Empty State -->
+        <SirenStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="w-100 h-100">
+            <MudIcon Icon="@SirenIcons.MockServer" Size="Size.Large" Class="mud-text-secondary mb-2" />
+            <MudText Typo="Typo.body2" Align="MudBlazor.Align.Center" Class="mud-text-secondary mb-3">
+                No mock servers configured
+            </MudText>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
+                       StartIcon="@SirenIcons.Add" OnClick="CreateConfiguration">
+                Create
+            </MudButton>
+        </SirenStack>
+    }
+    else
+    {
+        <!-- Configuration Selector -->
+        <MudSelect T="Guid?" Value="@_selectedConfigId" ValueChanged="OnConfigurationSelected"
+                   Label="Configuration" Variant="Variant.Outlined" Dense="true" Margin="Margin.Dense"
+                   FullWidth="true" Class="mb-3" OuterClass="max-h-40">
+            @foreach (var config in MockServerState.Configurations)
+            {
+                <MudSelectItem T="Guid?" Value="@config.Id">
+                    @config.Name
+                </MudSelectItem>
+            }
+        </MudSelect>
+
+        @if (_selectedConfig != null)
+        {
+            <!-- Server Controls -->
+            <MudPaper Class="pa-3 mb-3 w-100" Elevation="0" Outlined="true">
+                <SirenStack Spacing="2" Class="w-100">
+                    @if (!MockServerState.IsRunning || !IsActiveConfiguration)
+                    {
+                        <MudNumericField @bind-Value="_selectedConfig.Port" Label="Port"
+                                         Variant="Variant.Outlined" Dense="true" Margin="Margin.Dense"
+                                         Min="1024" Max="65535" Class="w-100" />
+                    }
+                    else
+                    {
+                        <SirenStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="w-100">
+                            <MudIcon Icon="@SirenIcons.Network" Size="Size.Small" Color="Color.Success" />
+                            <MudText Typo="Typo.body2">@MockServerState.BaseUrl</MudText>
+                            <SirenSpacer />
+                            <MudIconButton Icon="@SirenIcons.Copy" Size="Size.Small"
+                                           OnClick="CopyUrl" />
+                        </SirenStack>
+                    }
+
+                    @if (MockServerState.IsRunning && IsActiveConfiguration)
+                    {
+                        <MudButton Variant="Variant.Filled" Color="Color.Error"
+                                   StartIcon="@SirenIcons.Stop" FullWidth="true"
+                                   OnClick="StopServer">
+                            Stop Server
+                        </MudButton>
+                    }
+                    else
+                    {
+                        <MudButton Variant="Variant.Filled" Color="Color.Success"
+                                   StartIcon="@SirenIcons.Play" FullWidth="true"
+                                   OnClick="StartServer"
+                                   Disabled="@(MockServerState.IsRunning && !IsActiveConfiguration)">
+                            Start Server
+                        </MudButton>
+                    }
+                </SirenStack>
+            </MudPaper>
+
+            <!-- Endpoints -->
+            <SirenStack Row="true" AlignItems="AlignItems.Center" Class="w-100 mb-2">
+                <MudText Typo="Typo.subtitle2">Endpoints</MudText>
+                <SirenSpacer />
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">
+                    @_selectedConfig.EndpointCount
+                </MudText>
+            </SirenStack>
+
+            @if (_selectedConfig.Endpoints.Any())
+            {
+                <div class="w-100" style="flex: 1; overflow-y: auto; max-height: 250px;">
+                    <MudList T="MockEndpoint" Dense="true">
+                        @foreach (var endpoint in _selectedConfig.Endpoints.Take(10))
+                        {
+                            <MudListItem T="MockEndpoint" Dense="true" Class="rounded pa-1">
+                                <SirenStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                    <HttpMethodChip Method="@(new HttpMethod(endpoint.Method))" />
+                                    <MudText Typo="Typo.caption" Style="word-break: break-all;">
+                                        @TruncateRoute(endpoint.RoutePattern)
+                                    </MudText>
+                                    @if (!endpoint.IsEnabled)
+                                    {
+                                        <MudIcon Icon="@SirenIcons.Pause" Size="Size.Small"
+                                                 Class="mud-text-secondary" />
+                                    }
+                                </SirenStack>
+                            </MudListItem>
+                        }
+                        @if (_selectedConfig.EndpointCount > 10)
+                        {
+                            <MudListItem T="MockEndpoint" Dense="true" Class="rounded pa-1">
+                                <MudText Typo="Typo.caption" Class="mud-text-secondary">
+                                    +@(_selectedConfig.EndpointCount - 10) more...
+                                </MudText>
+                            </MudListItem>
+                        }
+                    </MudList>
+                </div>
+            }
+            else
+            {
+                <MudText Typo="Typo.caption" Class="mud-text-secondary" Align="MudBlazor.Align.Center">
+                    No endpoints configured
+                </MudText>
+            }
+        }
+
+        <SirenSpacer />
+
+        <!-- Open Full Page -->
+        <MudButton Variant="Variant.Text" Color="Color.Primary" FullWidth="true"
+                   EndIcon="@SirenIcons.LoadNewTab" OnClick="OpenMockServerPage">
+            Open Mock Server Page
+        </MudButton>
+    }
+</SirenStack>
+
+@code {
+    [Inject]
+    private MockServerState MockServerState { get; set; } = default!;
+
+    [Inject]
+    private NavigationManager NavigationManager { get; set; } = default!;
+
+    [Inject]
+    private ISnackbar Snackbar { get; set; } = default!;
+
+    [Inject]
+    private IJsApiService JsApi { get; set; } = default!;
+
+    private Guid? _selectedConfigId;
+    private MockServerConfiguration? _selectedConfig;
+
+    private bool IsActiveConfiguration => MockServerState.ActiveConfigurationId == _selectedConfigId;
+
+    protected override void OnInitialized()
+    {
+        MockServerState.StateChanged += OnStateChanged;
+
+        // Select first configuration or active one
+        _selectedConfigId = MockServerState.ActiveConfigurationId
+            ?? MockServerState.Configurations.FirstOrDefault()?.Id;
+
+        UpdateSelectedConfig();
+    }
+
+    private void OnStateChanged()
+    {
+        UpdateSelectedConfig();
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void UpdateSelectedConfig()
+    {
+        if (_selectedConfigId.HasValue)
+        {
+            _selectedConfig = MockServerState.GetConfiguration(_selectedConfigId.Value);
+        }
+        else
+        {
+            _selectedConfig = MockServerState.Configurations.FirstOrDefault();
+            _selectedConfigId = _selectedConfig?.Id;
+        }
+    }
+
+    private void OnConfigurationSelected(Guid? configId)
+    {
+        _selectedConfigId = configId;
+        UpdateSelectedConfig();
+    }
+
+    private void CreateConfiguration()
+    {
+        var config = MockServerState.CreateConfiguration("New Mock Server");
+        _selectedConfigId = config.Id;
+        _selectedConfig = config;
+        NavigationManager.NavigateTo($"/mock-server/{config.Id}");
+    }
+
+    private async Task StartServer()
+    {
+        if (_selectedConfig == null) return;
+
+        // Save any port changes first
+        MockServerState.SaveConfiguration(_selectedConfig);
+        await MockServerState.StartServerAsync(_selectedConfig.Id);
+
+        if (MockServerState.IsRunning)
+        {
+            Snackbar.Add($"Mock server started on port {MockServerState.ActualPort}", Severity.Success);
+        }
+        else
+        {
+            Snackbar.Add("Failed to start mock server", Severity.Error);
+        }
+    }
+
+    private async Task StopServer()
+    {
+        await MockServerState.StopServerAsync();
+        Snackbar.Add("Mock server stopped", Severity.Info);
+    }
+
+    private async Task CopyUrl()
+    {
+        if (MockServerState.BaseUrl != null)
+        {
+            await JsApi.CopyToClipboardAsync(MockServerState.BaseUrl);
+            Snackbar.Add("URL copied", Severity.Success);
+        }
+    }
+
+    private void OpenMockServerPage()
+    {
+        NavigationManager.NavigateTo("/mock-server");
+    }
+
+    private string TruncateRoute(string route)
+    {
+        return route.Length > 25 ? route[..22] + "..." : route;
+    }
+
+    public void Dispose()
+    {
+        MockServerState.StateChanged -= OnStateChanged;
+    }
+}

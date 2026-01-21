@@ -1,0 +1,283 @@
+@page "/mock-server"
+@using MudBlazor
+@using Siren.Components.MockServer.Models
+@using Siren.Components.Theme
+@using Siren.Components.Shared
+@implements IDisposable
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="py-4">
+    <SirenStack Row="true" AlignItems="AlignItems.Center" Class="mb-4">
+        <SirenStack Spacing="1">
+            <MudText Typo="Typo.h4" class="mud-text-primary">Mock Server Configurations</MudText>
+            <MudText Typo="Typo.body2" Class="mud-text-secondary">
+                Create and manage mock HTTP servers for testing and development
+            </MudText>
+        </SirenStack>
+        <SirenSpacer />
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@SirenIcons.Add"
+                   OnClick="CreateNewConfiguration">
+            New Configuration
+        </MudButton>
+    </SirenStack>
+
+    @if (!MockServerState.Configurations.Any())
+    {
+        <MudPaper Class="pa-8 text-center" Elevation="0">
+            <MudIcon Icon="@SirenIcons.MockServer" Size="Size.Large" Class="mb-4 mud-text-secondary" />
+            <MudText Typo="Typo.h6" Class="mb-2">No Mock Servers Yet</MudText>
+            <MudText Typo="Typo.body2" Class="mud-text-secondary mb-4">
+                Create your first mock server configuration to start simulating API responses.
+            </MudText>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@SirenIcons.Add"
+                       OnClick="CreateNewConfiguration">
+                Create First Configuration
+            </MudButton>
+        </MudPaper>
+    }
+    else
+    {
+        <MudGrid Spacing="3">
+            @foreach (var config in MockServerState.Configurations)
+            {
+                <MudItem xs="12" sm="6" md="4">
+                    <MudCard Elevation="2" Class="h-100 siren-card" Outlined="true">
+                        <MudCardHeader>
+                            <CardHeaderContent>
+                                <SirenStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                    <MudIcon Icon="@SirenIcons.MockServer" Color="@GetStatusColor(config)" />
+                                    <MudText Typo="Typo.h6">@config.Name</MudText>
+                                </SirenStack>
+                            </CardHeaderContent>
+                            <CardHeaderActions>
+                                <MudMenu Icon="@SirenIcons.MoreVert" Dense="true">
+                                    <MudMenuItem Icon="@SirenIcons.Edit" OnClick="@(() => EditConfiguration(config.Id))">
+                                        Edit
+                                    </MudMenuItem>
+                                    <MudMenuItem Icon="@SirenIcons.Copy" OnClick="@(() => DuplicateConfiguration(config))">
+                                        Duplicate
+                                    </MudMenuItem>
+                                    <MudDivider />
+                                    <MudMenuItem Icon="@SirenIcons.Delete" IconColor="Color.Error"
+                                                 OnClick="@(() => DeleteConfiguration(config))">
+                                        Delete
+                                    </MudMenuItem>
+                                </MudMenu>
+                            </CardHeaderActions>
+                        </MudCardHeader>
+                        <MudCardContent>
+                            <SirenStack Spacing="2">
+                                <SirenStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                    <MudText Typo="Typo.body2" Class="mud-text-secondary">Port:</MudText>
+                                    <MudText Typo="Typo.body2">@config.Port</MudText>
+                                </SirenStack>
+                                <SirenStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                    <MudText Typo="Typo.body2" Class="mud-text-secondary">Endpoints:</MudText>
+                                    <MudText Typo="Typo.body2">@config.EndpointCount</MudText>
+                                </SirenStack>
+                                @if (IsActiveConfiguration(config))
+                                {
+                                    <MudChip T="string" Size="Size.Small" Color="@GetStatusChipColor()" Icon="@GetStatusIcon()">
+                                        @GetStatusText()
+                                    </MudChip>
+                                }
+                            </SirenStack>
+                        </MudCardContent>
+                        <MudCardActions>
+                            @if (IsActiveConfiguration(config) && MockServerState.IsRunning)
+                            {
+                                <MudButton Variant="Variant.Text" Color="Color.Error" StartIcon="@SirenIcons.Stop"
+                                           OnClick="@(() => StopServer())">
+                                    Stop
+                                </MudButton>
+                            }
+                            else
+                            {
+                                <MudButton Variant="Variant.Text" Color="Color.Success" StartIcon="@SirenIcons.Play"
+                                           OnClick="@(() => StartServer(config.Id))"
+                                           Disabled="@(MockServerState.IsRunning && !IsActiveConfiguration(config))">
+                                    Start
+                                </MudButton>
+                            }
+                            <SirenSpacer />
+                            <MudButton Variant="Variant.Text" Color="Color.Primary"
+                                       OnClick="@(() => EditConfiguration(config.Id))">
+                                Configure
+                            </MudButton>
+                        </MudCardActions>
+                    </MudCard>
+                </MudItem>
+            }
+        </MudGrid>
+    }
+</MudContainer>
+
+<MudMessageBox @ref="_deleteConfirmation" Title="Delete Configuration" CancelText="Cancel">
+    <MessageContent>
+        Are you sure you want to delete this mock server configuration? This action cannot be undone.
+    </MessageContent>
+    <YesButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Error">Delete</MudButton>
+    </YesButton>
+</MudMessageBox>
+
+@code {
+    [Inject]
+    private MockServerState MockServerState { get; set; } = default!;
+
+    [Inject]
+    private NavigationManager NavigationManager { get; set; } = default!;
+
+    [Inject]
+    private ISnackbar Snackbar { get; set; } = default!;
+
+    private MudMessageBox? _deleteConfirmation;
+
+    protected override void OnInitialized()
+    {
+        MockServerState.StateChanged += OnStateChanged;
+    }
+
+    private void OnStateChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void CreateNewConfiguration()
+    {
+        var config = MockServerState.CreateConfiguration("New Mock Server");
+        NavigationManager.NavigateTo($"/mock-server/{config.Id}");
+    }
+
+    private void EditConfiguration(Guid id)
+    {
+        NavigationManager.NavigateTo($"/mock-server/{id}");
+    }
+
+    private void DuplicateConfiguration(MockServerConfiguration config)
+    {
+        var newConfig = MockServerState.CreateConfiguration($"{config.Name} (Copy)");
+
+        // Copy endpoints from source
+        foreach (var endpoint in config.Endpoints)
+        {
+            var newEndpoint = new MockEndpoint
+            {
+                Name = endpoint.Name,
+                Method = endpoint.Method,
+                RoutePattern = endpoint.RoutePattern,
+                Response = new MockResponse
+                {
+                    StatusCode = endpoint.Response.StatusCode,
+                    Headers = new Dictionary<string, string>(endpoint.Response.Headers),
+                    Body = endpoint.Response.Body,
+                    DelayMs = endpoint.Response.DelayMs
+                },
+                IsEnabled = endpoint.IsEnabled,
+                Priority = endpoint.Priority
+            };
+            newConfig.Endpoints.Add(newEndpoint);
+        }
+
+        newConfig.Port = config.Port;
+        MockServerState.SaveConfiguration(newConfig);
+
+        Snackbar.Add("Configuration duplicated", Severity.Success);
+    }
+
+    private async Task DeleteConfiguration(MockServerConfiguration config)
+    {
+        if (_deleteConfirmation == null) return;
+
+        var result = await _deleteConfirmation.ShowAsync();
+        if (result == true)
+        {
+            if (IsActiveConfiguration(config) && MockServerState.IsRunning)
+            {
+                await MockServerState.StopServerAsync();
+            }
+
+            MockServerState.DeleteConfiguration(config.Id);
+            Snackbar.Add("Configuration deleted", Severity.Success);
+        }
+    }
+
+    private async Task StartServer(Guid configId)
+    {
+        await MockServerState.StartServerAsync(configId);
+
+        if (MockServerState.IsRunning)
+        {
+            Snackbar.Add($"Mock server started on port {MockServerState.ActualPort}", Severity.Success);
+        }
+        else
+        {
+            Snackbar.Add("Failed to start mock server", Severity.Error);
+        }
+    }
+
+    private async Task StopServer()
+    {
+        await MockServerState.StopServerAsync();
+        Snackbar.Add("Mock server stopped", Severity.Info);
+    }
+
+    private bool IsActiveConfiguration(MockServerConfiguration config)
+    {
+        return MockServerState.ActiveConfigurationId == config.Id;
+    }
+
+    private Color GetStatusColor(MockServerConfiguration config)
+    {
+        if (!IsActiveConfiguration(config)) return Color.Default;
+
+        return MockServerState.Status switch
+        {
+            MockServerStatus.Running => Color.Success,
+            MockServerStatus.Starting => Color.Warning,
+            MockServerStatus.Stopping => Color.Warning,
+            MockServerStatus.Error => Color.Error,
+            _ => Color.Default
+        };
+    }
+
+    private Color GetStatusChipColor()
+    {
+        return MockServerState.Status switch
+        {
+            MockServerStatus.Running => Color.Success,
+            MockServerStatus.Starting => Color.Warning,
+            MockServerStatus.Stopping => Color.Warning,
+            MockServerStatus.Error => Color.Error,
+            _ => Color.Default
+        };
+    }
+
+    private string GetStatusIcon()
+    {
+        return MockServerState.Status switch
+        {
+            MockServerStatus.Running => SirenIcons.Play,
+            MockServerStatus.Starting => SirenIcons.Refresh,
+            MockServerStatus.Stopping => SirenIcons.Pause,
+            MockServerStatus.Error => SirenIcons.Bug,
+            _ => SirenIcons.Stop
+        };
+    }
+
+    private string GetStatusText()
+    {
+        return MockServerState.Status switch
+        {
+            MockServerStatus.Running => $"Running on :{MockServerState.ActualPort}",
+            MockServerStatus.Starting => "Starting...",
+            MockServerStatus.Stopping => "Stopping...",
+            MockServerStatus.Error => "Error",
+            _ => "Stopped"
+        };
+    }
+
+    public void Dispose()
+    {
+        MockServerState.StateChanged -= OnStateChanged;
+    }
+}

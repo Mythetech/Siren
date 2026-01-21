@@ -1,0 +1,502 @@
+@page "/mock-server/{Id:guid}"
+@using MudBlazor
+@using Siren.Components.MockServer.Models
+@using Siren.Components.Theme
+@using Siren.Components.Shared
+@using Siren.Components.Shared.Notifications
+@using Siren.Components.Http
+@using BlazorMonaco
+@using BlazorMonaco.Editor
+@using Microsoft.JSInterop
+@implements IDisposable
+
+@if (_configuration == null)
+{
+    <MudContainer MaxWidth="MaxWidth.Large" Class="py-4">
+        <MudText>Configuration not found</MudText>
+        <MudButton Variant="Variant.Text" StartIcon="@SirenIcons.Back" OnClick="NavigateBack">
+            Back to Mock Servers
+        </MudButton>
+    </MudContainer>
+}
+else
+{
+    <div class="mock-server-page">
+        <!-- Toolbar -->
+        <MudPaper Elevation="0" Class="mock-server-toolbar">
+            <SirenIconButton Icon="@SirenIcons.Back" OnClick="NavigateBack" Tooltip="Back" />
+            <SirenStack Row="true" AlignItems="AlignItems.Center" Spacing="0">
+                <MudTextField @bind-Value="_configuration.Name" Variant="Variant.Text"
+                              Style="width: 200px;" Immediate="true" Placeholder="Server Name"
+                              OnBlur="HandleNameBlur" />
+                <MudText Typo="Typo.body2" Class="mud-text-secondary" Style="margin: 0 4px;">:</MudText>
+                <MudNumericField @bind-Value="_configuration.Port" Variant="Variant.Text"
+                                 Min="1024" Max="65535" Style="width: 70px;" HideSpinButtons="true"
+                                 Disabled="@(MockServerState.IsRunning && IsActiveConfiguration)"
+                                 OnBlur="HandlePortBlur" />
+            </SirenStack>
+            @if (MockServerState.IsRunning && IsActiveConfiguration)
+            {
+                <MudChip T="string" Color="Color.Success" Size="Size.Small">Running</MudChip>
+                <MudText Typo="Typo.caption" Class="mud-text-secondary" Style="font-family: monospace;">@MockServerState.BaseUrl</MudText>
+                <SirenIconButton Icon="@SirenIcons.Copy" Size="Size.Small" Tooltip="Copy URL"
+                                 OnClick="@(() => CopyToClipboard(MockServerState.BaseUrl!))" />
+            }
+            <SirenSpacer />
+            @if (MockServerState.IsRunning && IsActiveConfiguration)
+            {
+                <SirenIconButton Icon="@SirenIcons.Stop" Color="Color.Error" OnClick="StopServer" Tooltip="Stop Server" />
+            }
+            else
+            {
+                <SirenIconButton Icon="@SirenIcons.Play" Color="Color.Success" OnClick="StartServer" Tooltip="Start Server"
+                                 Disabled="@(MockServerState.IsRunning && !IsActiveConfiguration)" />
+            }
+            <SirenIconButton Icon="@SirenIcons.Save" Color="Color.Primary" OnClick="SaveConfiguration" Tooltip="Save" />
+        </MudPaper>
+
+        <!-- Main Content -->
+        <MudPaper Elevation="1" Style="flex: 1; overflow: hidden;">
+
+            @if (!_configuration.Endpoints.Any())
+            {
+                <SirenStack Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="2" Class="pa-8" Style="flex: 1;">
+                    <MudIcon Icon="@SirenIcons.MockServer" Style="font-size: 3em;" Color="Color.Primary" />
+                    <MudText Typo="Typo.body1">No endpoints configured</MudText>
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary">
+                        Add an endpoint to define mock responses
+                    </MudText>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@SirenIcons.Add"
+                               OnClick="AddNewEndpoint" Class="mt-2">
+                        Add First Endpoint
+                    </MudButton>
+                </SirenStack>
+            }
+            else
+            {
+                <div style="flex: 1; overflow: hidden; display: flex;">
+                    <SirenSplitter Panel1Size="35%" Panel2Size="65%" Class="w-100">
+                        <Panel1>
+                            <div class="mock-panel-container">
+                                <div class="mock-panel-header">
+                                    <MudText Typo="Typo.subtitle2">Endpoints</MudText>
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Default">@_configuration.Endpoints.Count</MudChip>
+                                    <SirenSpacer />
+                                    <MudIconButton Icon="@SirenIcons.Add" Size="Size.Small" Color="Color.Primary"
+                                                   OnClick="AddNewEndpoint" Title="Add Endpoint" />
+                                </div>
+                                <div class="mock-endpoint-list">
+                                @foreach (var endpoint in _configuration.Endpoints.OrderByDescending(e => e.Priority))
+                                {
+                                    <div class="@GetEndpointItemClass(endpoint)"
+                                         @onclick="@(() => SelectEndpoint(endpoint))"
+                                         style="padding: 8px 12px; margin-bottom: 4px; border-radius: 6px; cursor: pointer;">
+                                        <SirenStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                            <HttpMethodChip Method="@(new HttpMethod(endpoint.Method))" />
+                                            <SirenStack Spacing="0" Style="flex: 1; min-width: 0;">
+                                                <MudText Typo="Typo.body2" Style="word-break: break-all; font-family: var(--mud-typography-monospace);">
+                                                    @endpoint.RoutePattern
+                                                </MudText>
+                                                @if (!string.IsNullOrWhiteSpace(endpoint.Name))
+                                                {
+                                                    <MudText Typo="Typo.caption" Class="mud-text-secondary">
+                                                        @endpoint.Name
+                                                    </MudText>
+                                                }
+                                            </SirenStack>
+                                            @if (!endpoint.IsEnabled)
+                                            {
+                                                <Badge Size="Size.Small" Color="Color.Warning">Disabled</Badge>
+                                            }
+                                            <SirenIconButton Icon="@SirenIcons.Delete" Color="Color.Error" Size="Size.Small"
+                                                             Class="hover-visible" Tooltip="Delete Endpoint"
+                                                             OnClick="@(() => DeleteEndpoint(endpoint))"
+                                                             OnClick:stopPropagation="true" />
+                                        </SirenStack>
+                                    </div>
+                                }
+                                </div>
+                            </div>
+                        </Panel1>
+                        <Panel2>
+                            <div class="mock-panel-container">
+                                <div class="mock-panel-header">
+                                    @if (_selectedEndpoint != null)
+                                    {
+                                        <HttpMethodChip Method="@(new HttpMethod(_selectedEndpoint.Method))" />
+                                        <MudText Typo="Typo.subtitle2" Style="font-family: var(--mud-typography-monospace);">
+                                            @_selectedEndpoint.RoutePattern
+                                        </MudText>
+                                        <SirenSpacer />
+                                        <SirenSwitch Style="max-height: 20px;" Size="Size.Small" T="bool" @bind-Value="_selectedEndpoint.IsEnabled" Color="Color.Primary"
+                                                     Label="@(_selectedEndpoint.IsEnabled ? "Enabled" : "Disabled")" />
+                                    }
+                                    else
+                                    {
+                                        <MudText Typo="Typo.subtitle2" Class="mud-text-secondary">No endpoint selected</MudText>
+                                    }
+                                </div>
+                            @if (_selectedEndpoint != null)
+                            {
+                                <div class="mock-editor-panel">
+                                    <div class="mock-editor-form">
+                                        <!-- Route Section -->
+                                        <SirenStack Row="true" Spacing="1" AlignItems="AlignItems.Center" Class="mb-1">
+                                            <MudIcon Icon="@SirenIcons.Request" Size="Size.Small" Color="Color.Primary" />
+                                            <MudText Typo="Typo.subtitle2" Color="Color.Primary">Route</MudText>
+                                        </SirenStack>
+                                        <div class="mock-editor-form-row mb-3">
+                                            <SimpleHttpRequestMethodSelector SelectedMethod="@_selectedEndpoint.Method"
+                                                                             SelectedMethodChanged="@(m => { if (m != null) _selectedEndpoint.Method = m; })"
+                                                                             Variant="@Variant.Text"
+                                                                             Label="" />
+                                            <MudTextField @bind-Value="_selectedEndpoint.RoutePattern" Variant="Variant.Text"
+                                                          Placeholder="/api/example/{id}" Style="flex: 1;" />
+                                        </div>
+                                        <!-- Response Section -->
+                                        <SirenStack Row="true" Spacing="1" AlignItems="AlignItems.Center" Class="mb-1">
+                                            <MudIcon Icon="@SirenIcons.Response" Size="Size.Small" Color="Color.Primary" />
+                                            <MudText Typo="Typo.subtitle2" Color="Color.Primary">Response</MudText>
+                                        </SirenStack>
+                                        <div class="mock-editor-form-row mb-3">
+                                            <MudNumericField @bind-Value="_selectedEndpoint.Response.StatusCode"
+                                                             Label="Status" Variant="Variant.Text"
+                                                             Min="100" Max="599" Style="width: 80px;" />
+                                            <MudNumericField @bind-Value="_selectedEndpoint.Response.DelayMs"
+                                                             Label="Delay (ms)" Variant="Variant.Text"
+                                                             Min="0" Max="30000" Style="width: 100px;" />
+                                            <MudSelect T="string" Value="_selectedContentType" Label="Content-Type"
+                                                       Variant="Variant.Text" Style="width: 160px;"
+                                                       ValueChanged="@((string v) => OnContentTypeChanged(v))">
+                                                <MudSelectItem Value="@("application/json")">application/json</MudSelectItem>
+                                                <MudSelectItem Value="@("text/plain")">text/plain</MudSelectItem>
+                                                <MudSelectItem Value="@("text/html")">text/html</MudSelectItem>
+                                                <MudSelectItem Value="@("application/xml")">application/xml</MudSelectItem>
+                                            </MudSelect>
+                                        </div>
+                                        <SirenStack Row="true" Spacing="1" AlignItems="AlignItems.Center" Class="mb-1">
+                                            <MudText Typo="Typo.body2">Body</MudText>
+                                            <MudText Typo="Typo.caption" Class="mud-text-secondary">
+                                                @("{{variable}}") for substitution
+                                            </MudText>
+                                        </SirenStack>
+                                    </div>
+                                    <div class="mock-editor-body-container">
+                                        <StandaloneCodeEditor @ref="_editor" Id="mock-response-body-editor"
+                                                              ConstructionOptions="EditorConstructionOptions"
+                                                              OnDidChangeModelContent="OnEditorContentChanged"
+                                                              OnDidInit="OnEditorInit" />
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="mock-editor-panel">
+                                    <SirenStack Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="2" Style="flex: 1;">
+                                        <MudIcon Icon="@SirenIcons.Edit" Class="mud-text-secondary" />
+                                        <MudText Typo="Typo.body1" Class="mud-text-secondary">
+                                            Select an endpoint to edit
+                                        </MudText>
+                                    </SirenStack>
+                                </div>
+                            }
+                            </div>
+                        </Panel2>
+                    </SirenSplitter>
+                </div>
+            }
+        </MudPaper>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    [Inject]
+    private MockServerState MockServerState { get; set; } = default!;
+
+    [Inject]
+    private NavigationManager NavigationManager { get; set; } = default!;
+
+    [Inject]
+    private ISnackbar Snackbar { get; set; } = default!;
+
+    [Inject]
+    private IJSRuntime JS { get; set; } = default!;
+
+    private MockServerConfiguration? _configuration;
+    private MockEndpoint? _selectedEndpoint;
+    private StandaloneCodeEditor? _editor;
+    private string _selectedContentType = "application/json";
+    private bool _isEditorReady = false;
+    private string _lastSavedName = "";
+    private int _lastSavedPort;
+
+    private bool IsActiveConfiguration => MockServerState.ActiveConfigurationId == Id;
+
+    private string GetEndpointItemClass(MockEndpoint endpoint)
+    {
+        var baseClass = "endpoint-item";
+        if (_selectedEndpoint?.Id == endpoint.Id)
+        {
+            return baseClass + " endpoint-item-selected";
+        }
+        return baseClass;
+    }
+
+    protected override void OnInitialized()
+    {
+        MockServerState.StateChanged += OnStateChanged;
+        LoadConfiguration();
+    }
+
+    private async Task OnEditorInit()
+    {
+        _isEditorReady = true;
+        if (_selectedEndpoint != null)
+        {
+            await UpdateEditorContent();
+        }
+    }
+
+    private void LoadConfiguration()
+    {
+        _configuration = MockServerState.GetConfiguration(Id);
+        if (_configuration != null)
+        {
+            _lastSavedName = _configuration.Name;
+            _lastSavedPort = _configuration.Port;
+            if (_configuration.Endpoints.Any())
+            {
+                _selectedEndpoint = _configuration.Endpoints.First();
+                UpdateContentTypeFromEndpoint();
+            }
+        }
+    }
+
+    private void OnStateChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void NavigateBack()
+    {
+        NavigationManager.NavigateTo("/mock-server");
+    }
+
+    private void SaveConfiguration()
+    {
+        if (_configuration == null) return;
+
+        MockServerState.SaveConfiguration(_configuration);
+        _lastSavedName = _configuration.Name;
+        _lastSavedPort = _configuration.Port;
+        Snackbar.AddSirenSuccess("Configuration saved");
+    }
+
+    private void HandleNameBlur()
+    {
+        if (_configuration == null) return;
+        if (_configuration.Name != _lastSavedName)
+        {
+            SaveConfiguration();
+        }
+    }
+
+    private void HandlePortBlur()
+    {
+        if (_configuration == null) return;
+        if (_configuration.Port != _lastSavedPort)
+        {
+            SaveConfiguration();
+        }
+    }
+
+    private async Task StartServer()
+    {
+        if (_configuration == null) return;
+
+        // Save before starting
+        MockServerState.SaveConfiguration(_configuration);
+        await MockServerState.StartServerAsync(_configuration.Id);
+
+        if (MockServerState.IsRunning)
+        {
+            Snackbar.AddSirenSuccess($"Mock server started on port {MockServerState.ActualPort}");
+        }
+        else
+        {
+            Snackbar.AddSirenError("Failed to start mock server");
+        }
+    }
+
+    private async Task StopServer()
+    {
+        await MockServerState.StopServerAsync();
+        Snackbar.AddSirenInfo("Mock server stopped");
+    }
+
+    private async Task AddNewEndpoint()
+    {
+        if (_configuration == null) return;
+
+        var endpoint = new MockEndpoint
+        {
+            Name = "",
+            Method = "GET",
+            RoutePattern = "/api/new-endpoint",
+            Response = new MockResponse
+            {
+                StatusCode = 200,
+                Body = "{\n  \n}",
+                Headers = new Dictionary<string, string>
+                {
+                    ["Content-Type"] = "application/json"
+                }
+            }
+        };
+
+        _configuration.Endpoints.Add(endpoint);
+        _selectedEndpoint = endpoint;
+        _selectedContentType = "application/json";
+        await UpdateEditorContent();
+    }
+
+    private async Task SelectEndpoint(MockEndpoint endpoint)
+    {
+        _selectedEndpoint = endpoint;
+        UpdateContentTypeFromEndpoint();
+        await UpdateEditorContent();
+    }
+
+    private void UpdateContentTypeFromEndpoint()
+    {
+        if (_selectedEndpoint?.Response.Headers.TryGetValue("Content-Type", out var contentType) == true)
+        {
+            _selectedContentType = contentType;
+        }
+        else
+        {
+            _selectedContentType = "application/json";
+        }
+    }
+
+    private async Task OnContentTypeChanged(string value)
+    {
+        _selectedContentType = value;
+        if (_selectedEndpoint != null)
+        {
+            _selectedEndpoint.Response.Headers["Content-Type"] = value;
+        }
+        await UpdateEditorLanguage();
+    }
+
+    private async Task UpdateEditorLanguage()
+    {
+        if (_editor != null && _isEditorReady)
+        {
+            var language = _selectedContentType switch
+            {
+                "application/json" => "json",
+                "application/xml" => "xml",
+                "text/html" => "html",
+                _ => "plaintext"
+            };
+
+            try
+            {
+                var model = await _editor.GetModel();
+                if (model != null)
+                {
+                    await BlazorMonaco.Editor.Global.SetModelLanguage(JS, model, language);
+                }
+            }
+            catch (JSException)
+            {
+                // Editor not ready
+            }
+        }
+    }
+
+    private async Task UpdateEditorContent()
+    {
+        if (_editor != null && _isEditorReady && _selectedEndpoint != null)
+        {
+            try
+            {
+                await _editor.SetValue(_selectedEndpoint.Response.Body);
+
+                var language = _selectedContentType switch
+                {
+                    "application/json" => "json",
+                    "application/xml" => "xml",
+                    "text/html" => "html",
+                    _ => "plaintext"
+                };
+
+                var model = await _editor.GetModel();
+                if (model != null)
+                {
+                    await BlazorMonaco.Editor.Global.SetModelLanguage(JS, model, language);
+                }
+            }
+            catch (JSException)
+            {
+                // Editor not ready yet
+            }
+        }
+    }
+
+    private async Task OnEditorContentChanged(ModelContentChangedEvent e)
+    {
+        if (_selectedEndpoint != null && _editor != null)
+        {
+            _selectedEndpoint.Response.Body = await _editor.GetValue();
+        }
+    }
+
+    private void DeleteEndpoint(MockEndpoint endpoint)
+    {
+        if (_configuration == null) return;
+
+        _configuration.Endpoints.Remove(endpoint);
+
+        if (_selectedEndpoint == endpoint)
+        {
+            _selectedEndpoint = _configuration.Endpoints.FirstOrDefault();
+            if (_selectedEndpoint != null)
+            {
+                UpdateContentTypeFromEndpoint();
+                _ = UpdateEditorContent();
+            }
+        }
+    }
+
+    private StandaloneEditorConstructionOptions EditorConstructionOptions(StandaloneCodeEditor editor)
+    {
+        return new StandaloneEditorConstructionOptions
+        {
+            AutomaticLayout = true,
+            Language = "json",
+            Value = _selectedEndpoint?.Response.Body ?? "{}",
+            Theme = "vs-dark",
+            Minimap = new EditorMinimapOptions { Enabled = false },
+            FontSize = 13,
+            LineNumbers = "on",
+            ScrollBeyondLastLine = false,
+            WordWrap = "on"
+        };
+    }
+
+    private async Task CopyToClipboard(string text)
+    {
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", text);
+        Snackbar.AddSirenSuccess("Copied to clipboard");
+    }
+
+    public void Dispose()
+    {
+        MockServerState.StateChanged -= OnStateChanged;
+    }
+}
