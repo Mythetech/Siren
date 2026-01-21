@@ -1,0 +1,24 @@
+<Project>
+  <PropertyGroup>
+    <!-- Tiered compilation - fast initial JIT, optimizes hot paths in background -->
+    <TieredCompilation>true</TieredCompilation>
+    <TieredCompilationQuickJit>true</TieredCompilationQuickJit>
+    <TieredCompilationQuickJitForLoops>true</TieredCompilationQuickJitForLoops>
+
+    <!-- Profile-guided optimization - learns hot paths over time -->
+    <TieredPGO>true</TieredPGO>
+  </PropertyGroup>
+
+  <!-- Release-only optimizations -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <!-- ReadyToRun - pre-compiles IL to native for faster cold start -->
+    <PublishReadyToRun>true</PublishReadyToRun>
+
+    <!-- Single file deployment -->
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+
+    <!-- Explicitly disable trimming (breaks reflection) -->
+    <PublishTrimmed>false</PublishTrimmed>
+  </PropertyGroup>
+</Project>

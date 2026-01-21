@@ -5,7 +5,6 @@
 		<TargetFramework>net10.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
-		<PublishTrimmed>False</PublishTrimmed>
 		<ApplicationIcon>wwwroot\logo.ico</ApplicationIcon>
 	</PropertyGroup>
 	<PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

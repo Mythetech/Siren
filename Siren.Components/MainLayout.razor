@@ -19,6 +19,7 @@
 @using Mythetech.Framework.Infrastructure.Plugins
 @using Mythetech.Framework.Infrastructure.Settings
 @using Microsoft.AspNetCore.Components.Routing
+@using Microsoft.JSInterop
 @using MouseEvent = MudBlazor.MouseEvent
 @inject NavigationManager NavigationManager
 @implements IDisposable
@@ -169,7 +170,6 @@
             }
         }
 
-        // Initialize plugins on first render (deferred from Program.cs)
         if (firstRender && !_pluginLoadingStarted && !PluginState.PluginsLoaded)
         {
             _pluginLoadingStarted = true;
@@ -181,6 +181,18 @@
             await LoadAllPluginAssetsAsync();
             _assetsLoaded = true;
             StateHasChanged();
+        }
+
+        if (firstRender)
+        {
+            try
+            { 
+                await Task.Delay(500);
+                await JS.InvokeVoidAsync("sirenSplash.hide");
+            }
+            catch
+            {
+            }
         }
 
         await base.OnAfterRenderAsync(firstRender);

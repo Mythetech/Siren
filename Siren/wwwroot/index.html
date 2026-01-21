@@ -4,6 +4,37 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <base href="/" />
+    <style>
+        #siren-splash {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #000000 0%, #00162E 50%, #00001A 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            opacity: 1;
+            transition: opacity 0.4s ease-out;
+        }
+        #siren-splash.fade-out { opacity: 0; pointer-events: none; }
+
+        #siren-splash .logo { width: 200px; height: 307px; margin-bottom: 24px; animation: pulse 2s ease-in-out infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+
+        #siren-splash .title { font-family: 'Gotu', sans-serif; font-size: 2.5rem; color: #0077B6; margin-bottom: 32px; letter-spacing: 0.1em; }
+
+        #siren-splash .wave-loader { display: flex; gap: 6px; height: 30px; align-items: flex-end; }
+        #siren-splash .wave-bar { width: 4px; background: linear-gradient(180deg, #0077B6, #00162E); border-radius: 2px; animation: wave 1.2s ease-in-out infinite; }
+        #siren-splash .wave-bar:nth-child(1) { animation-delay: 0s; height: 10px; }
+        #siren-splash .wave-bar:nth-child(2) { animation-delay: 0.1s; height: 15px; }
+        #siren-splash .wave-bar:nth-child(3) { animation-delay: 0.2s; height: 20px; }
+        #siren-splash .wave-bar:nth-child(4) { animation-delay: 0.3s; height: 25px; }
+        #siren-splash .wave-bar:nth-child(5) { animation-delay: 0.4s; height: 20px; }
+        #siren-splash .wave-bar:nth-child(6) { animation-delay: 0.5s; height: 15px; }
+        #siren-splash .wave-bar:nth-child(7) { animation-delay: 0.6s; height: 10px; }
+        @keyframes wave { 0%, 100% { transform: scaleY(0.5); } 50% { transform: scaleY(1.5); } }
+    </style>
     <link href="https://cdn-endpnt-stmythetechglobal.azureedge.net/assets/material-symbols.css" rel="stylesheet" type="text/css" />
     <link href="Siren.styles.css" rel="stylesheet" />
     <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" type="text/css" />
@@ -16,7 +47,22 @@
     <title>Siren</title>
 </head>
 <body>
-    <app id="app" style="overflow:hidden;">Loading...</app>
+    <div id="siren-splash">
+            <img class="logo" src="siren-logo-full.png" alt="Siren" />
+            <div class="title">Siren</div>
+            <div class="wave-loader">
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+            </div>
+        </div>
+    <app id="app" style="overflow:hidden;">
+        
+    </app>
 
     <script src="_content/Microsoft.FluentUI.AspNetCore.Components/Microsoft.FluentUI.AspNetCore.Components.lib.module.js" type="module" async></script>
     <script src="_framework/blazor.webview.js"></script>
@@ -25,5 +71,16 @@
     <script src="_content/BlazorMonaco/jsInterop.js"></script>
     <script src="_content/BlazorMonaco/lib/monaco-editor/min/vs/loader.js"></script>
     <script src="_content/BlazorMonaco/lib/monaco-editor/min/vs/editor/editor.main.js"></script>
+    <script>
+        window.sirenSplash = {
+            hide: function() {
+                var splash = document.getElementById('siren-splash');
+                if (splash) {
+                    splash.classList.add('fade-out');
+                    setTimeout(function() { splash.remove(); }, 400);
+                }
+            }
+        };
+    </script>
 </body>
 </html>
