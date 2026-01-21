@@ -21,6 +21,7 @@ using Siren.Components.Variables;
 using Siren.History;
 using Siren.Infrastructure;
 using Siren.Mcp;
+using Siren.MockServer;
 using Siren.Variables;
 using Velopack;
 
@@ -82,7 +83,7 @@ namespace Siren
 
             appBuilder.RootComponents.Add<Components.App>("app");
 
-            appBuilder.Services.AddSirenComponents<HistoryService, CollectionsService, VariablesService, AppDataService>();
+            appBuilder.Services.AddSirenComponents<HistoryService, CollectionsService, VariablesService, AppDataService, MockServerService>();
 
             // Settings storage for framework
             appBuilder.Services.AddSettingsStorage<LiteDbSettingsStorage>();
@@ -137,7 +138,7 @@ namespace Siren
             services.AddHttpClient();
             services.AddMessageBus();
 
-            services.AddSirenComponents<HistoryService, CollectionsService, VariablesService, AppDataService>();
+            services.AddSirenComponents<HistoryService, CollectionsService, VariablesService, AppDataService, MockServerService>();
             services.AddSettingsStorage<LiteDbSettingsStorage>();
 
             // Add MCP with stdio transport (default)

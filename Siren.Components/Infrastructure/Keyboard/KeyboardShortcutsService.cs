@@ -50,6 +50,18 @@ namespace Siren.Components.Infrastructure.Keyboard
                     Key: KeyCode.KeyV,
                     RequiresCtrl: true,
                     RequiresShift: true
+                ),
+                new KeyboardShortcut(
+                    Description: "Go to requests page",
+                    Key: KeyCode.KeyR,
+                    RequiresCtrl: true,
+                    RequiresShift: true
+                ),
+                new KeyboardShortcut(
+                    Description: "Go to mock server page",
+                    Key: KeyCode.KeyM,
+                    RequiresCtrl: true,
+                    RequiresShift: true
                 )
             }.AsReadOnly();
         }

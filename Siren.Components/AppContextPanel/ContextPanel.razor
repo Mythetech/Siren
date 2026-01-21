@@ -6,6 +6,7 @@
 @using Siren.Components.Collections
 @using Siren.Components.Variables
 @using Siren.Components.SessionStats
+@using Siren.Components.MockServer
 @using MouseEvent = MudBlazor.MouseEvent
 
 <SirenStack Spacing="1" Class="app-context-panel" Style="" AlignItems="MudBlazor.AlignItems.Center">
@@ -28,6 +29,12 @@
         Title="Variables" Icon="@SirenIcons.Variables" ContextPanelItemClicked="HandleContextPanelItemClicked">
         <PanelContent>
             <VariablesPanel />
+        </PanelContent>
+    </ContextPanelItem>
+    <ContextPanelItem Active="@(_activeItem?.Title == "Mock Server")" @ref="@_contextPanelItems["Mock Server"]"
+        Title="Mock Server" Icon="@SirenIcons.MockServer" ContextPanelItemClicked="HandleContextPanelItemClicked">
+        <PanelContent>
+            <MockServerPanel />
         </PanelContent>
     </ContextPanelItem>
     @if (SessionStatsSettings.ShowSessionStats)
@@ -87,10 +94,10 @@
     <MudPaper Class="h-100 w-100"
         Style="@($"max-width:calc(var(--mud-drawer-width-left) - var(--mud-drawer-width-mini-left));max-height:100dvh")"
         Square="true">
-        <SirenStack Spacing="3" Class="w-100">
+        <SirenStack Spacing="0" Class="w-100 h-100">
             @if (_activeItem != null)
             {
-                <SirenStack Row="true" Class="w-100 pa-2" Spacing="3" AlignItems="AlignItems.Center">
+                <SirenStack Row="true" Class="w-100 pa-2 mb-2" Spacing="3" AlignItems="AlignItems.Center">
                     <SirenIcon Icon="@_activeItem.Icon" Color="Color.Primary" />
                     <SirenText Typo="Typo.h6">@_activeItem.Title</SirenText>
                     <SirenSpacer />
@@ -243,6 +250,7 @@
     public async Task OpenHistoryPanel() => await OpenPanel("History");
     public async Task OpenCollectionsPanel() => await OpenPanel("Collections");
     public async Task OpenVariablesPanel() => await OpenPanel("Variables");
+    public async Task OpenMockServerPanel() => await OpenPanel("Mock Server");
 
     private async Task OpenPanel(string panelName)
     {

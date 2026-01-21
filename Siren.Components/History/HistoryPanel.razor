@@ -1,6 +1,8 @@
 ﻿@using Siren.Components.History
 @using System.Net
 @using Siren.Components.Http.Models
+@using Siren.Components.MockServer
+@using Siren.Components.MockServer.Models
 
 @if (_loading)
 {
@@ -53,9 +55,14 @@ else
         </MudTd>
 
         <MudTd Class="px-0 pr-2">
-            <SirenIconButton Disabled="@(!HasHistoryData(context))" Class="scale-75"
-                Tooltip="@(HasHistoryData(context) ? "Load request" : "No data")" Size="@Size.Small"
-                OnClick="@(() => LoadHistoryRecord(context))" Icon="@SirenIcons.LoadNewTab" />
+            <SirenStack Row="true" Spacing="0">
+                <SirenIconButton Disabled="@(!HasHistoryData(context))" Class="scale-75"
+                    Tooltip="@(HasHistoryData(context) ? "Load request" : "No data")" Size="@Size.Small"
+                    OnClick="@(() => LoadHistoryRecord(context))" Icon="@SirenIcons.LoadNewTab" />
+                <SirenIconButton Disabled="@(!HasHistoryData(context))" Class="scale-75"
+                    Tooltip="Create mock endpoint" Size="@Size.Small"
+                    OnClick="@(() => CreateMockFromHistory(context))" Icon="@SirenIcons.MockServer" />
+            </SirenStack>
         </MudTd>
     </RowTemplate>
 </MudTable>
@@ -79,6 +86,12 @@ else
 
     [Inject]
     protected IJsApiService JsApiService { get; set; } = default!;
+
+    [Inject]
+    protected MockServerState MockServerState { get; set; } = default!;
+
+    [Inject]
+    protected NavigationManager NavigationManager { get; set; } = default!;
 
     private List<HistoryRecord> HistoryRecords { get; set; } = new();
 
@@ -192,6 +205,42 @@ else
         await JsApiService.CopyToClipboardAsync(value);
 
         Snackbar.Add($"Copied `{value} to clipboard`", Severity.Info);
+    }
+
+    private void CreateMockFromHistory(HistoryRecord record)
+    {
+        // Get or create a configuration
+        var config = MockServerState.ActiveConfiguration
+            ?? MockServerState.Configurations.FirstOrDefault();
+
+        if (config == null)
+        {
+            config = MockServerState.CreateConfiguration("Mock Server");
+        }
+
+        // Create the endpoint from the history record
+        var uri = new Uri(record.RequestUri);
+        var endpoint = new MockEndpoint
+        {
+            Name = $"From: {record.RequestUri}",
+            Method = record.HttpMethod.Method,
+            RoutePattern = uri.AbsolutePath,
+            SourceRequestId = record.Request?.Id,
+            Response = new MockResponse
+            {
+                StatusCode = (int)record.StatusCode,
+                Body = record.Response?.ResponseText ?? "{}",
+                Headers = record.Response?.Headers?.ToDictionary(h => h.Key, h => h.Value)
+                    ?? new Dictionary<string, string> { ["Content-Type"] = "application/json" }
+            }
+        };
+
+        MockServerState.AddEndpoint(config.Id, endpoint);
+
+        Snackbar.Add("Mock endpoint created", Severity.Success);
+
+        // Navigate to the configuration edit page
+        NavigationManager.NavigateTo($"/mock-server/{config.Id}");
     }
 
 }
