@@ -9,6 +9,7 @@ using NSubstitute;
 using Siren.Components;
 using Siren.Components.History;
 using Siren.Components.Http;
+using Siren.Components.MockServer;
 using Siren.Components.Http.Models;
 
 namespace Siren.Test.Components
@@ -24,6 +25,8 @@ namespace Siren.Test.Components
             _historyService = Substitute.For<IHistoryService>();
             Services.AddSingleton(_state);
             Services.AddSingleton(_historyService);
+            Services.AddSingleton(Substitute.For<IMockServerService>());
+            Services.AddSingleton<MockServerState>();
             Services.AddMudServices();
             JSInterop.SetupVoid("mudPopover.initialize", _ => true);
             JSInterop.Setup<int>("mudpopoverHelper.countProviders");
