@@ -52,7 +52,6 @@ public class MockServerService : IMockServerService, IDisposable
         {
             SetStatus(MockServerStatus.Starting);
 
-            // Load configuration
             if (configurationId.HasValue)
             {
                 _activeConfig = MockServerRepository.GetConfiguration(configurationId.Value);
@@ -67,7 +66,6 @@ public class MockServerService : IMockServerService, IDisposable
                 _activeConfig = CreateConfiguration("Default Mock Server");
             }
 
-            // Find available port
             var port = FindAvailablePort(_activeConfig.Port);
             if (!port.HasValue)
             {
@@ -75,7 +73,6 @@ public class MockServerService : IMockServerService, IDisposable
                 return MockServerStartResult.Failed($"No available ports in range {PortRangeStart}-{PortRangeEnd}");
             }
 
-            // Start listener
             _listener = new HttpListener();
             _listener.Prefixes.Add($"http://localhost:{port.Value}/");
 
@@ -195,24 +192,20 @@ public class MockServerService : IMockServerService, IDisposable
                 log.Body = await reader.ReadToEndAsync();
             }
 
-            // Find matching endpoint
             var endpoint = FindMatchingEndpoint(request.HttpMethod, log.Path);
 
             if (endpoint != null)
             {
                 log.MatchedEndpointId = endpoint.Id;
 
-                // Apply delay if configured
                 if (endpoint.Response.DelayMs > 0)
                 {
                     await Task.Delay(endpoint.Response.DelayMs);
                 }
 
-                // Set response status
                 response.StatusCode = endpoint.Response.StatusCode;
                 log.ResponseStatusCode = endpoint.Response.StatusCode;
 
-                // Set response headers
                 foreach (var header in endpoint.Response.Headers)
                 {
                     if (header.Key.Equals("Content-Type", StringComparison.OrdinalIgnoreCase))
@@ -225,7 +218,6 @@ public class MockServerService : IMockServerService, IDisposable
                     }
                 }
 
-                // Process body with variable substitution
                 var body = _variableSubstitution.SubstituteVariables(endpoint.Response.Body);
                 var bodyBytes = Encoding.UTF8.GetBytes(body);
                 response.ContentLength64 = bodyBytes.Length;
@@ -233,7 +225,6 @@ public class MockServerService : IMockServerService, IDisposable
             }
             else
             {
-                // No matching endpoint - return 404
                 response.StatusCode = 404;
                 log.ResponseStatusCode = 404;
                 response.ContentType = "application/json";
@@ -263,7 +254,6 @@ public class MockServerService : IMockServerService, IDisposable
 
             response.Close();
 
-            // Add to logs
             AddRequestLog(log);
         }
     }
@@ -281,34 +271,28 @@ public class MockServerService : IMockServerService, IDisposable
 
     private bool MatchesEndpoint(MockEndpoint endpoint, string method, string path)
     {
-        // Method match
         if (endpoint.Method != "*" &&
             !endpoint.Method.Equals(method, StringComparison.OrdinalIgnoreCase))
         {
             return false;
         }
 
-        // Route match
         return MatchRoute(endpoint.RoutePattern, path);
     }
 
     private bool MatchRoute(string pattern, string path)
     {
-        // Normalize paths
         pattern = pattern.Trim('/');
         path = path.Trim('/');
 
-        // Exact match
         if (pattern.Equals(path, StringComparison.OrdinalIgnoreCase))
             return true;
 
         var patternParts = pattern.Split('/', StringSplitOptions.RemoveEmptyEntries);
         var pathParts = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
 
-        // Wildcard at end matches anything
         if (patternParts.Length > 0 && patternParts[^1] == "*")
         {
-            // Check prefix match
             for (int i = 0; i < patternParts.Length - 1; i++)
             {
                 if (i >= pathParts.Length) return false;
@@ -323,11 +307,9 @@ public class MockServerService : IMockServerService, IDisposable
             return true;
         }
 
-        // Length must match for non-wildcard patterns
         if (patternParts.Length != pathParts.Length)
             return false;
 
-        // Compare each part
         for (int i = 0; i < patternParts.Length; i++)
         {
             var patternPart = patternParts[i];
@@ -375,7 +357,6 @@ public class MockServerService : IMockServerService, IDisposable
             }
         }
 
-        // Try ports before preferred if preferred is not at start
         if (preferredPort > PortRangeStart)
         {
             for (int port = PortRangeStart; port < preferredPort; port++)
