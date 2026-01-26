@@ -7,6 +7,10 @@
 		<Nullable>enable</Nullable>
 		<ApplicationIcon>wwwroot\logo.ico</ApplicationIcon>
 	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
+		<PublishSingleFile>true</PublishSingleFile>
+		<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+	</PropertyGroup>
 	<PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
 		<SignAssembly>true</SignAssembly>
 	</PropertyGroup>

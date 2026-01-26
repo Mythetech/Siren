@@ -42,10 +42,18 @@ namespace Siren
 
             VelopackApp.Build().Run();
 
+            // Register early exception handler to catch startup errors (before window exists)
+            AppDomain.CurrentDomain.UnhandledException += (sender, error) =>
+            {
+                Console.Error.WriteLine($"Fatal exception: {error.ExceptionObject}");
+            };
+
             var appBuilder = PhotinoBlazorAppBuilder.CreateDefault(args);
 
+            // Use AppContext.BaseDirectory for published apps - Directory.GetCurrentDirectory()
+            // returns wrong path when launching from shortcuts or Start menu
             var configuration = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
+                .SetBasePath(AppContext.BaseDirectory)
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
                 .Build();
 
@@ -117,6 +125,8 @@ namespace Siren
                 .SetUseOsDefaultSize(false)
                 .SetFullScreen(false)
                 .SetLogVerbosity(0)
+                .SetSmoothScrollingEnabled(true)
+                .SetJavascriptClipboardAccessEnabled(true)
                 .SetTitle("Siren");
 
             app.RegisterProvider(app.Services);

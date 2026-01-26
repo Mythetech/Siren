@@ -14,6 +14,8 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.VERSION }}
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -27,6 +29,11 @@ jobs:
 
     - name: Setup GitHub Package Authentication
       run: dotnet nuget add source --username USERNAME --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/mythetech/index.json"
+
+    - name: Get Version
+      id: get_version
+      run: echo "VERSION=0.0.${{ github.run_number }}" >> $GITHUB_OUTPUT
+      shell: bash
 
     - name: Execute unit tests
       run: dotnet test Siren.Test/Siren.Test.csproj
@@ -451,3 +458,216 @@ jobs:
       with:
         name: Siren-${{ matrix.platform }}-${{ steps.get_version.outputs.VERSION }}
         path: releases/${{ matrix.platform }}
+
+  # ====================
+  # SMOKE TESTS
+  # ====================
+  # Verifies that published builds can actually install and launch on each platform
+  smoke-test:
+    needs: [publish, test]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: Windows
+          - os: macos-latest
+            platform: macOS
+          - os: ubuntu-latest
+            platform: Linux
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+
+    steps:
+    - name: Download Build Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: Siren-${{ matrix.platform }}-${{ needs.test.outputs.version }}
+        path: releases/
+
+    - name: List Downloaded Files
+      run: |
+        echo "Downloaded artifacts:"
+        ls -la releases/ || dir releases/
+      shell: bash
+
+    # Windows smoke test
+    - name: Smoke Test (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: pwsh
+      run: |
+        # Find and extract portable zip (simpler than installer for CI)
+        $zip = Get-ChildItem -Path "releases" -Filter "*Portable*.zip" -Recurse | Select-Object -First 1
+        if (-not $zip) {
+          # Fall back to any zip
+          $zip = Get-ChildItem -Path "releases" -Filter "*.zip" -Recurse | Select-Object -First 1
+        }
+        if (-not $zip) { throw "No zip archive found in releases/" }
+
+        Write-Output "Extracting: $($zip.FullName)"
+        Expand-Archive -Path $zip.FullName -DestinationPath "app" -Force
+
+        $exe = Get-ChildItem -Path "app" -Filter "Siren.exe" -Recurse | Select-Object -First 1
+        if (-not $exe) { throw "Siren.exe not found in package" }
+
+        Write-Output "Launching: $($exe.FullName)"
+        # Single-file apps extract and spawn a child process, so the initial process exits quickly
+        Start-Process -FilePath $exe.FullName
+        Start-Sleep -Seconds 20
+
+        # Look for the actual Siren process by name (not the bootstrap process)
+        $sirenProcess = Get-Process -Name "Siren" -ErrorAction SilentlyContinue
+        if (-not $sirenProcess) {
+          Write-Error "Siren process not found after 20 seconds"
+          exit 1
+        }
+
+        Write-Output "Found Siren process (PID: $($sirenProcess.Id))"
+
+        if (-not $sirenProcess.MainWindowHandle -or $sirenProcess.MainWindowHandle -eq 0) {
+          Write-Warning "Main window handle not found, but process is running"
+        } else {
+          Write-Output "Window title: $($sirenProcess.MainWindowTitle)"
+        }
+
+        # Clean shutdown
+        $sirenProcess.CloseMainWindow() | Out-Null
+        if (-not $sirenProcess.WaitForExit(10000)) {
+          Write-Warning "App did not close gracefully, killing..."
+          $sirenProcess.Kill()
+        }
+        Write-Output "Windows smoke test PASSED"
+
+    # macOS smoke test
+    - name: Smoke Test (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        # Find portable app zip
+        ZIP_FILE=$(find releases -name "*Portable*.zip" 2>/dev/null | head -1)
+        if [ -z "$ZIP_FILE" ]; then
+          # Fall back to any zip
+          ZIP_FILE=$(find releases -name "*.zip" 2>/dev/null | head -1)
+        fi
+        if [ -z "$ZIP_FILE" ]; then
+          echo "No zip archive found"
+          ls -la releases/
+          exit 1
+        fi
+
+        echo "Extracting: $ZIP_FILE"
+        unzip -q "$ZIP_FILE" -d app
+
+        APP_BUNDLE=$(find app -name "*.app" -type d | head -1)
+        if [ -z "$APP_BUNDLE" ]; then
+          echo "No .app bundle found in archive"
+          ls -laR app/
+          exit 1
+        fi
+
+        # Clear quarantine flag (required for CI)
+        xattr -cr "$APP_BUNDLE"
+
+        echo "Launching: $APP_BUNDLE"
+        open "$APP_BUNDLE"
+        sleep 20
+
+        # Check if running
+        if ! pgrep -x "Siren" > /dev/null; then
+          echo "Application not running after launch"
+          exit 1
+        fi
+
+        # Verify window exists via AppleScript
+        osascript -e 'tell application "System Events" to get name of first window of process "Siren"' || {
+          echo "Warning: Could not verify window via AppleScript, but process is running"
+        }
+
+        # Clean shutdown
+        osascript -e 'quit app "Siren"' || true
+        sleep 2
+        echo "macOS smoke test PASSED"
+
+    # Linux dependencies
+    - name: Install Linux Dependencies
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y xvfb libgtk-3-0 libwebkit2gtk-4.1-0 xdotool libfuse2 libnotify4
+
+    # Linux smoke test
+    - name: Smoke Test (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        # Find AppImage
+        APPIMAGE=$(find releases -name "*.AppImage" | head -1)
+        if [ -z "$APPIMAGE" ]; then
+          echo "No AppImage found"
+          ls -la releases/
+          exit 1
+        fi
+        chmod +x "$APPIMAGE"
+
+        # Start virtual display
+        export DISPLAY=:99
+        Xvfb :99 -screen 0 1920x1080x24 &
+        XVFB_PID=$!
+        sleep 2
+
+        echo "Launching: $APPIMAGE"
+        "$APPIMAGE" &
+        APP_PID=$!
+        sleep 20
+
+        # Check if still running
+        if ! kill -0 $APP_PID 2>/dev/null; then
+          echo "Application crashed"
+          kill $XVFB_PID 2>/dev/null || true
+          exit 1
+        fi
+
+        # Verify window using xdotool
+        WINDOW_ID=$(xdotool search --name "Siren" 2>/dev/null | head -1)
+        if [ -z "$WINDOW_ID" ]; then
+          echo "Warning: Could not find Siren window via xdotool, but process is running"
+        else
+          echo "Found window ID: $WINDOW_ID"
+        fi
+
+        # Cleanup
+        kill $APP_PID 2>/dev/null || true
+        kill $XVFB_PID 2>/dev/null || true
+        echo "Linux smoke test PASSED"
+
+    # Screenshot on failure
+    - name: Screenshot on Failure (Windows)
+      if: failure() && matrix.os == 'windows-latest'
+      shell: pwsh
+      run: |
+        Add-Type -AssemblyName System.Windows.Forms
+        Add-Type -AssemblyName System.Drawing
+        $screen = [System.Windows.Forms.Screen]::PrimaryScreen
+        $bitmap = New-Object System.Drawing.Bitmap($screen.Bounds.Width, $screen.Bounds.Height)
+        $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+        $graphics.CopyFromScreen($screen.Bounds.Location, [System.Drawing.Point]::Empty, $screen.Bounds.Size)
+        $bitmap.Save("screenshot-failure.png")
+        Write-Output "Screenshot saved to screenshot-failure.png"
+
+    - name: Screenshot on Failure (macOS)
+      if: failure() && matrix.os == 'macos-latest'
+      run: |
+        screencapture -x screenshot-failure.png || true
+        echo "Screenshot saved to screenshot-failure.png"
+
+    - name: Screenshot on Failure (Linux)
+      if: failure() && matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get install -y scrot || true
+        DISPLAY=:99 scrot screenshot-failure.png || true
+        echo "Screenshot saved to screenshot-failure.png"
+
+    - name: Upload Failure Artifacts
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: smoke-test-failure-${{ matrix.platform }}
+        path: screenshot-failure.png
