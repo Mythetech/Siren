@@ -32,30 +32,18 @@
 		<PackageReference Include="Velopack" Version="0.0.1298" />
 	</ItemGroup>
 	<ItemGroup>
-		<Content Remove="wwwroot\siren-logo-full.png" />
-		<Content Update="wwwroot\logo.icns">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</Content>
+		<None Update="wwwroot\**">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 		<Content Update="wwwroot\logo.ico">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
-	</ItemGroup>
-	<ItemGroup>
-		<Content Update="wwwroot\**">
+		<Content Update="wwwroot\logo.icns">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\Siren.Components\Siren.Components.csproj" />
-	</ItemGroup>
-	<ItemGroup>
-		<EmbeddedResource Include="wwwroot\app.css">
-			<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-		</EmbeddedResource>
-		<EmbeddedResource Include="wwwroot\siren-logo-full.png">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</EmbeddedResource>
 	</ItemGroup>
 	<ItemGroup>
 		<Folder Include="wwwroot\css\" />
