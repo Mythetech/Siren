@@ -11,9 +11,6 @@
 
   <!-- Release-only optimizations -->
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-    <!-- ReadyToRun - pre-compiles IL to native for faster cold start -->
-    <PublishReadyToRun>true</PublishReadyToRun>
-
     <!-- Single file deployment -->
     <PublishSingleFile>true</PublishSingleFile>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
