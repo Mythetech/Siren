@@ -108,6 +108,8 @@
 
     [Inject] protected ISettingsProvider SettingsProvider { get; set; } = default!;
 
+    [Inject] protected IAppAsyncInitializer AppInitializer { get; set; } = default!;
+
     private Func<string> GetWidth => () => AppState.SideBarOpen ? "74vw" : "calc(100vw - 52px)";
 
     private bool IsOnHomePage => NavigationManager.Uri == NavigationManager.BaseUri
@@ -160,6 +162,11 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (firstRender)
+        {
+            await AppInitializer.InitializeAsync();
+        }
+
         if (firstRender)
         {
             await AppState.SetSystemColorMode();

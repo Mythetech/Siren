@@ -17,6 +17,7 @@ using Siren.Components;
 using Siren.Components.History;
 using Siren.Components.Http;
 using Siren.Components.Settings;
+using Siren.Components.Infrastructure;
 using Siren.Components.Variables;
 using Siren.History;
 using Siren.Infrastructure;
@@ -85,19 +86,19 @@ namespace Siren
 
             appBuilder.Services.AddSirenComponents<HistoryService, CollectionsService, VariablesService, AppDataService, MockServerService>();
 
-            // Settings storage for framework
             appBuilder.Services.AddSettingsStorage<LiteDbSettingsStorage>();
 
             appBuilder.Services.AddSirenMcp();
 
             appBuilder.Services.AddMessageBus(typeof(App).Assembly);
 
-            // Settings framework registration (new DI-friendly API)
             appBuilder.Services.AddSettingsFramework();
             appBuilder.Services.RegisterSettingsFromAssemblies(
                 typeof(App).Assembly,
                 typeof(DesktopHost).Assembly,
                 typeof(SettingsBase).Assembly);
+
+            appBuilder.Services.AddSingleton<IAppAsyncInitializer, AppAsyncInitializer>();
 
             var app = appBuilder.Build();
 
@@ -105,9 +106,6 @@ namespace Siren
 
             app.Services.UseSettingsFramework();
 
-            await SettingsMigration.MigrateIfNeededAsync(app.Services);
-            await app.Services.LoadPersistedSettingsAsync();
-            
             app.Services.UseSirenMcp();
 
             app.Services.UseSecretManager();
