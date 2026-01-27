@@ -31,12 +31,12 @@ namespace Siren
     public class Program
     {
         [STAThread]
-        static async Task Main(string[] args)
+        static void Main(string[] args)
         {
             // Check for --mcp flag for stdio-based MCP server mode (used by Claude Desktop)
             if (args.Contains("--mcp"))
             {
-                await RunMcpServerAsync(args);
+                RunMcpServerAsync(args).GetAwaiter().GetResult();
                 return;
             }
 
@@ -127,6 +127,7 @@ namespace Siren
                 .SetLogVerbosity(0)
                 .SetSmoothScrollingEnabled(true)
                 .SetJavascriptClipboardAccessEnabled(true)
+                .SetChromeless(false)
                 .SetTitle("Siren");
 
             app.RegisterProvider(app.Services);
