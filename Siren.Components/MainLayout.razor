@@ -3,6 +3,7 @@
 @using Siren.Components.Theme
 @using Siren.Components.AppContextPanel
 @using Siren.Components.Http
+@using Siren.Components.NativeMenu
 @using Siren.Components.Shared
 @using Siren.Components.Variables
 @using Microsoft.FluentUI.AspNetCore.Components
@@ -20,7 +21,6 @@
 @using Mythetech.Framework.Infrastructure.Settings
 @using Microsoft.AspNetCore.Components.Routing
 @using Microsoft.JSInterop
-@using MouseEvent = MudBlazor.MouseEvent
 @inject NavigationManager NavigationManager
 @implements IDisposable
 
@@ -33,42 +33,34 @@
 <JsApiCommandProvider />
 <FluentKeyCodeProvider />
 
-<MudLayout>
-    <MudAppBar Class="pl-4"
-        Style="border-bottom-left-radius:3em;box-shadow:1px 1px 4px 0px var(--mud-palette-primary);border-bottom-right-radius:1.5em;">
-        <SirenStack Row="true" Class="w-100" AlignItems="@AlignItems.Center" Spacing="3">
-            <MudTooltip Text="Back to Requests" Disabled="@IsOnHomePage">
-                <MudIconButton Icon="@SirenIcons.Home" Color="Color.Secondary" Class="mb-1"
+<MudLayout Class="custom-title-bar-layout">
+    <Hermes.Blazor.Components.HermesTitleBar Height="38">
+        <div class="siren-title-bar-content">
+            <MudTooltip Text="Back to Requests" Disabled="@IsOnHomePage" Class="no-drag">
+                <MudIconButton Icon="@SirenIcons.Home" Color="Color.Secondary" Size="Size.Small"
                     Disabled="@IsOnHomePage" OnClick="NavigateToHome" />
             </MudTooltip>
-            <MudMenu ActivationEvent="MouseEvent.MouseOver" AnchorOrigin="Origin.BottomLeft"
-                TransformOrigin="Origin.TopLeft" Dense="true" ListClass="pa-1">
-                <ActivatorContent>
-                    <MudText Class="app-header-font" Typo="Typo.h5" Style="cursor: pointer;">Siren</MudText>
-                </ActivatorContent>
-                <ChildContent>
-                    <MudMenuItem Class="rounded" Icon="@SirenIcons.About" OnClick="OpenAboutSiren">About</MudMenuItem>
-                    <MudMenuItem Class="rounded" Icon="@SirenIcons.Settings" OnClick="OpenSettingsDialog">Settings</MudMenuItem>
-                    <MudMenuItem Class="rounded" Icon="@SirenIcons.Bug" OnClick="OpenReportIssue">Report Issue</MudMenuItem>
-                </ChildContent>
-            </MudMenu>
-            <MenuBar />
-            <SirenSpacer />
-            <HttpRequestTabs />
-        </SirenStack>
-    </MudAppBar>
+            <MudText Class="app-header-font no-drag" Typo="Typo.h6">Siren</MudText>
+            <div class="no-drag" style="flex:1;min-width:0;">
+                <HttpRequestTabs />
+            </div>
+        </div>
+    </Hermes.Blazor.Components.HermesTitleBar>
     <MudDrawer @bind-Open="@AppState.SideBarOpen" Variant="DrawerVariant.Mini" Style="overflow: hidden;">
         <ContextPanel @ref="_contextPanel" IsDarkMode="@AppState.IsDarkMode" DrawerBackgroundColor="@_backgroundColor"
             DrawerToggled="@(() => AppState.ToggleSideBar())"
             DarkModeToggled="@(() => AppState.IsDarkMode = !AppState.IsDarkMode)" />
         <div class="@($"resizer {(!AppState.SideBarOpen ? "d-none" : "")}")"></div>
     </MudDrawer>
-    <MudMainContent Class=" pl-2 pr-0" Style="@($"max-height:100dvh;max-width:100vw;overflow:hidden;")">
+    <MudMainContent Class="pl-2 pr-0" Style="max-height:100dvh;max-width:100vw;overflow:hidden;">
         <MudContainer Class="px-0 mud-width-full" MaxWidth="MaxWidth.ExtraLarge"
-            Style="@($"height:94vh;overflow:hidden;")">
+            Style="height:100%;overflow:hidden;">
             @Body
         </MudContainer>
     </MudMainContent>
+    <NativeMenuDispatcher />
+    <NativeMenuStateUpdater />
+    <Siren.Components.NativeMenu.Consumers.MenuCommandProvider />
     <KeyboardShortcuts OnOpenSettings="OpenSettingsDialog"
         OnOpenHistory="@(() => _contextPanel?.OpenHistoryPanel())"
         OnOpenCollections="@(() => _contextPanel?.OpenCollectionsPanel())"
@@ -229,24 +221,6 @@
 
         var dialog = await DialogService.ShowAsync<SettingsDialog>("Settings", options);
         var result = await dialog.Result;
-    }
-
-    protected async Task OpenAboutSiren()
-    {
-        var options = new DialogOptions
-        {
-            CloseOnEscapeKey = true,
-            BackgroundClass = "siren-dialog",
-            MaxWidth = MaxWidth.Small
-        };
-
-        var dialog = await DialogService.ShowAsync<AboutSiren>("About", options);
-        var result = await dialog.Result;
-    }
-
-    protected async Task OpenReportIssue()
-    {
-        await LinkOpenService.OpenLinkAsync(AppConfig.ReportIssueUrl);
     }
 
     private void HandleActiveEnvironmentChanged(string? environment)

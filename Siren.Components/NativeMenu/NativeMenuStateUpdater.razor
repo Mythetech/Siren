@@ -1,0 +1,168 @@
+@using Siren.Components.Http.Models
+@using Siren.Components.Variables
+@using Mythetech.Framework.Infrastructure.MessageBus
+@using Mythetech.Framework.Infrastructure.Plugins
+@using Mythetech.Framework.Infrastructure.Plugins.Components
+@using Mythetech.Framework.Desktop.Updates
+@using Mythetech.Framework.Desktop.Updates.Events
+@implements IConsumer<UpdateAvailable>
+@implements IDisposable
+
+@* Invisible component that subscribes to state changes and updates native menu item states *@
+
+@code {
+    [Inject] private INativeMenuService MenuService { get; set; } = default!;
+    [Inject] private IMessageBus Bus { get; set; } = default!;
+    [Inject] private SirenAppState AppState { get; set; } = default!;
+    [Inject] private VariableState VariableState { get; set; } = default!;
+    [Inject] private IUpdateService UpdateService { get; set; } = default!;
+    [Inject] private PluginState PluginState { get; set; } = default!;
+    [Inject] private PluginMenuCallbackRegistry CallbackRegistry { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        Bus.Subscribe<UpdateAvailable>(this);
+
+        AppState.OnActiveEnvironmentChanged += OnActiveEnvironmentChanged;
+        AppState.OnActiveNetworkRequestChanged += OnActiveRequestChanged;
+        VariableState.StateChanged += OnVariableStateChanged;
+        PluginState.StateChanged += OnPluginStateChanged;
+
+        // Initial sync after a brief delay to ensure menus are ready
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(100);
+            await InvokeAsync(SyncAllMenuStates);
+        });
+    }
+
+    public Task Consume(UpdateAvailable message)
+    {
+        return InvokeAsync(() =>
+        {
+            MenuService.SetUpdateAvailable(message.Update.TargetVersion.ToString());
+        });
+    }
+
+    private void OnActiveEnvironmentChanged(string? envName)
+    {
+        InvokeAsync(() => MenuService.SetActiveEnvironment(envName));
+    }
+
+    private void OnActiveRequestChanged(SirenNetworkRequest? _)
+    {
+        InvokeAsync(UpdateRequestDependentItems);
+    }
+
+    private void OnVariableStateChanged()
+    {
+        InvokeAsync(RebuildEnvironmentMenu);
+    }
+
+    private void OnPluginStateChanged(object? sender, EventArgs e)
+    {
+        InvokeAsync(RebuildPluginMenus);
+    }
+
+    private void SyncAllMenuStates()
+    {
+        if (!MenuService.IsActive)
+            return;
+
+        RebuildEnvironmentMenu();
+        RebuildPluginMenus();
+        UpdateRequestDependentItems();
+
+        if (UpdateService.AvailableUpdate is not null)
+        {
+            MenuService.SetUpdateAvailable(UpdateService.AvailableUpdate.TargetVersion.ToString());
+        }
+    }
+
+    private void RebuildEnvironmentMenu()
+    {
+        if (!MenuService.IsActive)
+            return;
+
+        var envNames = VariableState.Environments.Select(e => e.Name);
+        MenuService.RebuildEnvironmentMenu(envNames, AppState.ActiveEnvironment);
+    }
+
+    private void RebuildPluginMenus()
+    {
+        if (!MenuService.IsActive)
+            return;
+
+        CallbackRegistry.Clear();
+
+        var pluginData = new List<NativePluginMenuData>();
+
+        foreach (var plugin in PluginState.Plugins)
+        {
+            var data = new NativePluginMenuData
+            {
+                PluginId = plugin.Manifest.Id,
+                PluginName = plugin.Manifest.Name,
+                IsEnabled = plugin.IsEnabled,
+            };
+
+            // Extract menu items from plugin's PluginMenu components
+            foreach (var menuType in plugin.MenuComponents)
+            {
+                try
+                {
+                    if (Activator.CreateInstance(menuType) is PluginMenu menuComponent)
+                    {
+                        var items = menuComponent.Items;
+                        if (items is not null)
+                        {
+                            int index = 0;
+                            foreach (var item in items)
+                            {
+                                var itemId = $"{MenuItemIds.ToolsPluginPrefix}{plugin.Manifest.Id}.item.{index}";
+                                data.Items.Add(new NativePluginMenuItemData
+                                {
+                                    Text = item.Text,
+                                    ItemId = itemId,
+                                    Disabled = item.Disabled,
+                                });
+                                CallbackRegistry.Register(itemId, item.OnClick);
+                                index++;
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                    // Plugin menu component may require DI - skip custom items
+                }
+            }
+
+            pluginData.Add(data);
+        }
+
+        MenuService.RebuildPluginMenus(pluginData);
+    }
+
+    private void UpdateRequestDependentItems()
+    {
+        if (!MenuService.IsActive)
+            return;
+
+        var hasResponse = AppState.Active?.Response != null;
+        var hasRequest = AppState.Active?.Request != null;
+
+        MenuService.SetItemEnabled(MenuItemIds.FileSaveResponse, hasResponse);
+        MenuService.SetItemEnabled(MenuItemIds.ToolsCurlExport, hasRequest);
+        MenuService.SetItemEnabled(MenuItemIds.ToolsHistoryExportLast, hasResponse);
+    }
+
+    public void Dispose()
+    {
+        Bus.Unsubscribe<UpdateAvailable>(this);
+        AppState.OnActiveEnvironmentChanged -= OnActiveEnvironmentChanged;
+        AppState.OnActiveNetworkRequestChanged -= OnActiveRequestChanged;
+        VariableState.StateChanged -= OnVariableStateChanged;
+        PluginState.StateChanged -= OnPluginStateChanged;
+    }
+}

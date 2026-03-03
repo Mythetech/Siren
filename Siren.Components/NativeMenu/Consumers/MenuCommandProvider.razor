@@ -1,0 +1,440 @@
+@using Siren.Components.Http.Models
+@using Siren.Components.Http.Commands
+@using Siren.Components.NativeMenu.Commands
+@using Siren.Components.Variables
+@using Siren.Components.Collections
+@using Siren.Components.History
+@using Siren.Components.Services
+@using Siren.Components.Theme
+@using Siren.Components.Shared
+@using Siren.Components.Shared.Dialogs.Commands
+@using Siren.Components.Infrastructure.Commands
+@using Mythetech.Framework.Infrastructure.MessageBus
+@using Mythetech.Framework.Infrastructure.Files
+@using Mythetech.Framework.Infrastructure.Plugins
+@using Mythetech.Framework.Infrastructure.Plugins.Components
+@implements IConsumer<NewRequest>
+@implements IConsumer<SaveActiveRequest>
+@implements IConsumer<SaveActiveResponse>
+@implements IConsumer<FormatActiveRequest>
+@implements IConsumer<ExportActiveRequestAsCurl>
+@implements IConsumer<ExportLastRequestAsHar>
+@implements IConsumer<ExportAllAsHar>
+@implements IConsumer<ExportCollectionsToJson>
+@implements IConsumer<CreateCollection>
+@implements IConsumer<SetActiveEnvironment>
+@implements IConsumer<AddEnvironment>
+@implements IConsumer<AddVariable>
+@implements IConsumer<ImportPlugin>
+@implements IConsumer<ShowAboutPlugin>
+@implements IConsumer<TogglePlugin>
+@implements IConsumer<PluginMenuItemClicked>
+@implements IDisposable
+
+@* Invisible component that handles menu commands requiring UI services *@
+
+@code {
+    [Inject] private IMessageBus Bus { get; set; } = default!;
+    [Inject] private SirenAppState AppState { get; set; } = default!;
+    [Inject] private ISnackbar Snackbar { get; set; } = default!;
+    [Inject] private IDialogService DialogService { get; set; } = default!;
+    [Inject] private ICollectionsService CollectionsService { get; set; } = default!;
+    [Inject] private IHistoryService HistoryService { get; set; } = default!;
+    [Inject] private VariableState VariableState { get; set; } = default!;
+    [Inject] private ICurlGenerator CurlGenerator { get; set; } = default!;
+    [Inject] private IFileOpenService FileOpenService { get; set; } = default!;
+    [Inject] private PluginState PluginState { get; set; } = default!;
+    [Inject] private PluginLoader PluginLoader { get; set; } = default!;
+    [Inject] private IJsApiService JsApiService { get; set; } = default!;
+    [Inject] private ILogger<MenuCommandProvider> Logger { get; set; } = default!;
+    [Inject] private PluginMenuCallbackRegistry PluginCallbackRegistry { get; set; } = default!;
+    [Inject] private PluginContext PluginContext { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        Bus.Subscribe<NewRequest>(this);
+        Bus.Subscribe<SaveActiveRequest>(this);
+        Bus.Subscribe<SaveActiveResponse>(this);
+        Bus.Subscribe<FormatActiveRequest>(this);
+        Bus.Subscribe<ExportActiveRequestAsCurl>(this);
+        Bus.Subscribe<ExportLastRequestAsHar>(this);
+        Bus.Subscribe<ExportAllAsHar>(this);
+        Bus.Subscribe<ExportCollectionsToJson>(this);
+        Bus.Subscribe<CreateCollection>(this);
+        Bus.Subscribe<SetActiveEnvironment>(this);
+        Bus.Subscribe<AddEnvironment>(this);
+        Bus.Subscribe<AddVariable>(this);
+        Bus.Subscribe<ImportPlugin>(this);
+        Bus.Subscribe<ShowAboutPlugin>(this);
+        Bus.Subscribe<TogglePlugin>(this);
+        Bus.Subscribe<PluginMenuItemClicked>(this);
+    }
+
+    public Task Consume(NewRequest message)
+    {
+        return InvokeAsync(() =>
+        {
+            var networkRequest = new SirenNetworkRequest
+            {
+                Name = "New Request",
+                Request = new(),
+            };
+            AppState.AddNetworkRequest(networkRequest);
+            AppState.SetActive(networkRequest.Id);
+        });
+    }
+
+    public Task Consume(FormatActiveRequest message)
+    {
+        return InvokeAsync(() => AppState.TriggerFormatRequest());
+    }
+
+    public Task Consume(SetActiveEnvironment message)
+    {
+        return InvokeAsync(() => AppState.ActiveEnvironment = message.EnvironmentName);
+    }
+
+    public async Task Consume(SaveActiveRequest message)
+    {
+        await InvokeAsync(async () =>
+        {
+            if (AppState.Active?.Request == null)
+            {
+                Snackbar.Add("No active request to save", Severity.Warning);
+                return;
+            }
+
+            var request = AppState.Active.Request;
+            var (editorBody, _) = await AppState.RequestBodyContentAsync();
+            if (request.BodyType == RequestBodyType.Raw && !string.IsNullOrEmpty(editorBody))
+            {
+                request.RawBody = editorBody;
+            }
+
+            var bodyTypeString = request.BodyType switch
+            {
+                RequestBodyType.None => "none",
+                RequestBodyType.Raw => "raw",
+                RequestBodyType.FormData => "form-data",
+                RequestBodyType.Binary => "binary",
+                _ => "raw"
+            };
+
+            var command = new SaveRequest(
+                Method: request.Method?.Method ?? "GET",
+                RequestUri: request.RequestUri,
+                DisplayUri: request.DisplayUri,
+                QueryParameters: request.QueryParameters,
+                Headers: request.Headers,
+                FormData: request.FormData,
+                ContentType: request.ContentType,
+                Body: request.RawBody,
+                BodyType: bodyTypeString,
+                Timeout: request.Timeout,
+                RetryAttempts: request.RetryAttempts,
+                Id: request.Id
+            );
+
+            await Bus.PublishAsync(command);
+        });
+    }
+
+    public async Task Consume(SaveActiveResponse message)
+    {
+        await InvokeAsync(async () =>
+        {
+            if (AppState.Active?.Response == null)
+            {
+                Snackbar.Add("No response to save", Severity.Warning);
+                return;
+            }
+
+            var response = AppState.Active.Response;
+            var command = new SaveResponse(
+                HttpStatusCode: response.HttpStatusCode,
+                StatusCode: response.StatusCode,
+                Duration: response.Duration,
+                RequestSize: response.RequestSize,
+                ResponseSize: response.ResponseSize,
+                Headers: response.Headers,
+                ActualRequestHeaders: response.ActualRequestHeaders,
+                ResponseText: response.ResponseText,
+                Timestamp: DateTimeOffset.UtcNow
+            );
+
+            await Bus.PublishAsync(command);
+        });
+    }
+
+    public async Task Consume(ExportActiveRequestAsCurl message)
+    {
+        await InvokeAsync(async () =>
+        {
+            if (AppState.Active?.Request == null)
+            {
+                Snackbar.Add("No active request to export", Severity.Warning);
+                return;
+            }
+
+            var request = AppState.Active.Request;
+            var (editorBody, _) = await AppState.RequestBodyContentAsync();
+            if (request.BodyType == RequestBodyType.Raw && !string.IsNullOrEmpty(editorBody))
+            {
+                request = request.Copy();
+                request.RawBody = editorBody;
+            }
+
+            var parameters = new DialogParameters { { "Request", request } };
+            await Bus.PublishAsync(new ShowDialog(
+                typeof(CurlExportDialog),
+                "Export as cURL",
+                new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "siren-dialog", MaxWidth = MaxWidth.Medium },
+                parameters));
+        });
+    }
+
+    public async Task Consume(ExportLastRequestAsHar message)
+    {
+        await InvokeAsync(async () =>
+        {
+            if (AppState.Active?.Request == null || AppState.Active?.Response == null)
+            {
+                Snackbar.Add("No request with response to export", Severity.Warning);
+                return;
+            }
+
+            var record = new HistoryRecord
+            {
+                Timestamp = DateTimeOffset.UtcNow,
+                HttpMethod = AppState.Active.Request.Method,
+                RequestUri = AppState.Active.Request.RequestUri,
+                StatusCode = AppState.Active.Response.HttpStatusCode,
+                Request = AppState.Active.Request,
+                Response = AppState.Active.Response
+            };
+
+            var parameters = new DialogParameters { { "Records", new List<HistoryRecord> { record } } };
+            await Bus.PublishAsync(new ShowDialog(
+                typeof(HarExportDialog),
+                "Export as HAR",
+                new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "siren-dialog", MaxWidth = MaxWidth.Large },
+                parameters));
+        });
+    }
+
+    public async Task Consume(ExportAllAsHar message)
+    {
+        await InvokeAsync(async () =>
+        {
+            var history = HistoryService.GetHistory();
+            if (history == null || history.Count == 0)
+            {
+                Snackbar.Add("No history to export", Severity.Warning);
+                return;
+            }
+
+            var recordsWithData = history.Where(r => r.Response != null).ToList();
+            if (recordsWithData.Count == 0)
+            {
+                Snackbar.Add("No history records with response data. Enable 'Save HTTP Content' in settings to capture full request/response data.", Severity.Warning);
+                return;
+            }
+
+            var parameters = new DialogParameters { { "Records", recordsWithData } };
+            await Bus.PublishAsync(new ShowDialog(
+                typeof(HarExportDialog),
+                "Export as HAR",
+                new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "siren-dialog", MaxWidth = MaxWidth.Large },
+                parameters));
+        });
+    }
+
+    public async Task Consume(ExportCollectionsToJson message)
+    {
+        await InvokeAsync(async () =>
+        {
+            try
+            {
+                var collections = CollectionsService.GetCollections();
+                if (collections.Count == 0)
+                {
+                    Snackbar.Add("No collections to export", Severity.Warning);
+                    return;
+                }
+
+                var json = System.Text.Json.JsonSerializer.Serialize(collections, new System.Text.Json.JsonSerializerOptions
+                {
+                    WriteIndented = true
+                });
+
+                await JsApiService.CopyToClipboardAsync(json);
+                Snackbar.Add("Collections exported to JSON (copied to clipboard)", Severity.Success, opts =>
+                {
+                    opts.SuccessIcon = SirenIcons.Collection;
+                });
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Error exporting collections");
+                Snackbar.Add("Error exporting collections", Severity.Error);
+            }
+        });
+    }
+
+    public Task Consume(CreateCollection message)
+    {
+        return InvokeAsync(() =>
+        {
+            CollectionsService.CreateCollection("Untitled", default!);
+            Snackbar.Add("Created collection", Severity.Success, opts =>
+            {
+                opts.SuccessIcon = SirenIcons.Collection;
+            });
+        });
+    }
+
+    public async Task Consume(AddEnvironment message)
+    {
+        await InvokeAsync(async () =>
+        {
+            var parameters = new DialogParameters
+            {
+                { "Label", "Environment name:" },
+                { "Placeholder", "New Environment" }
+            };
+            var options = new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "siren-dialog" };
+            var dialogRef = await DialogService.ShowAsync<InputDialog>("Add Environment", parameters, options);
+            var result = await dialogRef.Result;
+
+            if (result is { Canceled: false, Data: string environmentName } && !string.IsNullOrWhiteSpace(environmentName))
+            {
+                var variable = Variable.Create("Key", "Value", false, environmentName);
+                VariableState.CreateVariable(variable);
+                Snackbar.Add($"Created environment '{environmentName}'", Severity.Success, opts =>
+                {
+                    opts.SuccessIcon = SirenIcons.Environment;
+                });
+            }
+        });
+    }
+
+    public async Task Consume(AddVariable message)
+    {
+        await InvokeAsync(async () =>
+        {
+            var activeEnvironment = AppState.ActiveEnvironment ?? VariableGroups.SystemGroup;
+
+            var keyParameters = new DialogParameters
+            {
+                { "Label", "Variable key:" },
+                { "Placeholder", "Key" }
+            };
+            var options = new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "siren-dialog" };
+            var keyDialog = await DialogService.ShowAsync<InputDialog>("Add Variable", keyParameters, options);
+            var keyResult = await keyDialog.Result;
+
+            if (keyResult is { Canceled: true } || keyResult?.Data is not string key || string.IsNullOrWhiteSpace(key))
+                return;
+
+            var valueParameters = new DialogParameters
+            {
+                { "Label", "Variable value:" },
+                { "Placeholder", "Value" }
+            };
+            var valueDialog = await DialogService.ShowAsync<InputDialog>("Add Variable", valueParameters, options);
+            var valueResult = await valueDialog.Result;
+
+            if (valueResult is not { Canceled: false, Data: string value })
+                return;
+
+            var variable = Variable.Create(key, value, false, activeEnvironment);
+            VariableState.CreateVariable(variable);
+            Snackbar.Add($"Added variable '{key}' to {activeEnvironment}", Severity.Success, opts =>
+            {
+                opts.SuccessIcon = SirenIcons.Variables;
+            });
+        });
+    }
+
+    public async Task Consume(ImportPlugin message)
+    {
+        await InvokeAsync(async () =>
+        {
+            var files = await FileOpenService.OpenFileAsync(
+                title: "Select Plugin DLL",
+                filters: [new FileFilter("Plugin DLLs", ["*.dll"])]);
+
+            if (files.Length == 0) return;
+
+            foreach (var dllPath in files)
+            {
+                var pluginInfo = PluginLoader.LoadPlugin(dllPath);
+                if (pluginInfo is not null)
+                {
+                    await PluginState.RegisterPluginAsync(pluginInfo);
+                }
+            }
+        });
+    }
+
+    public async Task Consume(ShowAboutPlugin message)
+    {
+        await InvokeAsync(async () =>
+        {
+            var plugin = PluginState.Plugins.FirstOrDefault(p => p.Manifest.Id == message.PluginId);
+            if (plugin is null) return;
+
+            var parameters = new DialogParameters { { "Plugin", plugin } };
+            var options = new DialogOptions
+            {
+                MaxWidth = MaxWidth.Medium,
+                FullWidth = true,
+                CloseOnEscapeKey = true
+            };
+
+            await DialogService.ShowAsync<AboutPluginDialog>($"About {plugin.Manifest.Name}", parameters, options);
+        });
+    }
+
+    public async Task Consume(TogglePlugin message)
+    {
+        await InvokeAsync(async () =>
+        {
+            var plugin = PluginState.Plugins.FirstOrDefault(p => p.Manifest.Id == message.PluginId);
+            if (plugin is null) return;
+
+            if (plugin.IsEnabled)
+                await PluginState.DisablePluginAsync(plugin.Manifest.Id);
+            else
+                await PluginState.EnablePluginAsync(plugin.Manifest.Id);
+        });
+    }
+
+    public async Task Consume(PluginMenuItemClicked message)
+    {
+        await InvokeAsync(async () =>
+        {
+            await PluginCallbackRegistry.TryInvoke(message.ItemId, PluginContext);
+        });
+    }
+
+    public void Dispose()
+    {
+        Bus.Unsubscribe<NewRequest>(this);
+        Bus.Unsubscribe<SaveActiveRequest>(this);
+        Bus.Unsubscribe<SaveActiveResponse>(this);
+        Bus.Unsubscribe<FormatActiveRequest>(this);
+        Bus.Unsubscribe<ExportActiveRequestAsCurl>(this);
+        Bus.Unsubscribe<ExportLastRequestAsHar>(this);
+        Bus.Unsubscribe<ExportAllAsHar>(this);
+        Bus.Unsubscribe<ExportCollectionsToJson>(this);
+        Bus.Unsubscribe<CreateCollection>(this);
+        Bus.Unsubscribe<SetActiveEnvironment>(this);
+        Bus.Unsubscribe<AddEnvironment>(this);
+        Bus.Unsubscribe<AddVariable>(this);
+        Bus.Unsubscribe<ImportPlugin>(this);
+        Bus.Unsubscribe<ShowAboutPlugin>(this);
+        Bus.Unsubscribe<TogglePlugin>(this);
+        Bus.Unsubscribe<PluginMenuItemClicked>(this);
+    }
+}
