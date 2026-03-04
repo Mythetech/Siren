@@ -1,9 +1,11 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Hermes;
+using Hermes.Blazor;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Mythetech.Framework.Desktop;
 using Mythetech.Framework.Desktop.Environment;
-using Mythetech.Framework.Desktop.Photino;
+using Mythetech.Framework.Desktop.Hermes;
 using Mythetech.Framework.Infrastructure.Mcp;
 using Mythetech.Framework.Infrastructure.Mcp.Server;
 using Mythetech.Framework.Infrastructure.MessageBus;
@@ -11,11 +13,11 @@ using Mythetech.Framework.Infrastructure.Plugins;
 using Mythetech.Framework.Infrastructure.Secrets;
 using Mythetech.Framework.Infrastructure.Settings;
 using Mythetech.Framework.Desktop.Updates;
-using Photino.Blazor;
 using Siren.Collections;
 using Siren.Components;
 using Siren.Components.History;
 using Siren.Components.Http;
+using Siren.Components.NativeMenu;
 using Siren.Components.Settings;
 using Siren.Components.Infrastructure;
 using Siren.Components.Variables;
@@ -23,6 +25,7 @@ using Siren.History;
 using Siren.Infrastructure;
 using Siren.Mcp;
 using Siren.MockServer;
+using Siren.NativeMenu;
 using Siren.Variables;
 using Velopack;
 
@@ -42,13 +45,26 @@ namespace Siren
 
             VelopackApp.Build().Run();
 
+            HermesWindow.Prewarm();
+
             // Register early exception handler to catch startup errors (before window exists)
             AppDomain.CurrentDomain.UnhandledException += (sender, error) =>
             {
                 Console.Error.WriteLine($"Fatal exception: {error.ExceptionObject}");
             };
 
-            var appBuilder = PhotinoBlazorAppBuilder.CreateDefault(args);
+            var appBuilder = HermesBlazorAppBuilder.CreateDefault(args);
+
+            appBuilder.ConfigureWindow(options =>
+            {
+                options.Title = "Siren";
+                options.Width = 1920;
+                options.Height = 1080;
+                options.CenterOnScreen = true;
+                options.DevToolsEnabled = true;
+                options.CustomTitleBar = true;
+                options.WindowStateKey = "";
+            });
 
             // Use AppContext.BaseDirectory for published apps - Directory.GetCurrentDirectory()
             // returns wrong path when launching from shortcuts or Start menu
@@ -66,7 +82,7 @@ namespace Siren
 
             appBuilder.Services.AddHttpClient();
 
-            appBuilder.Services.AddDesktopServices();
+            appBuilder.Services.AddDesktopServices(DesktopHost.Hermes);
 
             appBuilder.Services.AddUpdateService(options =>
             {
@@ -90,7 +106,7 @@ namespace Siren
 
             appBuilder.Services.AddRuntimeEnvironment(System.Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")?.Equals("Production", StringComparison.OrdinalIgnoreCase) ?? false ? DesktopRuntimeEnvironment.Production() : DesktopRuntimeEnvironment.Development());
 
-            appBuilder.RootComponents.Add<Components.App>("app");
+            appBuilder.RootComponents.Add<Components.App>("#app");
 
             appBuilder.Services.AddSirenComponents<HistoryService, CollectionsService, VariablesService, AppDataService, MockServerService>();
 
@@ -108,6 +124,11 @@ namespace Siren
 
             appBuilder.Services.AddSingleton<IAppAsyncInitializer, AppAsyncInitializer>();
 
+            // Native menu services
+            appBuilder.Services.AddSingleton<INativeMenuService, NativeMenuService>();
+            appBuilder.Services.AddSingleton<INativeMenuCommandDispatcher, NativeMenuCommandDispatcher>();
+            appBuilder.Services.AddSingleton<PluginMenuCallbackRegistry>();
+
             var app = appBuilder.Build();
 
             app.Services.UseMessageBus(typeof(App).Assembly);
@@ -120,22 +141,11 @@ namespace Siren
 
             app.Services.UsePluginFramework();
 
-            app.MainWindow
-                .SetSize(1920, 1080)
-                .SetUseOsDefaultSize(false)
-                .SetFullScreen(false)
-                .SetLogVerbosity(0)
-                .SetSmoothScrollingEnabled(true)
-                .SetJavascriptClipboardAccessEnabled(true)
-                .SetChromeless(false)
-                .SetTitle("Siren");
+            app.RegisterHermesProvider();
 
-            app.RegisterProvider(app.Services);
-
-            AppDomain.CurrentDomain.UnhandledException += (sender, error) =>
-            {
-                app.MainWindow.ShowMessage("Fatal exception", error.ExceptionObject.ToString());
-            };
+            // Initialize native menus
+            var menuService = app.Services.GetRequiredService<INativeMenuService>();
+            menuService.Initialize(app.MainWindow.MenuBar);
 
             app.Run();
         }

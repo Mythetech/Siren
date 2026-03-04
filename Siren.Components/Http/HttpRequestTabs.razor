@@ -8,7 +8,7 @@
                   Color="Color.Primary"
                   Items="@AppState.NetworkRequests"
                   Class="@($"w-100 {(AppState.SideBarOpen ? "siren-app-short-tabs" : "siren-app-tabs")}")"
-                  Style="height:48px"
+                  Style="height:38px"
                   ItemAdded="HandleNetworkRequestAdded"
                   ItemClosed="HandleNetworkRequestRemoved"
                   TabChanged="HandleTabChange"
@@ -49,6 +49,8 @@
     };
 
     protected SirenDynamicTabs<SirenNetworkRequest> _tabs = default!;
+    private bool _isReady;
+    private Guid? _pendingActivation;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -59,6 +61,18 @@
             if (_tabs != null && _tabs?.UserTabs == null || _tabs?.UserTabs?.Count() < 1)
             {
                 RefreshTabsFromState();
+            }
+
+            _isReady = true;
+        }
+
+        if (_pendingActivation is { } requestId)
+        {
+            _pendingActivation = null;
+            var index = AppState.NetworkRequests.FindIndex(x => x.Id.Equals(requestId));
+            if (index >= 0 && _tabs?.DynamicTabs?.Panels != null && index < _tabs.DynamicTabs.Panels.Count)
+            {
+                _tabs.ActivateTab(index);
             }
         }
     }
@@ -111,12 +125,18 @@
     
     protected void HandleActiveNetworkRequestChanged(SirenNetworkRequest? request)
     {
-        if (request == null) return;
+        if (request == null || _tabs?.Items == null) return;
 
-        if (_tabs.Items.Any(x => x.Id.Equals(request.Id))) return;
-        
-        _tabs.AddTab(request.Id, request.Name);
-        StateHasChanged();
+        if (!_tabs.Items.Any(x => x.Id.Equals(request.Id)))
+        {
+            _tabs.AddTab(request.Id, request.Name);
+        }
+
+        if (!_isReady) return;
+
+        // Defer activation to OnAfterRenderAsync so child panels are fully rendered.
+        _pendingActivation = request.Id;
+        InvokeAsync(StateHasChanged);
     }
 
     protected void HandleNetworkRequestsChanged()
