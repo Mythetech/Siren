@@ -151,14 +151,10 @@ public class NativeMenuService : INativeMenuService
     {
         if (_menuBar is null) return;
 
-        // Remove and recreate the entire Plugins menu
-        try
+        // Remove existing Plugins menu if present
+        if (_menuBar.ContainsMenu("Plugins"))
         {
             _menuBar.RemoveMenu("Plugins");
-        }
-        catch
-        {
-            // Menu may not exist yet on first call
         }
 
         _menuBar.AddMenu("Plugins", menu =>
@@ -304,11 +300,7 @@ public class NativeMenuService : INativeMenuService
             menu.AddItem("Check for Updates", MenuItemIds.ToolsUpdates);
         });
 
-        // Plugins menu (top-level)
-        _menuBar.AddMenu("Plugins", menu =>
-        {
-            menu.AddItem("View Plugins", MenuItemIds.ToolsPluginsView);
-            menu.AddItem("Import Plugin...", MenuItemIds.ToolsPluginsImport);
-        });
+        // Plugins menu is built dynamically by RebuildPluginMenus()
+        // to avoid duplication when plugin state changes trigger rebuilds.
     }
 }

@@ -59,9 +59,20 @@
         InvokeAsync(RebuildEnvironmentMenu);
     }
 
+    private CancellationTokenSource? _pluginRebuildCts;
+
     private void OnPluginStateChanged(object? sender, EventArgs e)
     {
-        InvokeAsync(RebuildPluginMenus);
+        _pluginRebuildCts?.Cancel();
+        _pluginRebuildCts = new CancellationTokenSource();
+        var token = _pluginRebuildCts.Token;
+
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(250, token);
+            if (!token.IsCancellationRequested)
+                await InvokeAsync(RebuildPluginMenus);
+        }, token);
     }
 
     private void SyncAllMenuStates()
@@ -159,6 +170,8 @@
 
     public void Dispose()
     {
+        _pluginRebuildCts?.Cancel();
+        _pluginRebuildCts?.Dispose();
         Bus.Unsubscribe<UpdateAvailable>(this);
         AppState.OnActiveEnvironmentChanged -= OnActiveEnvironmentChanged;
         AppState.OnActiveNetworkRequestChanged -= OnActiveRequestChanged;
