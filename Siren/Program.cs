@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Mythetech.Framework.Desktop;
 using Mythetech.Framework.Desktop.Environment;
 using Mythetech.Framework.Desktop.Hermes;
+using Mythetech.Framework.Infrastructure.Guards;
 using Mythetech.Framework.Infrastructure.Mcp;
 using Mythetech.Framework.Infrastructure.Mcp.Server;
 using Mythetech.Framework.Infrastructure.MessageBus;
@@ -123,6 +124,7 @@ namespace Siren
                 typeof(SettingsBase).Assembly);
 
             appBuilder.Services.AddSingleton<IAppAsyncInitializer, AppAsyncInitializer>();
+            appBuilder.Services.AddJsGuards();
 
             // Native menu services
             appBuilder.Services.AddSingleton<INativeMenuService, NativeMenuService>();

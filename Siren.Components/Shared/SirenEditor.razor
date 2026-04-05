@@ -1,4 +1,8 @@
-﻿<StandaloneCodeEditor @ref="@_editor" Id="@EditorId" ConstructionOptions="EditorConstructionOptions" OnDidInit="OnDidInit" />
+﻿@using Mythetech.Framework.Infrastructure.Guards
+
+<JsGuard Name="monaco">
+    <StandaloneCodeEditor @ref="@_editor" Id="@EditorId" ConstructionOptions="EditorConstructionOptions" OnDidInit="OnDidInit" />
+</JsGuard>
 
 
 @code {
