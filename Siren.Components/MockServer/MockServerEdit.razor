@@ -8,6 +8,7 @@
 @using BlazorMonaco
 @using BlazorMonaco.Editor
 @using Microsoft.JSInterop
+@using Mythetech.Framework.Infrastructure.Guards
 @implements IDisposable
 
 @if (_configuration == null)
@@ -182,10 +183,12 @@ else
                                         </SirenStack>
                                     </div>
                                     <div class="mock-editor-body-container">
-                                        <StandaloneCodeEditor @ref="_editor" Id="mock-response-body-editor"
-                                                              ConstructionOptions="EditorConstructionOptions"
-                                                              OnDidChangeModelContent="OnEditorContentChanged"
-                                                              OnDidInit="OnEditorInit" />
+                                        <JsGuard Name="monaco">
+                                            <StandaloneCodeEditor @ref="_editor" Id="mock-response-body-editor"
+                                                                  ConstructionOptions="EditorConstructionOptions"
+                                                                  OnDidChangeModelContent="OnEditorContentChanged"
+                                                                  OnDidInit="OnEditorInit" />
+                                        </JsGuard>
                                     </div>
                                 </div>
                             }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Siren.Components.Variables;
 
 namespace Siren.Variables

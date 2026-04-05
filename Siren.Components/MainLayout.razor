@@ -189,8 +189,9 @@
                 await Task.Delay(500);
                 await JS.InvokeVoidAsync("sirenSplash.hide");
             }
-            catch
+            catch (Exception ex)
             {
+                Logger.LogWarning(ex, "Failed to hide splash screen");
             }
         }
 
