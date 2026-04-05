@@ -300,7 +300,12 @@ public class NativeMenuService : INativeMenuService
             menu.AddItem("Check for Updates", MenuItemIds.ToolsUpdates);
         });
 
-        // Plugins menu is built dynamically by RebuildPluginMenus()
-        // to avoid duplication when plugin state changes trigger rebuilds.
+        // Initial Plugins menu — RebuildPluginMenus() will replace this
+        // with full plugin data once plugin state is available.
+        _menuBar.AddMenu("Plugins", menu =>
+        {
+            menu.AddItem("View Plugins", MenuItemIds.ToolsPluginsView);
+            menu.AddItem("Import Plugin...", MenuItemIds.ToolsPluginsImport);
+        });
     }
 }
