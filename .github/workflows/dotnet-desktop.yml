@@ -507,18 +507,57 @@ jobs:
         Write-Output "Extracting: $($zip.FullName)"
         Expand-Archive -Path $zip.FullName -DestinationPath "app" -Force
 
-        $exe = Get-ChildItem -Path "app" -Filter "Siren.exe" -Recurse | Select-Object -First 1
+        # Prefer the real app in current/ (Velopack packages have a launcher stub at root)
+        $exe = Get-ChildItem -Path "app/current" -Filter "Siren.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+        if (-not $exe) {
+          $exe = Get-ChildItem -Path "app" -Filter "Siren.exe" -Recurse | Select-Object -First 1
+        }
         if (-not $exe) { throw "Siren.exe not found in package" }
 
         Write-Output "Launching: $($exe.FullName)"
-        # Single-file apps extract and spawn a child process, so the initial process exits quickly
-        Start-Process -FilePath $exe.FullName
-        Start-Sleep -Seconds 20
 
-        # Look for the actual Siren process by name (not the bootstrap process)
-        $sirenProcess = Get-Process -Name "Siren" -ErrorAction SilentlyContinue
+        # Set extraction directory for single-file apps to avoid Windows Defender issues with %TEMP%
+        $extractDir = Join-Path $PWD "dotnet-extract"
+        New-Item -ItemType Directory -Force -Path $extractDir | Out-Null
+
+        $psi = New-Object System.Diagnostics.ProcessStartInfo
+        $psi.FileName = $exe.FullName
+        $psi.UseShellExecute = $false
+        $psi.RedirectStandardError = $true
+        $psi.RedirectStandardOutput = $true
+        $psi.Environment["DOTNET_BUNDLE_EXTRACT_BASE_DIR"] = $extractDir
+        $psi.Environment["HERMES_SMOKE_TEST"] = "1"
+        $launchedProcess = [System.Diagnostics.Process]::Start($psi)
+        Write-Output "Launched process PID: $($launchedProcess.Id)"
+
+        # Poll for the process to appear (startup can be slow on CI)
+        $maxWait = 60
+        $elapsed = 0
+        $sirenProcess = $null
+        while ($elapsed -lt $maxWait) {
+          Start-Sleep -Seconds 5
+          $elapsed += 5
+
+          # Check if the launched process exited early
+          if ($launchedProcess.HasExited -and -not $sirenProcess) {
+            Write-Warning "Launched process exited with code $($launchedProcess.ExitCode)"
+            $stderr = $launchedProcess.StandardError.ReadToEnd()
+            $stdout = $launchedProcess.StandardOutput.ReadToEnd()
+            if ($stderr) { Write-Output "=== STDERR ===$([Environment]::NewLine)$stderr" }
+            if ($stdout) { Write-Output "=== STDOUT ===$([Environment]::NewLine)$stdout" }
+            Write-Error "Siren process exited unexpectedly with code $($launchedProcess.ExitCode)"
+            exit 1
+          }
+
+          $sirenProcess = Get-Process -Name "Siren" -ErrorAction SilentlyContinue
+          if ($sirenProcess) {
+            Write-Output "Siren process found after $elapsed seconds"
+            break
+          }
+          Write-Output "Waiting for Siren process... ($elapsed/$maxWait seconds)"
+        }
         if (-not $sirenProcess) {
-          Write-Error "Siren process not found after 20 seconds"
+          Write-Error "Siren process not found after $maxWait seconds"
           exit 1
         }
 
