@@ -126,6 +126,8 @@ jobs:
         security list-keychain -d user -s $KEYCHAIN_PATH
 
         xcrun notarytool store-credentials --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM" --password "$APPLE_PASSWORD" --keychain $KEYCHAIN_PATH velopack-profile
+    - name: Restore
+      run: dotnet restore Siren/Siren.csproj -r ${{ matrix.rid }}
     - name: Publish
       run: dotnet publish Siren/Siren.csproj -c Release -r ${{ matrix.rid }} --self-contained -p:PublishSingleFile=true -p:PublishTrimmed=false -o publish/${{ matrix.rid }}
     - name: Create Velopack Release
