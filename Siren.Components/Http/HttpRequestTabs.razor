@@ -148,8 +148,11 @@
     {
         await Task.Yield();
 
-        _tabs.ActivateTab(index);
-        StateHasChanged();
+        if (_tabs?.DynamicTabs?.Panels != null && index >= 0 && index < _tabs.DynamicTabs.Panels.Count)
+        {
+            _tabs.ActivateTab(index);
+            StateHasChanged();
+        }
     }
 
     protected void HandleNetworkRequestAdded()
