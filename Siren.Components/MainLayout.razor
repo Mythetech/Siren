@@ -38,7 +38,7 @@
         <div class="siren-title-bar-content">
             <MudTooltip Text="Back to Requests" Disabled="@IsOnHomePage" Class="no-drag">
                 <MudIconButton Icon="@SirenIcons.Home" Color="Color.Secondary" Size="Size.Small"
-                    Disabled="@IsOnHomePage" OnClick="NavigateToHome" />
+                               Disabled="@IsOnHomePage" OnClick="NavigateToHome" />
             </MudTooltip>
             <MudText Class="app-header-font no-drag" Typo="Typo.h6">Siren</MudText>
             <div class="no-drag" style="flex:1;min-width:0;">
@@ -48,25 +48,20 @@
     </Hermes.Blazor.Components.HermesTitleBar>
     <MudDrawer @bind-Open="@AppState.SideBarOpen" Variant="DrawerVariant.Mini" Style="overflow: hidden;">
         <ContextPanel @ref="_contextPanel" IsDarkMode="@AppState.IsDarkMode" DrawerBackgroundColor="@_backgroundColor"
-            DrawerToggled="@(() => AppState.ToggleSideBar())"
-            DarkModeToggled="@(() => AppState.IsDarkMode = !AppState.IsDarkMode)" />
+                      DrawerToggled="@(() => AppState.ToggleSideBar())"
+                      DarkModeToggled="@(() => AppState.IsDarkMode = !AppState.IsDarkMode)" />
         <div class="@($"resizer {(!AppState.SideBarOpen ? "d-none" : "")}")"></div>
     </MudDrawer>
-    <MudMainContent Class="pl-2 pr-0" Style="max-height:100dvh;max-width:100vw;overflow:hidden;">
-        <MudContainer Class="px-0 mud-width-full" MaxWidth="MaxWidth.ExtraLarge"
-            Style="height:100%;overflow:hidden;">
-            @Body
-        </MudContainer>
+    <MudMainContent Class="pl-2 pr-4 mud-height-full mud-width-full" Style="overflow:hidden;">
+        @Body
     </MudMainContent>
     <NativeMenuDispatcher />
     <NativeMenuStateUpdater />
     <Siren.Components.NativeMenu.Consumers.MenuCommandProvider />
-    <KeyboardShortcuts OnOpenSettings="OpenSettingsDialog"
-        OnOpenHistory="@(() => _contextPanel?.OpenHistoryPanel())"
-        OnOpenCollections="@(() => _contextPanel?.OpenCollectionsPanel())"
-        OnOpenVariables="@(() => _contextPanel?.OpenVariablesPanel())"
-        OnGoToRequests="NavigateToHome"
-        OnGoToMockServer="NavigateToMockServer" />
+    <KeyboardShortcuts OnOpenSettings="OpenSettingsDialog" OnOpenHistory="@(() => _contextPanel?.OpenHistoryPanel())"
+                       OnOpenCollections="@(() => _contextPanel?.OpenCollectionsPanel())"
+                       OnOpenVariables="@(() => _contextPanel?.OpenVariablesPanel())" OnGoToRequests="NavigateToHome"
+                       OnGoToMockServer="NavigateToMockServer" />
 </MudLayout>
 
 
@@ -185,7 +180,7 @@
         if (firstRender)
         {
             try
-            { 
+            {
                 await Task.Delay(500);
                 await JS.InvokeVoidAsync("sirenSplash.hide");
             }

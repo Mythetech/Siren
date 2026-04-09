@@ -30,9 +30,9 @@
                 <TabContent>
                     <MudMenu ActivationEvent="MudBlazor.MouseEvent.RightClick" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft" Dense="true" ListClass="pa-1">
                         <ActivatorContent>
-                            <span @oncontextmenu:preventDefault="true" style="display: contents;">
+                            <div @oncontextmenu="@context.ToggleAsync" @oncontextmenu:preventDefault="true" style="display: contents;">
                                 <NetworkRequestTab Request="@request" />
-                            </span>
+                            </div>
                         </ActivatorContent>
                         <ChildContent>
                             <MudMenuItem class="rounded-lg" OnClick="@(() => HandleDuplicate(item))">Duplicate</MudMenuItem>
@@ -83,9 +83,9 @@
     [Parameter]
     public bool Rounded { get; set; } = false;
 
-    public void ActivateTab(int index = 0)
+    public async Task ActivateTab(int index = 0)
     {
-        DynamicTabs.ActivatePanel(DynamicTabs.Panels[index]);
+        await DynamicTabs.ActivatePanelAsync(DynamicTabs.Panels[index]);
         StateHasChanged();
     }
 
@@ -167,7 +167,7 @@
             await Task.Yield();
             StateHasChanged();
             UserIndex = Items.Count;
-            DynamicTabs.ActivatePanel(DynamicTabs.Panels.Last());
+            await DynamicTabs.ActivatePanelAsync(DynamicTabs.Panels.Last());
             _stateHasChanged = true;
         }
     }

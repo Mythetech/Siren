@@ -26,35 +26,36 @@
 
 <MudStack Row="true" Class="w-100 h-100 ml-1" Spacing="0">
     <FluentMultiSplitter BarSize="1" @ref="_primarySplitter" OnResize="@SplitterResized"
-        OnCollapse="@((args) => HandleCollapse(args))" OnExpand="HandleExpand" Height="100%"
-        Width="@(sidePanelClosed ? "97%" :"100%")"
-        Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Horizontal" Style="overflow-x:clip;">
+                         OnCollapse="@((args) => HandleCollapse(args))" OnExpand="HandleExpand" Height="100%" Width="@GetSplitterWidth()"
+                         Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Horizontal"
+                         Style="overflow-x:clip; transition: width 225ms cubic-bezier(0, 0, 0.2, 1);">
         <FluentMultiSplitterPane Size="@(!sidePanelClosed ? "80%" : "88%")" Min="400px" Max="100%">
             <FluentMultiSplitter OnResize="@SplitterResized" Height="100%" Width="100%"
-                Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Vertical">
+                                 Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Vertical">
                 <FluentMultiSplitterPane Size="50%" Min="150px">
                     <MudPaper Height="100%" Elevation="0" Width="100%">
-                       <RequestPanel Loading="@_loading" @ref="_requestPanel" SendClicked="HandleSendClicked" /> 
+                        <RequestPanel Loading="@_loading" @ref="_requestPanel" SendClicked="HandleSendClicked" />
                     </MudPaper>
                 </FluentMultiSplitterPane>
                 <FluentMultiSplitterPane Size="50%" Min="150px" Collapsible="true">
                     <MudPaper Height="100%" Elevation="0" Width="100%">
-                        <ResponsePanel /> 
+                        <ResponsePanel />
                     </MudPaper>
                 </FluentMultiSplitterPane>
             </FluentMultiSplitter>
         </FluentMultiSplitterPane>
         <FluentMultiSplitterPane Id="request-context-panel" Collapsed="@sidePanelClosed" Collapsible="true"
-            Size="@(!sidePanelClosed ? "20%" :"12%")" Min="50px" Max="50%">
+                                 Size="@(!sidePanelClosed ? "20%" :"12%")" Min="50px" Max="50%">
             <MudPaper Height="100%" Width="100%">
-                <RequestContextPanel @ref="_requestContextPanel" IsOpen="@(!sidePanelClosed)" PanelClosed="@(() => ToggleSidePanel())" /> 
+                <RequestContextPanel @ref="_requestContextPanel" IsOpen="@(!sidePanelClosed)"
+                                     PanelClosed="@(() => ToggleSidePanel())" />
             </MudPaper>
         </FluentMultiSplitterPane>
     </FluentMultiSplitter>
     @if (sidePanelClosed)
     {
         <MudStack Spacing="3" AlignItems="AlignItems.Center" Class="w-100 h-100 pl-3"
-            Style="min-width: 30px;max-width:30px;">
+                  Style="min-width: 30px;max-width:30px;">
             <SirenIconButton Tooltip="Authorization" Icon="@SirenIcons.Auth" OnClick="@(() => ToggleSidePanel("Auth"))" />
 
             <SirenIconButton Tooltip="Headers" Icon="@SirenIcons.Headers" OnClick="@(() => ToggleSidePanel("Headers"))" />
@@ -62,7 +63,8 @@
             <SirenIconButton Tooltip="Cookies" Icon="@SirenIcons.Cookies" OnClick="@(() => ToggleSidePanel("Cookies"))" />
         </MudStack>
     }
-    <KeyboardShortcuts OnRunRequest="HandleSendClicked" OnNewTab="HandleNewTab" OnFocusUri="HandleFocusUri" OnFocusMethod="HandleFocusMethod" />
+    <KeyboardShortcuts OnRunRequest="HandleSendClicked" OnNewTab="HandleNewTab" OnFocusUri="HandleFocusUri"
+                       OnFocusMethod="HandleFocusMethod" />
 </MudStack>
 
 @code {
@@ -107,7 +109,24 @@
 
     private bool _loading = false;
 
+    private string GetSplitterWidth()
+    {
+        var drawerWidth = AppState.SideBarOpen
+            ? "var(--mud-drawer-width-left)"
+            : "var(--mud-drawer-width-mini-left)";
+
+        if (sidePanelClosed)
+            return $"calc(100% - {drawerWidth} - 30px)";
+
+        return $"calc(100% - {drawerWidth})";
+    }
+
     private string _responseText = "";
+    private static readonly System.Text.Json.JsonSerializerOptions _jsonDisplayOptions = new()
+    {
+        WriteIndented = true,
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+    };
 
     private CancellationTokenSource? _cts = default;
 
@@ -155,6 +174,7 @@
 
             AppState.SetActive(r);
         }
+        AppState.OnAppStateChanged += (state) => StateHasChanged();
     }
 
     private async Task<(string? body, string bodyType)> HandleRequestBodyContent()
@@ -204,6 +224,7 @@
         AppState.OnFormatRequest -= HandleFormatRequest;
         AppState.OnImportRequestBody -= HandleImportRequestBody;
         AppState.OnRequestBodyContent -= HandleRequestBodyContent;
+        AppState.OnAppStateChanged -= (state) => StateHasChanged();
     }
 
     private bool _containerResizing = false;
@@ -387,7 +408,8 @@
             content = null;
         }
 
-        var uriResult = await VariableSubstitutionService.SubstituteVariablesAsync(active.Request?.RequestUri ?? "", activeEnvironment);
+        var uriResult = await VariableSubstitutionService.SubstituteVariablesAsync(active.Request?.RequestUri ?? "",
+activeEnvironment);
         resolutionErrors.AddRange(uriResult.Errors);
         var requestUri = uriResult.Value;
 
@@ -464,6 +486,17 @@
         }
 
         _responseText = r.ResponseText;
+
+        // Pretty-print JSON for display
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(_responseText);
+            _responseText = System.Text.Json.JsonSerializer.Serialize(doc, _jsonDisplayOptions);
+        }
+        catch
+        {
+            // Not valid JSON — use raw text as-is
+        }
 
         var state = AppState.Active ?? new();
         state.Response = r;

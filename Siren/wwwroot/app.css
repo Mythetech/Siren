@@ -6,6 +6,7 @@
 html, body {
     background-color: var(--mud-palette-surface);
     font-family: Tahoma;
+    overflow: hidden;
 }
 
 a, .btn-link {

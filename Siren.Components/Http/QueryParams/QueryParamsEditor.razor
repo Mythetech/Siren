@@ -73,10 +73,11 @@
                 <MudBlazor.TemplateColumn Title="" Style="width: 50px;">
                     <CellTemplate>
                         <MudMenu ListClass="pa-1" Dense="true">
-                            <ActivatorContent>
+                            <ActivatorContent Context="menuContext">
                                 <SirenIconButton Icon="@SirenIcons.MoreVert"
                                                  Variant="Variant.Text"
-                                                 Color="Color.Inherit" />
+                                                 Color="Color.Inherit"
+                                                 OnClick="@(() => menuContext.ToggleAsync())" />
                             </ActivatorContent>
                             <ChildContent>
                                 <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Copy"
@@ -239,10 +240,11 @@
         StateHasChanged();
     }
 
-    private async Task UpdateParameter(QueryParameterModel model)
+    private async Task<DataGridEditFormAction> UpdateParameter(QueryParameterModel model)
     {
         await SyncToUri();
         StateHasChanged();
+        return DataGridEditFormAction.Close;
     }
 
     private async Task DeleteParameter(QueryParameterModel model)

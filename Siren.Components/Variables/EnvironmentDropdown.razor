@@ -6,8 +6,8 @@
 <MudMenu @ref="_menu" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft" Dense="true" ListClass="pa-1" ActivationEvent="MouseEvent.MouseOver">
     <ActivatorContent>
         <MudTooltip Text="Variable Environment" Placement="Placement.Right" Delay="0">
-            <SirenChip T="string" 
-                       Color="@(string.IsNullOrWhiteSpace(AppState.ActiveEnvironment) ? Color.Warning : Color.Info)" 
+            <SirenChip T="string"
+                       Color="@(string.IsNullOrWhiteSpace(AppState.ActiveEnvironment) ? Color.Warning : Color.Info)"
                        Value="@(AppState.ActiveEnvironment ?? "None")"
                        Style="cursor: pointer;">
                 <SirenStack Row="true" Spacing="2" AlignItems="AlignItems.Center">

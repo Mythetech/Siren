@@ -84,10 +84,11 @@
             <MudBlazor.TemplateColumn Title="">
                 <CellTemplate>
                     <MudMenu ListClass="pa-1" Dense="true">
-                        <ActivatorContent>
+                        <ActivatorContent Context="menuContext">
                             <SirenIconButton Icon="@SirenIcons.MoreVert"
                                              Variant="Variant.Text"
-                                             Color="Color.Inherit" />
+                                             Color="Color.Inherit"
+                                             OnClick="@(() => menuContext.ToggleAsync())" />
                         </ActivatorContent>
                         <ChildContent>
                             <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Copy"
@@ -136,10 +137,11 @@
         await HeadersChanged.InvokeAsync(Headers);
     }
 
-    private async Task HandleUpdate(HeaderModel model)
+    private async Task<DataGridEditFormAction> HandleUpdate(HeaderModel model)
     {
-        if (model.IsSystemHeader) return;
+        if (model.IsSystemHeader) return DataGridEditFormAction.Close;
         await HeadersChanged.InvokeAsync(Headers);
+        return DataGridEditFormAction.Close;
     }
 
     private async Task ToggleEnabled(HeaderModel model, bool enabled)

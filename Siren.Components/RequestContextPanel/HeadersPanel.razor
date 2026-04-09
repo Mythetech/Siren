@@ -82,13 +82,14 @@
                         <MudBlazor.TemplateColumn Title="">
                             <CellTemplate>
                                 <MudMenu ListClass="pa-1" Dense="true">
-                                    <ActivatorContent>
-                                        <SirenIconButton Icon="@SirenIcons.MoreVert" 
+                                    <ActivatorContent Context="menuContext">
+                                        <SirenIconButton Icon="@SirenIcons.MoreVert"
                                                          Variant="Variant.Text"
-                                                         Color="Color.Inherit" />
+                                                         Color="Color.Inherit"
+                                                         OnClick="@(() => menuContext.ToggleAsync())" />
                                     </ActivatorContent>
                                     <ChildContent>
-                                        <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Copy" 
+                                        <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Copy"
                                                      OnClick="@(async () =>
                                                      {
                                                          await JsApiService.CopyToClipboardAsync(context.Item.Key);
@@ -96,7 +97,7 @@
                                                      })">
                                             Copy Key
                                         </MudMenuItem>
-                                        <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Copy" 
+                                        <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Copy"
                                                      OnClick="@(async () =>
                                                      {
                                                          await JsApiService.CopyToClipboardAsync(context.Item.Value);
@@ -117,10 +118,11 @@
                             </CellTemplate>
                             <EditTemplate>
                                 <MudMenu ListClass="pa-1" Dense="true">
-                                    <ActivatorContent>
-                                        <SirenIconButton Icon="@SirenIcons.MoreVert" 
+                                    <ActivatorContent Context="menuContext">
+                                        <SirenIconButton Icon="@SirenIcons.MoreVert"
                                                          Variant="Variant.Text"
-                                                         Color="Color.Inherit" />
+                                                         Color="Color.Inherit"
+                                                         OnClick="@(() => menuContext.ToggleAsync())" />
                                     </ActivatorContent>
                                     <ChildContent>
                                         <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Copy" 
@@ -192,10 +194,11 @@
                             <MudBlazor.TemplateColumn Title="">
                                 <CellTemplate>
                                     <MudMenu ListClass="pa-1" Dense="true">
-                                        <ActivatorContent>
-                                            <SirenIconButton Icon="@SirenIcons.MoreVert" 
+                                        <ActivatorContent Context="menuContext">
+                                            <SirenIconButton Icon="@SirenIcons.MoreVert"
                                                              Variant="Variant.Text"
-                                                             Color="Color.Inherit" />
+                                                             Color="Color.Inherit"
+                                                             OnClick="@(() => menuContext.ToggleAsync())" />
                                         </ActivatorContent>
                                         <ChildContent>
                                             <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Copy" 
@@ -356,10 +359,10 @@
         Snackbar.Add($"Copied `{value}` to clipboard", Severity.Info);
     }
 
-    protected void UpdateHeader(HeaderModel m)
+    protected Task<DataGridEditFormAction> UpdateHeader(HeaderModel m)
     {
         if (m.IsSystemHeader)
-            return;
+            return Task.FromResult(DataGridEditFormAction.Close);
 
         var header = requestHeaders.Find(x => x.Id.Equals(m.Id));
         if (header != null)
@@ -371,6 +374,7 @@
             UpdateAllHeaders();
         }
         StateHasChanged();
+        return Task.FromResult(DataGridEditFormAction.Close);
     }
 
     protected void ToggleHeaderEnabled(HeaderModel m, bool enabled)
