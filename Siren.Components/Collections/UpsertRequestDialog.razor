@@ -47,7 +47,7 @@
 
     protected async void SaveClicked()
     {
-        await _httpSelector.HttpSelector.Validate();
+        await _httpSelector.HttpSelector.ValidateAsync();
 
         if (_httpSelector.HttpSelector.HasErrors)
         {

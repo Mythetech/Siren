@@ -13,7 +13,7 @@
                              AnchorOrigin="Origin.BottomLeft"
                              TransformOrigin="Origin.TopLeft">
                         <ActivatorContent>
-                            <span class="token-variable">
+                            <span class="token-variable" @onclick="@context.ToggleAsync">
                                 <span class="token-bracket">{{</span><span class="token-name">@segment.VariableName</span><span class="token-bracket">}}</span>
                             </span>
                         </ActivatorContent>

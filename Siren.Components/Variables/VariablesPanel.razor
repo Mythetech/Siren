@@ -69,9 +69,10 @@ else
                                              Icon="@SirenIcons.Add" Tooltip="@($"Add Variable")" Class="scale-75"
                                              Size="Size.Medium"/>
                             <MudMenu Dense="true" ListClass="pa-1">
-                                <ActivatorContent>
+                                <ActivatorContent Context="menuContext">
                                     <SirenIconButton Icon="@SirenIcons.MoreVert" Variant="Variant.Text"
-                                                     Color="Color.Inherit"/>
+                                                     Color="Color.Inherit"
+                                                     OnClick="@(() => menuContext.ToggleAsync())"/>
                                 </ActivatorContent>
                                 <ChildContent>
                                     <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Add"
@@ -189,9 +190,10 @@ else
                                     <MudBlazor.TemplateColumn Title="">
                                         <CellTemplate>
                                             <MudMenu ListClass="pa-1" Dense="true">
-                                                <ActivatorContent>
+                                                <ActivatorContent Context="menuContext">
                                                     <SirenIconButton Icon="@SirenIcons.MoreVert" Variant="Variant.Text"
-                                                                     Color="Color.Inherit"/>
+                                                                     Color="Color.Inherit"
+                                                                     OnClick="@(() => menuContext.ToggleAsync())"/>
                                                 </ActivatorContent>
                                                 <ChildContent>
                                                     <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Copy"
@@ -220,9 +222,10 @@ else
                                         </CellTemplate>
                                         <EditTemplate>
                                             <MudMenu Dense="true" ListClass="pa-1">
-                                                <ActivatorContent>
+                                                <ActivatorContent Context="menuContext">
                                                     <SirenIconButton Icon="@SirenIcons.MoreVert" Variant="Variant.Text"
-                                                                     Color="Color.Inherit"/>
+                                                                     Color="Color.Inherit"
+                                                                     OnClick="@(() => menuContext.ToggleAsync())"/>
                                                 </ActivatorContent>
                                                 <ChildContent>
                                                     <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Copy"
@@ -421,9 +424,10 @@ else
         VariableState.CreateVariable(v);
     }
 
-    protected void UpdateVariable(Variable variable)
+    protected Task<DataGridEditFormAction> UpdateVariable(Variable variable)
     {
         VariableUpdated(variable);
+        return Task.FromResult(DataGridEditFormAction.Close);
     }
 
     protected void DeleteVariable(Variable variable)
@@ -482,7 +486,7 @@ else
             return;
         }
 
-        var confirmed = await DialogService.ShowMessageBox(
+        var confirmed = await DialogService.ShowMessageBoxAsync(
             "Delete Environment",
             $"Are you sure you want to delete the '{environmentName}' environment? This will delete all {variables.Count} variable(s) in this environment. This cannot be undone.",
             yesText: "Delete",

@@ -192,7 +192,7 @@
         SyncToNetworkRequest();
     }
 
-    protected void UpdateFormDataEntry(DictionaryViewModel m)
+    protected Task<DataGridEditFormAction> UpdateFormDataEntry(DictionaryViewModel m)
     {
         var entry = formDataEntries.Find(x => x.Id.Equals(m.Id));
         if (entry != null)
@@ -202,6 +202,7 @@
             SyncToNetworkRequest();
         }
         StateHasChanged();
+        return Task.FromResult(DataGridEditFormAction.Close);
     }
 
     protected void DeleteFormDataEntry(DictionaryViewModel m)
