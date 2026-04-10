@@ -1,4 +1,9 @@
-﻿:root {
+﻿@font-face {
+    font-family: "Gotu";
+    src: url(fonts/Gotu-Regular.ttf) format('truetype');
+}
+
+:root {
     --http-request-dropdown-color: var(--mud-palette-primary);
     --http-request-dropdown-hover-bg: var(--mud-palette-tertiary-hover);
 }
