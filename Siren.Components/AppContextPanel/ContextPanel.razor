@@ -68,10 +68,8 @@
 
     <MudMenu ActivationEvent="MouseEvent.MouseOver" AnchorOrigin="Origin.TopRight">
         <ActivatorContent>
-            <MudTooltip Text="Color Mode">
                 <MudIconButton Icon="@(AppState.IsDarkMode? SirenIcons.DarkMode: SirenIcons.LightMode)"
                     Color="Color.Primary" Variant="Variant.Text" OnClick="@DarkModeToggled" />
-            </MudTooltip>
         </ActivatorContent>
         <ChildContent>
             <MudToggleGroup T="string" Size="Size.Small" Value="@SelectedColorMode"
@@ -82,7 +80,7 @@
             </MudToggleGroup>
         </ChildContent>
     </MudMenu>
-    <MudTooltip Text="Settings">
+    <MudTooltip Text="Settings" Placement="Placement.Right">
         <MudIconButton Color="Color.Primary" Icon="@SirenIcons.Settings" OnClick="OpenSettingsDialog" />
     </MudTooltip>
 

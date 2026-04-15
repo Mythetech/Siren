@@ -1,4 +1,4 @@
-﻿@font-face {
+@font-face {
     font-family: "Gotu";
     src: url(fonts/Gotu-Regular.ttf) format('truetype');
 }
@@ -226,7 +226,7 @@ a, .btn-link {
 }
 
 .hermes-title-bar {
-    background: var(--mud-palette-surface) !important;
+    background: linear-gradient(90deg, var(--mud-palette-appbar-background), var(--mud-palette-surface)) !important;
     border-bottom: 1px solid rgba(0,0,0,0.1);
 }
 

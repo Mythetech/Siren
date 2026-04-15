@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using MudBlazor;
 
 namespace Siren.Components.Theme
@@ -14,7 +14,7 @@ namespace Siren.Components.Theme
                 Tertiary = SirenColors.Tertiary,
                 HoverOpacity = 0.5,
                 Background = SirenColors.Light,
-                AppbarBackground = SirenColors.Primary,
+                AppbarBackground = SirenColors.AppBarBackground,
                 Black = SirenColors.Black,
                 Surface = "FFFFFF",
                 ActionDefault = SirenColors.Primary,

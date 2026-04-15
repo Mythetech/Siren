@@ -37,6 +37,7 @@ public static class ServiceCollectionExtensions
             config.SnackbarConfiguration.ShowTransitionDuration = 100;
             config.SnackbarConfiguration.SnackbarVariant = Variant.Outlined;
             config.PopoverOptions.QueueDelay = TimeSpan.FromSeconds(0.01);
+            config.PopoverOptions.OverflowBehavior = OverflowBehavior.FlipNever;
         });
 
         services.AddFluentUIComponents();

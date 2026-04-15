@@ -3,29 +3,15 @@
 
 @if (!string.IsNullOrWhiteSpace(Tooltip))
 {
-    <MudTooltip Text="@Tooltip" Color="@Color">
-        <MudIconButton Class="@Class"
-                       Color="@Color"
-                       OnClick="@OnClick"
-                       ChildContent="@ChildContent"
-                       Style="@Style"
-                       Icon="@Icon"
-                       Size="@Size"
-                       Disabled="@Disabled"
-                       Variant="@Variant" />
+    <MudTooltip Text="@Tooltip" Color="@Color" Placement="@Placement">
+        <MudIconButton Class="@Class" Color="@Color" OnClick="@OnClick" ChildContent="@ChildContent" Style="@Style"
+                       Icon="@Icon" Size="@Size" Disabled="@Disabled" Variant="@Variant" />
     </MudTooltip>
 }
 else
 {
-    <MudIconButton Class="@Class"
-                   Color="@Color"
-                   OnClick="@OnClick"
-                   ChildContent="@ChildContent"
-                   Style="@Style"
-                   Icon="@Icon"
-                   Size="@Size"
-                   Disabled="@Disabled"
-                   Variant="@Variant" />
+    <MudIconButton Class="@Class" Color="@Color" OnClick="@OnClick" ChildContent="@ChildContent" Style="@Style" Icon="@Icon"
+                   Size="@Size" Disabled="@Disabled" Variant="@Variant" />
 }
 
 
@@ -50,6 +36,9 @@ else
 
     [Parameter]
     public string Tooltip { get; set; } = "";
+
+    [Parameter]
+    public Placement Placement { get; set; } = Placement.Bottom;
 
     [Parameter]
     public bool Disabled { get; set; } = false;

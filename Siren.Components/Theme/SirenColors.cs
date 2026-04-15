@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 namespace Siren.Components.Theme
 {
     public static class SirenColors
@@ -15,7 +15,6 @@ namespace Siren.Components.Theme
             public static string AppBarBackground => "00162E";
 
             //public static string AppBarBackground => "001520";
-
         }
 
         public static string Primary => "0077B6";
@@ -33,6 +32,8 @@ namespace Siren.Components.Theme
         public static string Action => "";
 
         public static string ActionDisabled => "AED2E5";
+
+        public static string AppBarBackground => "0077B666";
 
         public static string Hash(string s)
         {

@@ -1,12 +1,14 @@
 ﻿@if (!Active)
 {
-    <MudTooltip Text="@Title">
-        <MudNavLink IconColor="@Color.Surface" Icon="@Icon" OnClick="@(async () => await ContextPanelItemClicked.InvokeAsync(this))" />
+    <MudTooltip Text="@Title" Placement="Placement.Right">
+        <MudNavLink IconColor="@Color.Surface" Icon="@Icon"
+                    OnClick="@(async () => await ContextPanelItemClicked.InvokeAsync(this))" />
     </MudTooltip>
 }
 else
 {
-    <MudNavLink Class="context-item-active" IconColor="@Color.Primary" Icon="@Icon" OnClick="@(async () => await ContextPanelItemClicked.InvokeAsync(this))"/>
+    <MudNavLink Class="context-item-active" IconColor="@Color.Primary" Icon="@Icon"
+                OnClick="@(async () => await ContextPanelItemClicked.InvokeAsync(this))" />
 }
 
 @code {
