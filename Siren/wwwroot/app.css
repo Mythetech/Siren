@@ -1,4 +1,4 @@
-@font-face {
+﻿@font-face {
     font-family: "Gotu";
     src: url(fonts/Gotu-Regular.ttf) format('truetype');
 }
@@ -20,6 +20,7 @@ a, .btn-link {
 
 .app-header-font {
     font-family: 'Gotu';
+    color: var(--mud-palette-text-primary);
 }
 
 .btn-primary {
