@@ -14,8 +14,8 @@
             <MudText Typo="Typo.body2" Align="MudBlazor.Align.Center" Class="mud-text-secondary mb-3">
                 No mock servers configured
             </MudText>
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
-                       StartIcon="@SirenIcons.Add" OnClick="CreateConfiguration">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" StartIcon="@SirenIcons.Add"
+                       OnClick="CreateConfiguration">
                 Create
             </MudButton>
         </SirenStack>
@@ -23,9 +23,9 @@
     else
     {
         <!-- Configuration Selector -->
-        <MudSelect T="Guid?" Value="@_selectedConfigId" ValueChanged="OnConfigurationSelected"
-                   Label="Configuration" Variant="Variant.Outlined" Dense="true" Margin="Margin.Dense"
-                   FullWidth="true" Class="mb-3" OuterClass="max-h-40">
+        <MudSelect T="Guid?" Value="@_selectedConfigId" ValueChanged="OnConfigurationSelected" Label="Configuration"
+                   Variant="Variant.Outlined" Dense="true" Margin="Margin.Dense" FullWidth="true" Class="mb-3"
+                   OuterClass="max-h-40">
             @foreach (var config in MockServerState.Configurations)
             {
                 <MudSelectItem T="Guid?" Value="@config.Id">
@@ -37,13 +37,12 @@
         @if (_selectedConfig != null)
         {
             <!-- Server Controls -->
-            <MudPaper Class="pa-3 mb-3 w-100" Elevation="0" Outlined="true">
+            <MudPaper Class="pa-3 my-4 w-100" Elevation="0" Outlined="true">
                 <SirenStack Spacing="2" Class="w-100">
                     @if (!MockServerState.IsRunning || !IsActiveConfiguration)
                     {
-                        <MudNumericField @bind-Value="_selectedConfig.Port" Label="Port"
-                                         Variant="Variant.Outlined" Dense="true" Margin="Margin.Dense"
-                                         Min="1024" Max="65535" Class="w-100" />
+                        <MudNumericField @bind-Value="_selectedConfig.Port" Label="Port" Variant="Variant.Outlined" Dense="true"
+                                         Margin="Margin.Dense" Min="1024" Max="65535" Class="w-100" />
                     }
                     else
                     {
@@ -51,25 +50,21 @@
                             <MudIcon Icon="@SirenIcons.Network" Size="Size.Small" Color="Color.Success" />
                             <MudText Typo="Typo.body2">@MockServerState.BaseUrl</MudText>
                             <SirenSpacer />
-                            <MudIconButton Icon="@SirenIcons.Copy" Size="Size.Small"
-                                           OnClick="CopyUrl" />
+                            <MudIconButton Icon="@SirenIcons.Copy" Size="Size.Small" OnClick="CopyUrl" />
                         </SirenStack>
                     }
 
                     @if (MockServerState.IsRunning && IsActiveConfiguration)
                     {
-                        <MudButton Variant="Variant.Filled" Color="Color.Error"
-                                   StartIcon="@SirenIcons.Stop" FullWidth="true"
+                        <MudButton Variant="Variant.Filled" Color="Color.Error" StartIcon="@SirenIcons.Stop" FullWidth="true"
                                    OnClick="StopServer">
                             Stop Server
                         </MudButton>
                     }
                     else
                     {
-                        <MudButton Variant="Variant.Filled" Color="Color.Success"
-                                   StartIcon="@SirenIcons.Play" FullWidth="true"
-                                   OnClick="StartServer"
-                                   Disabled="@(MockServerState.IsRunning && !IsActiveConfiguration)">
+                        <MudButton Variant="Variant.Filled" Color="Color.Success" StartIcon="@SirenIcons.Play" FullWidth="true"
+                                   OnClick="StartServer" Disabled="@(MockServerState.IsRunning && !IsActiveConfiguration)">
                             Start Server
                         </MudButton>
                     }
@@ -99,8 +94,7 @@
                                     </MudText>
                                     @if (!endpoint.IsEnabled)
                                     {
-                                        <MudIcon Icon="@SirenIcons.Pause" Size="Size.Small"
-                                                 Class="mud-text-secondary" />
+                                        <MudIcon Icon="@SirenIcons.Pause" Size="Size.Small" Class="mud-text-secondary" />
                                     }
                                 </SirenStack>
                             </MudListItem>
@@ -127,8 +121,8 @@
         <SirenSpacer />
 
         <!-- Open Full Page -->
-        <MudButton Variant="Variant.Text" Color="Color.Primary" FullWidth="true"
-                   EndIcon="@SirenIcons.LoadNewTab" OnClick="OpenMockServerPage">
+        <MudButton Variant="Variant.Text" Color="Color.Primary" FullWidth="true" EndIcon="@SirenIcons.LoadNewTab"
+                   OnClick="OpenMockServerPage">
             Open Mock Server Page
         </MudButton>
     }

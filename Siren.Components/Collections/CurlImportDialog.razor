@@ -14,14 +14,13 @@
                 Paste a cURL command to import it as a request. Supports headers, data, and common options.
             </SirenText>
 
-            <MudTextField T="string"
-                          @bind-Value="_curlCommand"
-                          Label="cURL Command"
-                          Placeholder="curl -X POST 'https://api.example.com/data' -H 'Content-Type: application/json' -d '{...}'"
-                          Lines="8"
-                          Variant="Variant.Outlined"
-                          FullWidth="true"
-                          Style="font-family: monospace;" />
+            <MtTextField T="string"
+                         @bind-Value="_curlCommand"
+                         Label="cURL Command"
+                         Placeholder="curl -X POST 'https://api.example.com/data' -H 'Content-Type: application/json' -d '{...}'"
+                         Lines="8"
+                         Class="w-100"
+                         Style="font-family: monospace;" />
 
             @if (_parseError != null)
             {

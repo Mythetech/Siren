@@ -24,10 +24,10 @@
                     ValueChanged="UpdateRequestUri"
                     VariableInfoProvider="GetVariableInfo" />
 
-                <MudButton OnClick="@OnSendClicked" Variant="Variant.Text"
+                <SirenButton OnClick="@OnSendClicked" Variant="Variant.Text"
                     Color="@(Loading? Color.Dark: Color.Inherit)" Class="send-request-button">
                     @(Loading ? "Cancel" : "Send")
-                </MudButton>
+                </SirenButton>
             </SirenStack>
         </MudPaper>
     </SirenStack>

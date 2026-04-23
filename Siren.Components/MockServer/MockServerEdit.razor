@@ -22,24 +22,23 @@
 }
 else
 {
-    <div class="mock-server-page">
+    <div class="mock-server-page mud-drawer-transition" style="@GetPageWidth()">
         <!-- Toolbar -->
         <MudPaper Elevation="0" Class="mock-server-toolbar">
             <SirenIconButton Icon="@SirenIcons.Back" OnClick="NavigateBack" Tooltip="Back" />
             <SirenStack Row="true" AlignItems="AlignItems.Center" Spacing="0">
-                <MudTextField @bind-Value="_configuration.Name" Variant="Variant.Text"
-                              Style="width: 200px;" Immediate="true" Placeholder="Server Name"
-                              OnBlur="HandleNameBlur" />
+                <MudTextField @bind-Value="_configuration.Name" Variant="Variant.Text" Style="width: 200px;"
+                              Immediate="true" Placeholder="Server Name" OnBlur="HandleNameBlur" />
                 <MudText Typo="Typo.body2" Class="mud-text-secondary" Style="margin: 0 4px;">:</MudText>
-                <MudNumericField @bind-Value="_configuration.Port" Variant="Variant.Text"
-                                 Min="1024" Max="65535" Style="width: 70px;" HideSpinButtons="true"
-                                 Disabled="@(MockServerState.IsRunning && IsActiveConfiguration)"
-                                 OnBlur="HandlePortBlur" />
+                <MudNumericField @bind-Value="_configuration.Port" Variant="Variant.Text" Min="1024" Max="65535"
+                                 Style="width: 70px;" HideSpinButtons="true"
+                                 Disabled="@(MockServerState.IsRunning && IsActiveConfiguration)" OnBlur="HandlePortBlur" />
             </SirenStack>
             @if (MockServerState.IsRunning && IsActiveConfiguration)
             {
                 <MudChip T="string" Color="Color.Success" Size="Size.Small">Running</MudChip>
-                <MudText Typo="Typo.caption" Class="mud-text-secondary" Style="font-family: monospace;">@MockServerState.BaseUrl</MudText>
+                <MudText Typo="Typo.caption" Class="mud-text-secondary" Style="font-family: monospace;">@MockServerState.BaseUrl
+                </MudText>
                 <SirenIconButton Icon="@SirenIcons.Copy" Size="Size.Small" Tooltip="Copy URL"
                                  OnClick="@(() => CopyToClipboard(MockServerState.BaseUrl!))" />
             }
@@ -81,41 +80,41 @@ else
                             <div class="mock-panel-container">
                                 <div class="mock-panel-header">
                                     <MudText Typo="Typo.subtitle2">Endpoints</MudText>
-                                    <MudChip T="string" Size="Size.Small" Color="Color.Default">@_configuration.Endpoints.Count</MudChip>
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Default">@_configuration.Endpoints.Count
+                                    </MudChip>
                                     <SirenSpacer />
                                     <MudIconButton Icon="@SirenIcons.Add" Size="Size.Small" Color="Color.Primary"
                                                    OnClick="AddNewEndpoint" Title="Add Endpoint" />
                                 </div>
                                 <div class="mock-endpoint-list">
-                                @foreach (var endpoint in _configuration.Endpoints.OrderByDescending(e => e.Priority))
-                                {
-                                    <div class="@GetEndpointItemClass(endpoint)"
-                                         @onclick="@(() => SelectEndpoint(endpoint))"
-                                         style="padding: 8px 12px; margin-bottom: 4px; border-radius: 6px; cursor: pointer;">
-                                        <SirenStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                                            <HttpMethodChip Method="@(new HttpMethod(endpoint.Method))" />
-                                            <SirenStack Spacing="0" Style="flex: 1; min-width: 0;">
-                                                <MudText Typo="Typo.body2" Style="word-break: break-all; font-family: var(--mud-typography-monospace);">
-                                                    @endpoint.RoutePattern
-                                                </MudText>
-                                                @if (!string.IsNullOrWhiteSpace(endpoint.Name))
-                                                {
-                                                    <MudText Typo="Typo.caption" Class="mud-text-secondary">
-                                                        @endpoint.Name
+                                    @foreach (var endpoint in _configuration.Endpoints.OrderByDescending(e => e.Priority))
+                                    {
+                                        <div class="@GetEndpointItemClass(endpoint)" @onclick="@(() => SelectEndpoint(endpoint))"
+                                             style="padding: 8px 12px; margin-bottom: 4px; border-radius: 6px; cursor: pointer;">
+                                            <SirenStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                                <HttpMethodChip Method="@(new HttpMethod(endpoint.Method))" />
+                                                <SirenStack Spacing="0" Style="flex: 1; min-width: 0;">
+                                                    <MudText Typo="Typo.body2"
+                                                             Style="word-break: break-all; font-family: var(--mud-typography-monospace);">
+                                                        @endpoint.RoutePattern
                                                     </MudText>
+                                                    @if (!string.IsNullOrWhiteSpace(endpoint.Name))
+                                                    {
+                                                        <MudText Typo="Typo.caption" Class="mud-text-secondary">
+                                                            @endpoint.Name
+                                                        </MudText>
+                                                    }
+                                                </SirenStack>
+                                                @if (!endpoint.IsEnabled)
+                                                {
+                                                    <Badge Size="Size.Small" Color="Color.Warning">Disabled</Badge>
                                                 }
+                                                <SirenIconButton Icon="@SirenIcons.Delete" Color="Color.Error" Size="Size.Small"
+                                                                 Class="hover-visible" Tooltip="Delete Endpoint"
+                                                                 OnClick="@(() => DeleteEndpoint(endpoint))" OnClick:stopPropagation="true" />
                                             </SirenStack>
-                                            @if (!endpoint.IsEnabled)
-                                            {
-                                                <Badge Size="Size.Small" Color="Color.Warning">Disabled</Badge>
-                                            }
-                                            <SirenIconButton Icon="@SirenIcons.Delete" Color="Color.Error" Size="Size.Small"
-                                                             Class="hover-visible" Tooltip="Delete Endpoint"
-                                                             OnClick="@(() => DeleteEndpoint(endpoint))"
-                                                             OnClick:stopPropagation="true" />
-                                        </SirenStack>
-                                    </div>
-                                }
+                                        </div>
+                                    }
                                 </div>
                             </div>
                         </Panel1>
@@ -129,7 +128,8 @@ else
                                             @_selectedEndpoint.RoutePattern
                                         </MudText>
                                         <SirenSpacer />
-                                        <SirenSwitch Style="max-height: 20px;" Size="Size.Small" T="bool" @bind-Value="_selectedEndpoint.IsEnabled" Color="Color.Primary"
+                                        <SirenSwitch Style="max-height: 20px;" Size="Size.Small" T="bool"
+                                                     @bind-Value="_selectedEndpoint.IsEnabled" Color="Color.Primary"
                                                      Label="@(_selectedEndpoint.IsEnabled ? "Enabled" : "Disabled")" />
                                     }
                                     else
@@ -137,72 +137,69 @@ else
                                         <MudText Typo="Typo.subtitle2" Class="mud-text-secondary">No endpoint selected</MudText>
                                     }
                                 </div>
-                            @if (_selectedEndpoint != null)
-                            {
-                                <div class="mock-editor-panel">
-                                    <div class="mock-editor-form">
-                                        <!-- Route Section -->
-                                        <SirenStack Row="true" Spacing="1" AlignItems="AlignItems.Center" Class="mb-1">
-                                            <MudIcon Icon="@SirenIcons.Request" Size="Size.Small" Color="Color.Primary" />
-                                            <MudText Typo="Typo.subtitle2" Color="Color.Primary">Route</MudText>
-                                        </SirenStack>
-                                        <div class="mock-editor-form-row mb-3">
-                                            <SimpleHttpRequestMethodSelector SelectedMethod="@_selectedEndpoint.Method"
-                                                                             SelectedMethodChanged="@(m => { if (m != null) _selectedEndpoint.Method = m; })"
-                                                                             Variant="@Variant.Text"
-                                                                             Label="" />
-                                            <MudTextField @bind-Value="_selectedEndpoint.RoutePattern" Variant="Variant.Text"
-                                                          Placeholder="/api/example/{id}" Style="flex: 1;" />
+                                @if (_selectedEndpoint != null)
+                                {
+                                    <div class="mock-editor-panel">
+                                        <div class="mock-editor-form">
+                                            <!-- Route Section -->
+                                            <SirenStack Row="true" Spacing="1" AlignItems="AlignItems.Center" Class="mb-1">
+                                                <MudIcon Icon="@SirenIcons.Request" Size="Size.Small" Color="Color.Primary" />
+                                                <MudText Typo="Typo.subtitle2" Color="Color.Primary">Route</MudText>
+                                            </SirenStack>
+                                            <div class="mock-editor-form-row mb-3">
+                                                <SimpleHttpRequestMethodSelector SelectedMethod="@_selectedEndpoint.Method"
+                                                                                 SelectedMethodChanged="@(m => { if (m != null) _selectedEndpoint.Method = m; })"
+                                                                                 Variant="@Variant.Text" Label="" />
+                                                <MudTextField @bind-Value="_selectedEndpoint.RoutePattern" Variant="Variant.Text"
+                                                              Placeholder="/api/example/{id}" Style="flex: 1;" />
+                                            </div>
+                                            <!-- Response Section -->
+                                            <SirenStack Row="true" Spacing="1" AlignItems="AlignItems.Center" Class="mb-1">
+                                                <MudIcon Icon="@SirenIcons.Response" Size="Size.Small" Color="Color.Primary" />
+                                                <MudText Typo="Typo.subtitle2" Color="Color.Primary">Response</MudText>
+                                            </SirenStack>
+                                            <div class="mock-editor-form-row mb-3">
+                                                <MudNumericField @bind-Value="_selectedEndpoint.Response.StatusCode" Label="Status"
+                                                                 Variant="Variant.Text" Min="100" Max="599" Style="width: 80px;" />
+                                                <MudNumericField @bind-Value="_selectedEndpoint.Response.DelayMs" Label="Delay (ms)"
+                                                                 Variant="Variant.Text" Min="0" Max="30000" Style="width: 100px;" />
+                                                <MudSelect T="string" Value="_selectedContentType" Label="Content-Type"
+                                                           Variant="Variant.Text" Style="width: 160px;"
+                                                           ValueChanged="@((string v) => OnContentTypeChanged(v))">
+                                                    <MudSelectItem Value="@("application/json")">application/json</MudSelectItem>
+                                                    <MudSelectItem Value="@("text/plain")">text/plain</MudSelectItem>
+                                                    <MudSelectItem Value="@("text/html")">text/html</MudSelectItem>
+                                                    <MudSelectItem Value="@("application/xml")">application/xml</MudSelectItem>
+                                                </MudSelect>
+                                            </div>
+                                            <SirenStack Row="true" Spacing="1" AlignItems="AlignItems.Center" Class="mb-1">
+                                                <MudText Typo="Typo.body2">Body</MudText>
+                                                <MudText Typo="Typo.caption" Class="mud-text-secondary">
+                                                    @("{{variable}}") for substitution
+                                                </MudText>
+                                            </SirenStack>
                                         </div>
-                                        <!-- Response Section -->
-                                        <SirenStack Row="true" Spacing="1" AlignItems="AlignItems.Center" Class="mb-1">
-                                            <MudIcon Icon="@SirenIcons.Response" Size="Size.Small" Color="Color.Primary" />
-                                            <MudText Typo="Typo.subtitle2" Color="Color.Primary">Response</MudText>
-                                        </SirenStack>
-                                        <div class="mock-editor-form-row mb-3">
-                                            <MudNumericField @bind-Value="_selectedEndpoint.Response.StatusCode"
-                                                             Label="Status" Variant="Variant.Text"
-                                                             Min="100" Max="599" Style="width: 80px;" />
-                                            <MudNumericField @bind-Value="_selectedEndpoint.Response.DelayMs"
-                                                             Label="Delay (ms)" Variant="Variant.Text"
-                                                             Min="0" Max="30000" Style="width: 100px;" />
-                                            <MudSelect T="string" Value="_selectedContentType" Label="Content-Type"
-                                                       Variant="Variant.Text" Style="width: 160px;"
-                                                       ValueChanged="@((string v) => OnContentTypeChanged(v))">
-                                                <MudSelectItem Value="@("application/json")">application/json</MudSelectItem>
-                                                <MudSelectItem Value="@("text/plain")">text/plain</MudSelectItem>
-                                                <MudSelectItem Value="@("text/html")">text/html</MudSelectItem>
-                                                <MudSelectItem Value="@("application/xml")">application/xml</MudSelectItem>
-                                            </MudSelect>
+                                        <div class="mock-editor-body-container">
+                                            <JsGuard Name="monaco">
+                                                <StandaloneCodeEditor @ref="_editor" Id="mock-response-body-editor"
+                                                                      ConstructionOptions="EditorConstructionOptions"
+                                                                      OnDidChangeModelContent="OnEditorContentChanged" OnDidInit="OnEditorInit" />
+                                            </JsGuard>
                                         </div>
-                                        <SirenStack Row="true" Spacing="1" AlignItems="AlignItems.Center" Class="mb-1">
-                                            <MudText Typo="Typo.body2">Body</MudText>
-                                            <MudText Typo="Typo.caption" Class="mud-text-secondary">
-                                                @("{{variable}}") for substitution
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="mock-editor-panel">
+                                        <SirenStack Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="2"
+                                                    Style="flex: 1;">
+                                            <MudIcon Icon="@SirenIcons.Edit" Class="mud-text-secondary" />
+                                            <MudText Typo="Typo.body1" Class="mud-text-secondary">
+                                                Select an endpoint to edit
                                             </MudText>
                                         </SirenStack>
                                     </div>
-                                    <div class="mock-editor-body-container">
-                                        <JsGuard Name="monaco">
-                                            <StandaloneCodeEditor @ref="_editor" Id="mock-response-body-editor"
-                                                                  ConstructionOptions="EditorConstructionOptions"
-                                                                  OnDidChangeModelContent="OnEditorContentChanged"
-                                                                  OnDidInit="OnEditorInit" />
-                                        </JsGuard>
-                                    </div>
-                                </div>
-                            }
-                            else
-                            {
-                                <div class="mock-editor-panel">
-                                    <SirenStack Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="2" Style="flex: 1;">
-                                        <MudIcon Icon="@SirenIcons.Edit" Class="mud-text-secondary" />
-                                        <MudText Typo="Typo.body1" Class="mud-text-secondary">
-                                            Select an endpoint to edit
-                                        </MudText>
-                                    </SirenStack>
-                                </div>
-                            }
+                                }
                             </div>
                         </Panel2>
                     </SirenSplitter>
@@ -221,6 +218,9 @@ else
 
     [Inject]
     private NavigationManager NavigationManager { get; set; } = default!;
+
+    [Inject]
+    private SirenAppState AppState { get; set; } = default!;
 
     [Inject]
     private ISnackbar Snackbar { get; set; } = default!;
@@ -251,6 +251,7 @@ else
     protected override void OnInitialized()
     {
         MockServerState.StateChanged += OnStateChanged;
+        AppState.OnAppStateChanged += (SirenAppState state) => StateHasChanged();
         LoadConfiguration();
     }
 
@@ -498,8 +499,19 @@ else
         Snackbar.AddSirenSuccess("Copied to clipboard");
     }
 
+    private string GetPageWidth()
+    {
+        var drawerWidth = AppState.SideBarOpen
+            ? "var(--mud-drawer-width-left)"
+            : "var(--mud-drawer-width-mini-left)";
+
+        return $"width: calc(100% - {drawerWidth})";
+    }
+
     public void Dispose()
     {
         MockServerState.StateChanged -= OnStateChanged;
+        AppState.OnAppStateChanged -= (SirenAppState state) => StateHasChanged();
+
     }
 }
