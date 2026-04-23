@@ -5,7 +5,7 @@
 @using Siren.Components.Shared
 @implements IDisposable
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="py-4">
+<div MaxWidth="MaxWidth.Large" Class="pa-4 mud-drawer-transition" Style="@GetPageWidth()">
     <SirenStack Row="true" AlignItems="AlignItems.Center" Class="mb-4">
         <SirenStack Spacing="1">
             <MudText Typo="Typo.h4" class="mud-text-primary">Mock Server Configurations</MudText>
@@ -109,7 +109,7 @@
             }
         </MudGrid>
     }
-</MudContainer>
+</div>
 
 <MudMessageBox @ref="_deleteConfirmation" Title="Delete Configuration" CancelText="Cancel">
     <MessageContent>
@@ -125,6 +125,9 @@
     private MockServerState MockServerState { get; set; } = default!;
 
     [Inject]
+    private SirenAppState AppState { get; set; } = default!;
+
+    [Inject]
     private NavigationManager NavigationManager { get; set; } = default!;
 
     [Inject]
@@ -135,6 +138,7 @@
     protected override void OnInitialized()
     {
         MockServerState.StateChanged += OnStateChanged;
+        AppState.OnAppStateChanged += (SirenAppState state) => StateHasChanged();
     }
 
     private void OnStateChanged()
@@ -276,8 +280,19 @@
         };
     }
 
+    private string GetPageWidth()
+    {
+        var drawerWidth = AppState.SideBarOpen
+            ? "var(--mud-drawer-width-left)"
+            : "var(--mud-drawer-width-mini-left)";
+
+        return $"width: calc(100% - {drawerWidth})";
+    }
+
     public void Dispose()
     {
         MockServerState.StateChanged -= OnStateChanged;
+        AppState.OnAppStateChanged -= (SirenAppState state) => StateHasChanged();
+
     }
 }

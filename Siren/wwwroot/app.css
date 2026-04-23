@@ -1431,3 +1431,7 @@ button:focus {
     padding-top: 38px;
     height: calc(100dvh);
 }
+
+.mud-drawer-transition {
+    transition: width 225ms cubic-bezier(0, 0, 0.2, 1);
+}

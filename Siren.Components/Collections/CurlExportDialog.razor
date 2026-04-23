@@ -14,13 +14,12 @@
                 Copy this cURL command to use in your terminal or share with others.
             </SirenText>
 
-            <MudTextField T="string"
-                          Value="@_curlCommand"
-                          ReadOnly="true"
-                          Lines="12"
-                          Variant="Variant.Outlined"
-                          FullWidth="true"
-                          Style="font-family: monospace;" />
+            <MtTextField T="string"
+                         Value="@_curlCommand"
+                         ReadOnly="true"
+                         Lines="12"
+                         Class="w-100"
+                         Style="font-family: monospace;" />
 
             @if (_copied)
             {
