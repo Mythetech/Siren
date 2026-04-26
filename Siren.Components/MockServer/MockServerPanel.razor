@@ -1,4 +1,5 @@
 @using MudBlazor
+@using Mythetech.Framework.Enums
 @using Siren.Components.MockServer.Models
 @using Siren.Components.Theme
 @using Siren.Components.Shared
@@ -63,10 +64,10 @@
                     }
                     else
                     {
-                        <MudButton Variant="Variant.Filled" Color="Color.Success" StartIcon="@SirenIcons.Play" FullWidth="true"
-                                   OnClick="StartServer" Disabled="@(MockServerState.IsRunning && !IsActiveConfiguration)">
+                        <MtButton Roundedness="@Roundedness.Pill" Variant="Variant.Filled" Color="Color.Success" StartIcon="@SirenIcons.Play" FullWidth="true"
+                                  OnClick="StartServer" Disabled="@(MockServerState.IsRunning && !IsActiveConfiguration)">
                             Start Server
-                        </MudButton>
+                        </MtButton>
                     }
                 </SirenStack>
             </MudPaper>
@@ -121,10 +122,10 @@
         <SirenSpacer />
 
         <!-- Open Full Page -->
-        <MudButton Variant="Variant.Text" Color="Color.Primary" FullWidth="true" EndIcon="@SirenIcons.LoadNewTab"
-                   OnClick="OpenMockServerPage">
+        <MtButton Roundedness="@Roundedness.Pill" Variant="Variant.Text" Color="Color.Primary" FullWidth="true" EndIcon="@SirenIcons.LoadNewTab"
+                  OnClick="OpenMockServerPage">
             Open Mock Server Page
-        </MudButton>
+        </MtButton>
     }
 </SirenStack>
 
