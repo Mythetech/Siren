@@ -29,6 +29,8 @@ using Siren.MockServer;
 using Siren.NativeMenu;
 using Siren.Variables;
 using Velopack;
+using Mythetech.Framework.Desktop.Storage.LiteDb;
+using LiteDbSettingsStorage = Mythetech.Framework.Desktop.Storage.LiteDb.LiteDbSettingsStorage;
 
 namespace Siren
 {
@@ -54,7 +56,8 @@ namespace Siren
                 Console.Error.WriteLine($"Fatal exception: {error.ExceptionObject}");
             };
 
-            var appBuilder = HermesBlazorAppBuilder.CreateDefault(args);
+            var appBuilder = HermesBlazorAppBuilder.CreateDefault(args)
+                .WithLicenseKey(HermesLicense.Key);
 
             appBuilder.ConfigureWindow(options =>
             {
