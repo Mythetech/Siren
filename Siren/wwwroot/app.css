@@ -677,7 +677,7 @@ button:focus {
 }
 
 .app-context-panel {
-    height: 100dvh;
+    height: 100%;
     min-width: var(--mud-drawer-width-mini-left);
     max-width: var(--mud-drawer-width-mini-left);
     overflow: hidden;
