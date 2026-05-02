@@ -402,3 +402,4 @@ FodyWeavers.xsd
 *.idea
 Siren/plugins/
 .claude*
+.internal/
