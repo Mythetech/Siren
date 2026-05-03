@@ -1,4 +1,4 @@
-using Microsoft.FluentUI.AspNetCore.Components;
+using MudBlazor.Utilities;
 
 namespace Siren.Components.Infrastructure.Keyboard
 {
@@ -10,56 +10,56 @@ namespace Siren.Components.Infrastructure.Keyboard
             {
                 new KeyboardShortcut(
                     Description: "Run active request",
-                    Key: KeyCode.Enter,
+                    Key: JsKey.Enter,
                     RequiresCtrl: true
                 ),
                 new KeyboardShortcut(
                     Description: "New request tab",
-                    Key: KeyCode.KeyT,
+                    Key: JsKey.KeyT,
                     RequiresCtrl: true
                 ),
                 new KeyboardShortcut(
                     Description: "Focus URI input",
-                    Key: KeyCode.KeyU,
+                    Key: JsKey.KeyU,
                     RequiresCtrl: true
                 ),
                 new KeyboardShortcut(
                     Description: "Open settings",
-                    Key: KeyCode.KeyS,
+                    Key: JsKey.KeyS,
                     RequiresCtrl: true
                 ),
                 new KeyboardShortcut(
                     Description: "Focus HTTP method",
-                    Key: KeyCode.KeyM,
+                    Key: JsKey.KeyM,
                     RequiresCtrl: true
                 ),
                 new KeyboardShortcut(
                     Description: "Open history panel",
-                    Key: KeyCode.KeyH,
+                    Key: JsKey.KeyH,
                     RequiresCtrl: true,
                     RequiresShift: true
                 ),
                 new KeyboardShortcut(
                     Description: "Open collections panel",
-                    Key: KeyCode.KeyC,
+                    Key: JsKey.KeyC,
                     RequiresCtrl: true,
                     RequiresShift: true
                 ),
                 new KeyboardShortcut(
                     Description: "Open variables panel",
-                    Key: KeyCode.KeyV,
+                    Key: JsKey.KeyV,
                     RequiresCtrl: true,
                     RequiresShift: true
                 ),
                 new KeyboardShortcut(
                     Description: "Go to requests page",
-                    Key: KeyCode.KeyR,
+                    Key: JsKey.KeyR,
                     RequiresCtrl: true,
                     RequiresShift: true
                 ),
                 new KeyboardShortcut(
                     Description: "Go to mock server page",
-                    Key: KeyCode.KeyM,
+                    Key: JsKey.KeyM,
                     RequiresCtrl: true,
                     RequiresShift: true
                 )
@@ -67,4 +67,3 @@ namespace Siren.Components.Infrastructure.Keyboard
         }
     }
 }
-

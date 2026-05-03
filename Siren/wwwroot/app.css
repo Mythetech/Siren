@@ -598,65 +598,19 @@ a, .btn-link {
     }
     */
 
-.fluent-multi-splitter {
-    /* Resize Icon colors */
-    --neutral-stroke-strong-rest: var(--mud-palette-primary-lighten);
-    --neutral-stroke-strong-hover: var(--mud-palette-primary-lighten);
-    /* Bar colors */
-    --neutral-stroke-rest: var(--mud-palette-primary-darken); /* var(--mud-palette-primary); */
-    --neutral-stroke-hover: var(--mud-palette-primary);
-    /* Bar size */
-    --fluent-multi-splitter-bar-size: 10px !important;
+.mud-split-panel > .divider {
+    background-color: var(--mud-palette-primary-darken);
     border-radius: 2em;
+    transition: background-color 0.2s ease;
 }
 
-    .fluent-multi-splitter > .fluent-multi-splitter-bar:has([status="lastresizable"]) {
-        opacity: 0.2;
-    }
-
-.fluent-multi-splitter-bar {
-    border-radius: 2em;
+.mud-split-panel > .divider:hover {
+    background-color: var(--mud-palette-primary);
 }
 
-    .fluent-multi-splitter-bar::before,
-    .fluent-multi-splitter-bar::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        width: 8px;
-        height: 100%;
-        background-color: var(--mud-palette-surface);
-        pointer-events: none;
-    }
-
-    .fluent-multi-splitter-bar::before {
-        left: 0;
-    }
-
-    .fluent-multi-splitter-bar::before {
-        right: 0;
-    }
-
-
-.fluent-multi-splitter:has([orientation="vertical"]) > * > * > .fluent-multi-splitter-bar::before,
-.fluent-multi-splitter:has([orientation="vertical"]) > * > * > .fluent-multi-splitter-bar::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 100%;
-    height: 8px;
-    background-color: var(--mud-palette-surface);
+.divider-locked > .divider {
     pointer-events: none;
-}
-
-.fluent-multi-splitter:has([orientation="vertical"]) > * > * > .fluent-multi-splitter-bar::before {
-    left: 0;
-}
-
-.fluent-multi-splitter:has([orientation="vertical"]) > * > * > .fluent-multi-splitter-bar::after {
-    right: 0;
+    visibility: hidden;
 }
 
 .mw-80 {

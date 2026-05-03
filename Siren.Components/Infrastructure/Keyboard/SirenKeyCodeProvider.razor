@@ -1,0 +1,60 @@
+@using MudBlazor
+@using MudBlazor.Utilities
+
+@* Ctrl+Enter / Cmd+Enter: Run active request *@
+<MudHotkey Key="JsKey.Enter" KeyModifiers="@CtrlOnly" OnHotkeyPressed="@OnRunRequest" />
+<MudHotkey Key="JsKey.Enter" KeyModifiers="@MetaOnly" OnHotkeyPressed="@OnRunRequest" />
+
+@* Ctrl+T / Cmd+T: New request tab *@
+<MudHotkey Key="JsKey.KeyT" KeyModifiers="@CtrlOnly" OnHotkeyPressed="@OnNewTab" />
+<MudHotkey Key="JsKey.KeyT" KeyModifiers="@MetaOnly" OnHotkeyPressed="@OnNewTab" />
+
+@* Ctrl+U / Cmd+U: Focus URI input *@
+<MudHotkey Key="JsKey.KeyU" KeyModifiers="@CtrlOnly" OnHotkeyPressed="@OnFocusUri" />
+<MudHotkey Key="JsKey.KeyU" KeyModifiers="@MetaOnly" OnHotkeyPressed="@OnFocusUri" />
+
+@* Ctrl+S / Cmd+S: Open settings *@
+<MudHotkey Key="JsKey.KeyS" KeyModifiers="@CtrlOnly" OnHotkeyPressed="@OnOpenSettings" />
+<MudHotkey Key="JsKey.KeyS" KeyModifiers="@MetaOnly" OnHotkeyPressed="@OnOpenSettings" />
+
+@* Ctrl+M / Cmd+M: Focus HTTP method *@
+<MudHotkey Key="JsKey.KeyM" KeyModifiers="@CtrlOnly" OnHotkeyPressed="@OnFocusMethod" />
+<MudHotkey Key="JsKey.KeyM" KeyModifiers="@MetaOnly" OnHotkeyPressed="@OnFocusMethod" />
+
+@* Ctrl+Shift+H / Cmd+Shift+H: Open history panel *@
+<MudHotkey Key="JsKey.KeyH" KeyModifiers="@CtrlShift" OnHotkeyPressed="@OnOpenHistory" />
+<MudHotkey Key="JsKey.KeyH" KeyModifiers="@MetaShift" OnHotkeyPressed="@OnOpenHistory" />
+
+@* Ctrl+Shift+C / Cmd+Shift+C: Open collections panel *@
+<MudHotkey Key="JsKey.KeyC" KeyModifiers="@CtrlShift" OnHotkeyPressed="@OnOpenCollections" />
+<MudHotkey Key="JsKey.KeyC" KeyModifiers="@MetaShift" OnHotkeyPressed="@OnOpenCollections" />
+
+@* Ctrl+Shift+V / Cmd+Shift+V: Open variables panel *@
+<MudHotkey Key="JsKey.KeyV" KeyModifiers="@CtrlShift" OnHotkeyPressed="@OnOpenVariables" />
+<MudHotkey Key="JsKey.KeyV" KeyModifiers="@MetaShift" OnHotkeyPressed="@OnOpenVariables" />
+
+@* Ctrl+Shift+R / Cmd+Shift+R: Go to requests page *@
+<MudHotkey Key="JsKey.KeyR" KeyModifiers="@CtrlShift" OnHotkeyPressed="@OnGoToRequests" />
+<MudHotkey Key="JsKey.KeyR" KeyModifiers="@MetaShift" OnHotkeyPressed="@OnGoToRequests" />
+
+@* Ctrl+Shift+M / Cmd+Shift+M: Go to mock server page *@
+<MudHotkey Key="JsKey.KeyM" KeyModifiers="@CtrlShift" OnHotkeyPressed="@OnGoToMockServer" />
+<MudHotkey Key="JsKey.KeyM" KeyModifiers="@MetaShift" OnHotkeyPressed="@OnGoToMockServer" />
+
+@code {
+    [Parameter] public EventCallback OnRunRequest { get; set; }
+    [Parameter] public EventCallback OnNewTab { get; set; }
+    [Parameter] public EventCallback OnFocusUri { get; set; }
+    [Parameter] public EventCallback OnOpenSettings { get; set; }
+    [Parameter] public EventCallback OnFocusMethod { get; set; }
+    [Parameter] public EventCallback OnOpenHistory { get; set; }
+    [Parameter] public EventCallback OnOpenCollections { get; set; }
+    [Parameter] public EventCallback OnOpenVariables { get; set; }
+    [Parameter] public EventCallback OnGoToRequests { get; set; }
+    [Parameter] public EventCallback OnGoToMockServer { get; set; }
+
+    private static readonly IEnumerable<JsKeyModifier> CtrlOnly = new[] { JsKeyModifier.ControlLeft };
+    private static readonly IEnumerable<JsKeyModifier> MetaOnly = new[] { JsKeyModifier.MetaLeft };
+    private static readonly IEnumerable<JsKeyModifier> CtrlShift = new[] { JsKeyModifier.ControlLeft, JsKeyModifier.ShiftLeft };
+    private static readonly IEnumerable<JsKeyModifier> MetaShift = new[] { JsKeyModifier.MetaLeft, JsKeyModifier.ShiftLeft };
+}

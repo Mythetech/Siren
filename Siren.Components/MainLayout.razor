@@ -6,7 +6,6 @@
 @using Siren.Components.NativeMenu
 @using Siren.Components.Shared
 @using Siren.Components.Variables
-@using Microsoft.FluentUI.AspNetCore.Components
 @using Siren.Components.Http.Models
 @using Siren.Components.Shared.Notifications
 @using Siren.Components.Shared.Dialogs.Consumers
@@ -31,7 +30,6 @@
 <GlobalCommandSnackbarProvider />
 <DialogCommandProvider />
 <JsApiCommandProvider />
-<FluentKeyCodeProvider />
 
 <MudLayout Class="custom-title-bar-layout">
     <Hermes.Blazor.Components.HermesTitleBar Height="38">
@@ -58,10 +56,10 @@
     <NativeMenuDispatcher />
     <NativeMenuStateUpdater />
     <Siren.Components.NativeMenu.Consumers.MenuCommandProvider />
-    <KeyboardShortcuts OnOpenSettings="OpenSettingsDialog" OnOpenHistory="@(() => _contextPanel?.OpenHistoryPanel())"
-                       OnOpenCollections="@(() => _contextPanel?.OpenCollectionsPanel())"
-                       OnOpenVariables="@(() => _contextPanel?.OpenVariablesPanel())" OnGoToRequests="NavigateToHome"
-                       OnGoToMockServer="NavigateToMockServer" />
+    <SirenKeyCodeProvider OnOpenSettings="OpenSettingsDialog" OnOpenHistory="@(() => _contextPanel?.OpenHistoryPanel())"
+                          OnOpenCollections="@(() => _contextPanel?.OpenCollectionsPanel())"
+                          OnOpenVariables="@(() => _contextPanel?.OpenVariablesPanel())" OnGoToRequests="NavigateToHome"
+                          OnGoToMockServer="NavigateToMockServer" />
 </MudLayout>
 
 
