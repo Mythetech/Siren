@@ -52,10 +52,11 @@
 		<None Remove="Variables\" />
 		<None Remove="Infrastructure\" />
 	</ItemGroup>
-	<!-- Remove duplicate blazor.webview.js static assets from referenced project -->
+	<!-- Remove duplicate static web assets from referenced project -->
 	<Target Name="RemoveDuplicateWebViewAssets" AfterTargets="ResolveCoreStaticWebAssets" BeforeTargets="MergeStaticWebAssets">
 		<ItemGroup>
 			<StaticWebAsset Remove="@(StaticWebAsset)" Condition="'%(SourceId)' == 'Siren.Components' AND $([System.String]::Copy('%(RelativePath)').Contains('blazor.webview'))" />
+			<StaticWebAsset Remove="@(StaticWebAsset)" Condition="'%(SourceId)' == 'Siren.Components' AND $([System.String]::Copy('%(RelativePath)').Contains('blazor.modules'))" />
 		</ItemGroup>
 	</Target>
 </Project>
