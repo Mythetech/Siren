@@ -5,10 +5,9 @@
 @using System.IO
 @using Microsoft.Extensions.Logging
 @using Mythetech.Framework.Infrastructure.Files
-@using Orientation = Microsoft.FluentUI.AspNetCore.Components.Orientation
 
 <SirenStack Class="w-100 h-100 d-flex">
-    <SirenSplitter Orientation="Orientation.Vertical" Class="w-100">
+    <SirenSplitter Horizontal="true" Class="w-100">
         <Panel1>
             <SirenStack Spacing="3" Class="p-1 overflow-y-scroll d-flex h-100 w-100">
                 <SirenStack Row="true" Spacing="3" Class="w-100" AlignItems="AlignItems.Center">

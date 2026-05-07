@@ -5,11 +5,10 @@
 @using Siren.Components.Services
 @using System.Text.Json
 @using System.Linq
-@using Orientation = Microsoft.FluentUI.AspNetCore.Components.Orientation
 @implements IDisposable
 
 <SirenStack Class="w-100 h-100">
-    <SirenSplitter Orientation="Orientation.Vertical" Class="w-100">
+    <SirenSplitter Horizontal="true" Class="w-100">
         <Panel1>
         <MudPaper Elevation="0" Height="100%" Width="100%" Class="p-1">
             <SirenText Typo="Typo.body1">Request Cookies</SirenText>

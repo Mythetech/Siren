@@ -1,5 +1,4 @@
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.FluentUI.AspNetCore.Components;
 using MudBlazor;
 using MudBlazor.Services;
 using Mythetech.Framework.Infrastructure.MessageBus;
@@ -39,8 +38,6 @@ public static class ServiceCollectionExtensions
             config.PopoverOptions.QueueDelay = TimeSpan.FromSeconds(0.01);
             config.PopoverOptions.OverflowBehavior = OverflowBehavior.FlipNever;
         });
-
-        services.AddFluentUIComponents();
 
         services.AddSingleton<SirenAppState>();
         services.AddSingleton<ICookieService, CookieService>();
