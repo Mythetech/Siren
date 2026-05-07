@@ -15,6 +15,7 @@
 @using Siren.Components.AppContextPanel
 @using Siren.Components.Configuration
 @using Microsoft.Extensions.Logging
+@using Mythetech.Framework.Components.CommandPalette
 @using Mythetech.Framework.Infrastructure
 @using Mythetech.Framework.Infrastructure.Plugins
 @using Mythetech.Framework.Infrastructure.Settings
@@ -30,6 +31,7 @@
 <GlobalCommandSnackbarProvider />
 <DialogCommandProvider />
 <JsApiCommandProvider />
+<CommandPaletteHost BackgroundClass="siren-dialog" />
 
 <MudLayout Class="custom-title-bar-layout">
     <Hermes.Blazor.Components.HermesTitleBar Height="38">
@@ -125,6 +127,8 @@
     {
         AppState.OnDarkModeChanged += HandleDarkModeChange;
         AppState.OnActiveEnvironmentChanged += HandleActiveEnvironmentChanged;
+        AppState.OnOpenContextPanel += HandleOpenContextPanel;
+        AppState.OnOpenSettings += HandleOpenSettings;
         VariableState.StateChanged += HandleVariableStateChanged;
         PluginState.StateChanged += OnPluginStateChanged;
         NavigationManager.LocationChanged += OnLocationChanged;
@@ -307,6 +311,33 @@
         InvokeAsync(StateHasChanged);
     }
 
+    private async Task HandleOpenContextPanel(string panelName)
+    {
+        await InvokeAsync(async () =>
+        {
+            switch (panelName)
+            {
+                case "History":
+                    if (_contextPanel != null) await _contextPanel.OpenHistoryPanel();
+                    break;
+                case "Collections":
+                    if (_contextPanel != null) await _contextPanel.OpenCollectionsPanel();
+                    break;
+                case "Variables":
+                    if (_contextPanel != null) await _contextPanel.OpenVariablesPanel();
+                    break;
+                case "Mock Server":
+                    if (_contextPanel != null) await _contextPanel.OpenMockServerPanel();
+                    break;
+            }
+        });
+    }
+
+    private async Task HandleOpenSettings()
+    {
+        await InvokeAsync(OpenSettingsDialog);
+    }
+
     private void NavigateToHome()
     {
         NavigationManager.NavigateTo("/");
@@ -321,6 +352,8 @@
     {
         AppState.OnDarkModeChanged -= HandleDarkModeChange;
         AppState.OnActiveEnvironmentChanged -= HandleActiveEnvironmentChanged;
+        AppState.OnOpenContextPanel -= HandleOpenContextPanel;
+        AppState.OnOpenSettings -= HandleOpenSettings;
         VariableState.StateChanged -= HandleVariableStateChanged;
         PluginState.StateChanged -= OnPluginStateChanged;
         NavigationManager.LocationChanged -= OnLocationChanged;

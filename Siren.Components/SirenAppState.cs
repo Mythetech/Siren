@@ -206,6 +206,46 @@ namespace Siren.Components
             }
             return (null, "none");
         }
+
+        public event Func<string, Task>? OnOpenContextPanel;
+
+        public async Task TriggerOpenContextPanel(string panelName)
+        {
+            if (OnOpenContextPanel != null)
+                await OnOpenContextPanel.Invoke(panelName);
+        }
+
+        public event Func<string, Task>? OnOpenRequestContextPanel;
+
+        public async Task TriggerOpenRequestContextPanel(string tabName)
+        {
+            if (OnOpenRequestContextPanel != null)
+                await OnOpenRequestContextPanel.Invoke(tabName);
+        }
+
+        public event Func<Task>? OnOpenSettings;
+
+        public async Task TriggerOpenSettings()
+        {
+            if (OnOpenSettings != null)
+                await OnOpenSettings.Invoke();
+        }
+
+        public event Func<Task>? OnSendRequest;
+
+        public async Task TriggerSendRequest()
+        {
+            if (OnSendRequest != null)
+                await OnSendRequest.Invoke();
+        }
+
+        public event Func<Task>? OnNewTab;
+
+        public async Task TriggerNewTab()
+        {
+            if (OnNewTab != null)
+                await OnNewTab.Invoke();
+        }
     }
 }
 

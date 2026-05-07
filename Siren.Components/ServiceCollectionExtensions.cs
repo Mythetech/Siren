@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using MudBlazor;
 using MudBlazor.Services;
+using Mythetech.Framework.Components.CommandPalette;
 using Mythetech.Framework.Infrastructure.MessageBus;
 using Mythetech.Framework.Infrastructure.Secrets;
 using Mythetech.Framework.Infrastructure.Settings;
@@ -11,6 +12,7 @@ using Siren.Components.MockServer;
 using Siren.Components.RequestContextPanel.Authentication;
 using Siren.Components.Services;
 using Siren.Components.Settings;
+using Siren.Components.CommandPalette;
 using Siren.Components.SessionStats;
 using Siren.Components.Variables;
 
@@ -91,6 +93,10 @@ public static class ServiceCollectionExtensions
         // Mock server
         services.AddSingleton<IMockServerService, TMockServerService>();
         services.AddSingleton<MockServerState>();
+
+        // Command palette
+        services.AddCommandPalette();
+        services.AddCommandProvider<SirenCommandProvider>();
 
         return services;
     }

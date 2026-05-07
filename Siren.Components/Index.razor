@@ -162,6 +162,9 @@
         AppState.OnFormatRequest += HandleFormatRequest;
         AppState.OnImportRequestBody += HandleImportRequestBody;
         AppState.OnRequestBodyContent += HandleRequestBodyContent;
+        AppState.OnOpenRequestContextPanel += HandleOpenRequestContextPanel;
+        AppState.OnSendRequest += HandleSendRequestFromPalette;
+        AppState.OnNewTab += HandleNewTabFromPalette;
         if (AppState.Active == null)
         {
             var r = CreateNewNetworkRequest();
@@ -226,6 +229,9 @@
         AppState.OnFormatRequest -= HandleFormatRequest;
         AppState.OnImportRequestBody -= HandleImportRequestBody;
         AppState.OnRequestBodyContent -= HandleRequestBodyContent;
+        AppState.OnOpenRequestContextPanel -= HandleOpenRequestContextPanel;
+        AppState.OnSendRequest -= HandleSendRequestFromPalette;
+        AppState.OnNewTab -= HandleNewTabFromPalette;
         AppState.OnAppStateChanged -= (state) => StateHasChanged();
     }
 
@@ -252,6 +258,21 @@
             Name = "New Request",
             Request = request,
         };
+    }
+
+    private async Task HandleOpenRequestContextPanel(string tab)
+    {
+        await InvokeAsync(async () => await ToggleSidePanel(tab));
+    }
+
+    private async Task HandleSendRequestFromPalette()
+    {
+        await InvokeAsync(HandleSendClicked);
+    }
+
+    private async Task HandleNewTabFromPalette()
+    {
+        await InvokeAsync(HandleNewTab);
     }
 
     protected async Task HandleFocusUri()
