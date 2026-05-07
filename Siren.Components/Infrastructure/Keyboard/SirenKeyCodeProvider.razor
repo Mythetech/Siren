@@ -1,25 +1,37 @@
 @using MudBlazor
 @using MudBlazor.Utilities
 
-@* Ctrl+Enter / Cmd+Enter: Run active request *@
-<MudHotkey Key="JsKey.Enter" KeyModifiers="@CtrlOnly" OnHotkeyPressed="@OnRunRequest" />
-<MudHotkey Key="JsKey.Enter" KeyModifiers="@MetaOnly" OnHotkeyPressed="@OnRunRequest" />
+@if (OnRunRequest.HasDelegate)
+{
+    @* Ctrl+Enter / Cmd+Enter: Run active request *@
+    <MudHotkey Key="JsKey.Enter" KeyModifiers="@CtrlOnly" OnHotkeyPressed="@OnRunRequest" />
+    <MudHotkey Key="JsKey.Enter" KeyModifiers="@MetaOnly" OnHotkeyPressed="@OnRunRequest" />
+}
 
-@* Ctrl+T / Cmd+T: New request tab *@
-<MudHotkey Key="JsKey.KeyT" KeyModifiers="@CtrlOnly" OnHotkeyPressed="@OnNewTab" />
-<MudHotkey Key="JsKey.KeyT" KeyModifiers="@MetaOnly" OnHotkeyPressed="@OnNewTab" />
+@if (OnNewTab.HasDelegate)
+{
+    @* Ctrl+T / Cmd+T: New request tab *@
+    <MudHotkey Key="JsKey.KeyT" KeyModifiers="@CtrlOnly" OnHotkeyPressed="@OnNewTab" />
+    <MudHotkey Key="JsKey.KeyT" KeyModifiers="@MetaOnly" OnHotkeyPressed="@OnNewTab" />
+}
 
-@* Ctrl+U / Cmd+U: Focus URI input *@
-<MudHotkey Key="JsKey.KeyU" KeyModifiers="@CtrlOnly" OnHotkeyPressed="@OnFocusUri" />
-<MudHotkey Key="JsKey.KeyU" KeyModifiers="@MetaOnly" OnHotkeyPressed="@OnFocusUri" />
+@if (OnFocusUri.HasDelegate)
+{
+    @* Ctrl+U / Cmd+U: Focus URI input *@
+    <MudHotkey Key="JsKey.KeyU" KeyModifiers="@CtrlOnly" OnHotkeyPressed="@OnFocusUri" />
+    <MudHotkey Key="JsKey.KeyU" KeyModifiers="@MetaOnly" OnHotkeyPressed="@OnFocusUri" />
+}
 
 @* Ctrl+S / Cmd+S: Open settings *@
 <MudHotkey Key="JsKey.KeyS" KeyModifiers="@CtrlOnly" OnHotkeyPressed="@OnOpenSettings" />
 <MudHotkey Key="JsKey.KeyS" KeyModifiers="@MetaOnly" OnHotkeyPressed="@OnOpenSettings" />
 
-@* Ctrl+M / Cmd+M: Focus HTTP method *@
-<MudHotkey Key="JsKey.KeyM" KeyModifiers="@CtrlOnly" OnHotkeyPressed="@OnFocusMethod" />
-<MudHotkey Key="JsKey.KeyM" KeyModifiers="@MetaOnly" OnHotkeyPressed="@OnFocusMethod" />
+@if (OnFocusMethod.HasDelegate)
+{
+    @* Ctrl+M / Cmd+M: Focus HTTP method *@
+    <MudHotkey Key="JsKey.KeyM" KeyModifiers="@CtrlOnly" OnHotkeyPressed="@OnFocusMethod" />
+    <MudHotkey Key="JsKey.KeyM" KeyModifiers="@MetaOnly" OnHotkeyPressed="@OnFocusMethod" />
+}
 
 @* Ctrl+Shift+H / Cmd+Shift+H: Open history panel *@
 <MudHotkey Key="JsKey.KeyH" KeyModifiers="@CtrlShift" OnHotkeyPressed="@OnOpenHistory" />
