@@ -80,7 +80,9 @@
                         </MudBlazor.TemplateColumn>
                         <MudBlazor.TemplateColumn Title="">
                             <CellTemplate>
-                                <MudMenu ListClass="pa-1" Dense="true">
+                                <MudMenu ListClass="pa-1" Dense="true"
+                                         AnchorOrigin="Origin.BottomLeft"
+                                         TransformOrigin="Origin.TopRight">
                                     <ActivatorContent Context="menuContext">
                                         <SirenIconButton Icon="@SirenIcons.MoreVert"
                                                          Variant="Variant.Text"
@@ -116,7 +118,9 @@
                                 </MudMenu>
                             </CellTemplate>
                             <EditTemplate>
-                                <MudMenu ListClass="pa-1" Dense="true">
+                                <MudMenu ListClass="pa-1" Dense="true"
+                                         AnchorOrigin="Origin.BottomLeft"
+                                         TransformOrigin="Origin.TopRight">
                                     <ActivatorContent Context="menuContext">
                                         <SirenIconButton Icon="@SirenIcons.MoreVert"
                                                          Variant="Variant.Text"
@@ -124,7 +128,7 @@
                                                          OnClick="@(() => menuContext.ToggleAsync())" />
                                     </ActivatorContent>
                                     <ChildContent>
-                                        <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Copy" 
+                                        <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Copy"
                                                      OnClick="@(async () =>
                                                      {
                                                          await JsApiService.CopyToClipboardAsync(context.Item.Key);
@@ -132,7 +136,7 @@
                                                      })">
                                             Copy Key
                                         </MudMenuItem>
-                                        <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Copy" 
+                                        <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Copy"
                                                      OnClick="@(async () =>
                                                      {
                                                          await JsApiService.CopyToClipboardAsync(context.Item.Value);
@@ -160,10 +164,10 @@
         <Panel2>
             <SirenStack Spacing="3" Class="p-1 overflow-auto flex-grow-1 d-flex w-100 h-100">
                 <SirenText Typo="Typo.body1">Response Headers</SirenText>
-                @if (NetworkRequest?.Response?.Headers != null)
+                @if (responseHeaders.Count > 0)
                 {
                     <MudDataGrid T="DictionaryViewModel"
-                                 Items="@(NetworkRequest.Response.Headers.ToViewModel())"
+                                 Items="@responseHeaders"
                                  Context="context"
                                  Class="w-100 h-100 d-flex"
                                  Bordered="false"
@@ -177,7 +181,7 @@
                         <Columns>
                             <MudBlazor.PropertyColumn Property="x => x.Key" Title="Header">
                                 <CellTemplate>
-                                    <MudTextField Value="@context.Item.Key" 
+                                    <MudTextField Value="@context.Item.Key"
                                                   ReadOnly="true"
                                                   Class="w-100"/>
                                 </CellTemplate>
@@ -185,14 +189,16 @@
 
                             <MudBlazor.PropertyColumn Property="x => x.Value" Title="Value">
                                 <CellTemplate>
-                                    <MudTextField Value="@context.Item.Value" 
+                                    <MudTextField Value="@context.Item.Value"
                                                   ReadOnly="true"
                                                   Class="w-100"/>
                                 </CellTemplate>
                             </MudBlazor.PropertyColumn>
                             <MudBlazor.TemplateColumn Title="">
                                 <CellTemplate>
-                                    <MudMenu ListClass="pa-1" Dense="true">
+                                    <MudMenu ListClass="pa-1" Dense="true"
+                                             AnchorOrigin="Origin.BottomLeft"
+                                             TransformOrigin="Origin.TopRight">
                                         <ActivatorContent Context="menuContext">
                                             <SirenIconButton Icon="@SirenIcons.MoreVert"
                                                              Variant="Variant.Text"
@@ -200,7 +206,7 @@
                                                              OnClick="@(() => menuContext.ToggleAsync())" />
                                         </ActivatorContent>
                                         <ChildContent>
-                                            <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Copy" 
+                                            <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Copy"
                                                          OnClick="@(async () =>
                                                          {
                                                              await JsApiService.CopyToClipboardAsync(context.Item.Key);
@@ -208,7 +214,7 @@
                                                          })">
                                                 Copy Key
                                             </MudMenuItem>
-                                            <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Copy" 
+                                            <MudMenuItem class="rounded-lg" Icon="@SirenIcons.Copy"
                                                          OnClick="@(async () =>
                                                          {
                                                              await JsApiService.CopyToClipboardAsync(context.Item.Value);
@@ -243,6 +249,7 @@
 
     private List<HeaderModel> requestHeaders = new();
     private List<HeaderModel> allHeaders = new();
+    private List<DictionaryViewModel> responseHeaders = new();
 
     protected override void OnInitialized()
     {
@@ -275,6 +282,8 @@
 
     private void LoadOrMergeHeaders()
     {
+        responseHeaders = NetworkRequest?.Response?.Headers?.ToViewModel() ?? new();
+
         if (NetworkRequest?.Request?.Headers == null)
         {
             return;
