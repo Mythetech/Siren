@@ -35,8 +35,8 @@
     <Hermes.Blazor.Components.HermesTitleBar Height="38">
         <div class="siren-title-bar-content">
             <MudTooltip Text="Back to Requests" Disabled="@IsOnHomePage" Class="no-drag">
-                <MudIconButton Icon="@SirenIcons.Home" Color="Color.Primary" Size="Size.Small"
-                               Disabled="@IsOnHomePage" OnClick="NavigateToHome" />
+                <MudIconButton Icon="@SirenIcons.Home" Color="Color.Primary" Size="Size.Small" Disabled="@IsOnHomePage"
+                               OnClick="NavigateToHome" />
             </MudTooltip>
             <MudText Class="app-header-font no-drag" Typo="Typo.h6">Siren</MudText>
             <div class="no-drag" style="flex:1;min-width:0;">
@@ -50,7 +50,7 @@
                       DarkModeToggled="@(() => AppState.IsDarkMode = !AppState.IsDarkMode)" />
         <div class="@($"resizer {(!AppState.SideBarOpen ? "d-none" : "")}")"></div>
     </MudDrawer>
-    <MudMainContent Class="pl-2 pr-4 mud-height-full mud-width-full" Style="overflow:hidden;">
+    <MudMainContent Class="pl-2 pr-1 mud-height-full mud-width-full" Style="overflow:hidden;">
         @Body
     </MudMainContent>
     <NativeMenuDispatcher />

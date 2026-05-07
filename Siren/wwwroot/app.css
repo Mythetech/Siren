@@ -598,6 +598,10 @@ a, .btn-link {
     }
     */
 
+.mud-split-panel {
+    transition: width 225ms cubic-bezier(0, 0, 0.2, 1);
+}
+
 .mud-split-panel > .divider {
     background-color: var(--mud-palette-primary-darken);
     border-radius: 2em;
@@ -611,6 +615,10 @@ a, .btn-link {
 .divider-locked > .divider {
     pointer-events: none;
     visibility: hidden;
+}
+
+.divider-locked > .child-panel:last-child {
+    overflow: visible;
 }
 
 .mw-80 {

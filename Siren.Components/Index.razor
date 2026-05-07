@@ -23,11 +23,10 @@
 @using Siren.Components.SessionStats
 
 <MudStack Row="true" Class="w-100 h-100 ml-1" Spacing="0">
-    <MudSplitPanel @ref="_outerSplitter" PanelGap="4" Transparent="true" MinPanelSize="30"
-                   Class="@($"h-100{(sidePanelClosed ? " divider-locked" : "")}")"
-                   Style="@($"width: {GetSplitterWidth()}")">
+    <MudSplitPanel @ref="_outerSplitter" PanelGap="2" Transparent="true" MinPanelSize="50"
+                   Class="@($"h-100{(sidePanelClosed ? " divider-locked" : "")}")" Style="@($"width: {GetSplitterWidth()}")">
         <FirstPanel>
-            <MudSplitPanel Horizontal="true" PanelGap="4" Transparent="true" MinPanelSize="150" Class="w-100 h-100">
+            <MudSplitPanel Horizontal="true" PanelGap="2" Transparent="true" MinPanelSize="150" Class="w-100 h-100">
                 <FirstPanel>
                     <MudPaper Height="100%" Elevation="0" Width="100%">
                         <RequestPanel Loading="@_loading" @ref="_requestPanel" SendClicked="HandleSendClicked" />
@@ -50,11 +49,14 @@
             }
             else
             {
-                <MudStack Spacing="3" AlignItems="AlignItems.Center" Class="h-100 pl-3"
-                          Style="min-width: 30px; max-width: 30px;">
-                    <SirenIconButton Tooltip="Authorization" Icon="@SirenIcons.Auth" OnClick="@(() => ToggleSidePanel("Auth"))" />
-                    <SirenIconButton Tooltip="Headers" Icon="@SirenIcons.Headers" OnClick="@(() => ToggleSidePanel("Headers"))" />
-                    <SirenIconButton Tooltip="Cookies" Icon="@SirenIcons.Cookies" OnClick="@(() => ToggleSidePanel("Cookies"))" />
+                <MudStack Spacing="3" AlignItems="AlignItems.Center" Class="h-100 pt-3"
+                          Style="border-left: solid 1px var(--mud-palette-primary); min-width: 48px">
+                    <SirenIconButton Tooltip="Authorization" Icon="@SirenIcons.Auth"
+                                     OnClick="@(() => ToggleSidePanel("Auth"))" />
+                    <SirenIconButton Tooltip="Headers" Icon="@SirenIcons.Headers"
+                                     OnClick="@(() => ToggleSidePanel("Headers"))" />
+                    <SirenIconButton Tooltip="Cookies" Icon="@SirenIcons.Cookies"
+                                     OnClick="@(() => ToggleSidePanel("Cookies"))" />
                 </MudStack>
             }
         </SecondPanel>
@@ -124,7 +126,7 @@
     private async Task<int> GetOuterSplitterWidthAsync()
     {
         return await JS.InvokeAsync<int>("eval",
-            $"document.querySelector('.mud-split-panel:not(.horizontal)')?.getBoundingClientRect().width ?? 800");
+            "document.querySelector('.mud-split-panel:not(.horizontal)')?.getBoundingClientRect().width ?? 800");
     }
 
     protected async Task ToggleSidePanel(string selectedTab = "")
@@ -137,7 +139,7 @@
 
         if (sidePanelClosed)
         {
-            await _outerSplitter.SetDividerPositionAsync(containerWidth - 34);
+            await _outerSplitter.SetDividerPositionAsync(containerWidth - 52);
         }
         else
         {
@@ -213,7 +215,7 @@
             if (sidePanelClosed)
             {
                 var containerWidth = await GetOuterSplitterWidthAsync();
-                await _outerSplitter.SetDividerPositionAsync(containerWidth - 34);
+                await _outerSplitter.SetDividerPositionAsync(containerWidth - 52);
             }
         }
     }
