@@ -1,7 +1,8 @@
 # Siren
+
 > Call to your endpoints
 
-Siren is an open source cross-platform desktop http testing application built with Blazor and Photino. Siren aims for simpler use cases targetted towards people who want something more lightweight and without any imposition of creating an account for more functionality.
+Siren is an open source cross-platform desktop http testing application built with Blazor and Hermes. Siren aims for simpler use cases targetted towards people who want something more lightweight and without any imposition of creating an account for more functionality.
 
 [![MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -11,63 +12,73 @@ Siren is an open source cross-platform desktop http testing application built wi
 
 <img width="1728" height="1052" alt="Siren Dark Mode" src="https://github.com/user-attachments/assets/2d305365-176e-4153-adf2-c7c18cbe465e" />
 
-
 ## Features
 
 ### HTTP Client
+
 - Make requests to your favorite HTTP based endpoints
 - Test your local running WebApi projects
 - History of requests
 - Save collections of related requests
 
 ### Development Experience
+
 - Light/Dark Mode
 - Local machine persistence
 - No Sign Up / Online Account
 
 ### Key Technologies
+
 - Blazor Hybrid
-- Photino
-- MudBlazor & FluentUI
+- Hermes
+- MudBlazor & Mythetech Framework
 
 ## Development Setup
 
 ### Prerequisites
+
 - .NET 8.0 SDK
 
 ### Getting Started
+
 1. Clone the repository
-    ```bash
-    git clone https://github.com/mythetech/siren.git
-    cd siren
-    ```
+
+   ```bash
+   git clone https://github.com/mythetech/siren.git
+   cd siren
+   ```
 
 2. Install dependencies
-    ```bash
-    dotnet restore
-    ```
+
+   ```bash
+   dotnet restore
+   ```
 
 3. Build the solution
-    ```bash
-    dotnet build
-    ```
+
+   ```bash
+   dotnet build
+   ```
 
 4. Run the application
-    ```bash
-    dotnet run --project Siren
-    ```
+
+   ```bash
+   dotnet run --project Siren
+   ```
 
 5. Call to your endpoints
 
 ## Contributing
 
-We welcome contributions! 
- - Bug fixes
- - Documentation updates
- - Enhancing functionality
- - Full features! (Start discussion for guidance)
+We welcome contributions!
+
+- Bug fixes
+- Documentation updates
+- Enhancing functionality
+- Full features! (Start discussion for guidance)
 
 ### Development Workflow
+
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
@@ -82,5 +93,4 @@ Please see our [Roadmap](Roadmap.md) for details
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. 
-
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
