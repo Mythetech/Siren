@@ -10,7 +10,7 @@ public class AddRequestToCollectionInput
     [McpToolInput(Description = "The ID (GUID) of the collection to add the request to", Required = true)]
     public string CollectionId { get; set; } = "";
 
-    [McpToolInput(Description = "HTTP method (GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS)", Required = true)]
+    [McpToolInput(Description = "HTTP method (GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS, QUERY)", Required = true)]
     public string Method { get; set; } = "GET";
 
     [McpToolInput(Description = "The full URL for the request", Required = true)]

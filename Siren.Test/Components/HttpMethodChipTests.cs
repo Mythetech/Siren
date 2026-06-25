@@ -36,6 +36,8 @@ namespace Siren.Test.Components
         [InlineData("OptIONS", "#3f51b5", "rgba(63, 81, 181, 0.1)")]
         [InlineData("HEAD", "#009688", "rgba(0, 150, 136, 0.1)")]
         [InlineData("HeaD", "#009688", "rgba(0, 150, 136, 0.1)")]
+        [InlineData("QUERY", "#00bcd4", "rgba(0, 188, 212, 0.1)")]
+        [InlineData("QueRy", "#00bcd4", "rgba(0, 188, 212, 0.1)")]
         [InlineData("UNKNOWN", "rgb(66, 66, 66)", "rgba(255, 255, 255, 0.1)")]
         public void HttpMethodChip_Should_Have_Correct_Color_And_BackgroundColor(string method, string expectedColor, string expectedBackgroundColor)
         {
