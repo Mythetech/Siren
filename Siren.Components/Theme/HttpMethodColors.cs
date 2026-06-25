@@ -17,6 +17,8 @@ namespace Siren.Components.Theme
 
         public static string Head => "#009688";
 
+        public static string Query => "#00bcd4";
+
         public static string Default => "rgb(66, 66, 66)";
     }
 }

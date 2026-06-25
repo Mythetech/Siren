@@ -8,7 +8,7 @@ namespace Siren.Mcp.Tools;
 
 public class SendHttpRequestInput
 {
-    [McpToolInput(Description = "HTTP method (GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS)", Required = true)]
+    [McpToolInput(Description = "HTTP method (GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS, QUERY)", Required = true)]
     public string Method { get; set; } = "GET";
 
     [McpToolInput(Description = "The full URL to send the request to", Required = true)]

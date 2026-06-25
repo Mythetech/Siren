@@ -29,7 +29,7 @@
 
 @code {
     string? selectedMethod;
-    List<string> methods = new List<string> { "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD" };
+    List<string> methods = new List<string> { "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD", "QUERY" };
 
     [Parameter]
     public bool AllowNone { get; set; } = false;
@@ -93,6 +93,7 @@
             "PATCH" => "#9c27b0",
             "OPTIONS" => "#3f51b5",
             "HEAD" => "#009688",
+            "QUERY" => "#00bcd4",
             _ => "var(--mud-palette-surface)",
         };
     }

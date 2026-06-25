@@ -45,7 +45,7 @@
 
 @code {
     string? _selectedMethod;
-    List<string> _methods = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"];
+    List<string> _methods = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD", "QUERY"];
 
     [Parameter]
     public bool AllowNone { get; set; } = false;
@@ -107,6 +107,7 @@
             "PATCH" => HttpMethodColors.Patch,
             "OPTIONS" => HttpMethodColors.Options,
             "HEAD" => HttpMethodColors.Head,
+            "QUERY" => HttpMethodColors.Query,
             _ => HttpMethodColors.Default,
         };
     }
