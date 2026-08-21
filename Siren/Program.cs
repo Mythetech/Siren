@@ -56,9 +56,8 @@ namespace Siren
                 Console.Error.WriteLine($"Fatal exception: {error.ExceptionObject}");
             };
 
-            var appBuilder = HermesBlazorAppBuilder.CreateDefault(args)
-                .WithLicenseKey(HermesLicense.Key);
-
+            var appBuilder = HermesBlazorAppBuilder.CreateDefault(args);
+            
             appBuilder.ConfigureWindow(options =>
             {
                 options.Title = "Siren";
