@@ -30,7 +30,6 @@ using Siren.NativeMenu;
 using Siren.Variables;
 using Velopack;
 using Mythetech.Framework.Desktop.Storage.LiteDb;
-using LiteDbSettingsStorage = Mythetech.Framework.Desktop.Storage.LiteDb.LiteDbSettingsStorage;
 
 namespace Siren
 {
@@ -76,62 +75,9 @@ namespace Siren
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
                 .Build();
 
-            appBuilder.Services
-                  .AddLogging(builder =>
-                {
-                    builder.AddConfiguration(configuration.GetSection("Logging"));
-                    builder.AddConsole();
-                });
-
-            appBuilder.Services.AddHttpClient();
-
-            appBuilder.Services.AddDesktopServices(DesktopHost.Hermes);
-
-            appBuilder.Services.AddUpdateService(options =>
-            {
-                var platform = OperatingSystem.IsWindows() ? "windows"
-                    : OperatingSystem.IsMacOS() ? "macos"
-                    : "linux";
-                var channel = OperatingSystem.IsWindows() ? "win"
-                    : OperatingSystem.IsMacOS() ? "osx"
-                    : "linux";
-                options.UpdateUrl = $"{Configuration.SirenDownloadConfiguration.UpdateBaseUrl}/{platform}";
-                options.Channel = channel;
-            });
-
-            appBuilder.Services.AddDesktopSettingsStorage("Siren");
-            appBuilder.Services.AddPluginStateProvider("Siren");
-
-            appBuilder.Services.AddAllDesktopSecretManagers("siren");
-            appBuilder.Services.AddSingleton<IVariableValueResolver, SecretReferenceResolver>();
-
-            appBuilder.Services.AddPluginFramework();
-
-            appBuilder.Services.AddRuntimeEnvironment(System.Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")?.Equals("Production", StringComparison.OrdinalIgnoreCase) ?? false ? DesktopRuntimeEnvironment.Production() : DesktopRuntimeEnvironment.Development());
+            ConfigureServices(appBuilder.Services, configuration);
 
             appBuilder.RootComponents.Add<Components.App>("#app");
-
-            appBuilder.Services.AddSirenComponents<HistoryService, CollectionsService, VariablesService, AppDataService, MockServerService>();
-
-            appBuilder.Services.AddSettingsStorage<LiteDbSettingsStorage>();
-
-            appBuilder.Services.AddSirenMcp();
-
-            appBuilder.Services.AddMessageBus(typeof(App).Assembly);
-
-            appBuilder.Services.AddSettingsFramework();
-            appBuilder.Services.RegisterSettingsFromAssemblies(
-                typeof(App).Assembly,
-                typeof(DesktopHost).Assembly,
-                typeof(SettingsBase).Assembly);
-
-            appBuilder.Services.AddSingleton<IAppAsyncInitializer, AppAsyncInitializer>();
-            appBuilder.Services.AddJsGuards();
-
-            // Native menu services
-            appBuilder.Services.AddSingleton<INativeMenuService, NativeMenuService>();
-            appBuilder.Services.AddSingleton<INativeMenuCommandDispatcher, NativeMenuCommandDispatcher>();
-            appBuilder.Services.AddSingleton<PluginMenuCallbackRegistry>();
 
             var app = appBuilder.Build();
 
@@ -155,19 +101,75 @@ namespace Siren
         }
 
         /// <summary>
-        /// Runs Siren as a standalone MCP server using stdio transport.
-        /// This is used by Claude Desktop and other MCP clients.
+        /// Registers the services for the main desktop application.
         /// </summary>
-        private static async Task RunMcpServerAsync(string[] _)
+        public static void ConfigureServices(IServiceCollection services, IConfiguration configuration)
         {
-            var services = new ServiceCollection();
+            services
+                  .AddLogging(builder =>
+                {
+                    builder.AddConfiguration(configuration.GetSection("Logging"));
+                    builder.AddConsole();
+                });
 
+            services.AddHttpClient();
+
+            services.AddDesktopServices(DesktopHost.Hermes);
+
+            services.AddUpdateService(options =>
+            {
+                var platform = OperatingSystem.IsWindows() ? "windows"
+                    : OperatingSystem.IsMacOS() ? "macos"
+                    : "linux";
+                var channel = OperatingSystem.IsWindows() ? "win"
+                    : OperatingSystem.IsMacOS() ? "osx"
+                    : "linux";
+                options.UpdateUrl = $"{Configuration.SirenDownloadConfiguration.UpdateBaseUrl}/{platform}";
+                options.Channel = channel;
+            });
+
+            services.AddDesktopSettingsStorage("Siren");
+            services.AddPluginStateProvider("Siren");
+
+            services.AddAllDesktopSecretManagers("siren");
+            services.AddSingleton<IVariableValueResolver, SecretReferenceResolver>();
+
+            services.AddPluginFramework();
+
+            services.AddRuntimeEnvironment(System.Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")?.Equals("Production", StringComparison.OrdinalIgnoreCase) ?? false ? DesktopRuntimeEnvironment.Production() : DesktopRuntimeEnvironment.Development());
+
+            services.AddSirenComponents<HistoryService, CollectionsService, VariablesService, AppDataService, MockServerService>();
+
+            services.AddSirenMcp();
+
+            services.AddMessageBus(typeof(App).Assembly);
+
+            services.AddSettingsFramework();
+            services.RegisterSettingsFromAssemblies(
+                typeof(App).Assembly,
+                typeof(DesktopHost).Assembly,
+                typeof(SettingsBase).Assembly);
+
+            services.AddSingleton<IAppAsyncInitializer, AppAsyncInitializer>();
+            services.AddJsGuards();
+
+            // Native menu services
+            services.AddSingleton<INativeMenuService, NativeMenuService>();
+            services.AddSingleton<INativeMenuCommandDispatcher, NativeMenuCommandDispatcher>();
+            services.AddSingleton<PluginMenuCallbackRegistry>();
+        }
+
+        /// <summary>
+        /// Registers the services for standalone MCP server mode.
+        /// </summary>
+        public static void ConfigureMcpServices(IServiceCollection services)
+        {
             services.AddLogging(builder => builder.AddConsole());
             services.AddHttpClient();
             services.AddMessageBus();
 
             services.AddSirenComponents<HistoryService, CollectionsService, VariablesService, AppDataService, MockServerService>();
-            services.AddSettingsStorage<LiteDbSettingsStorage>();
+            services.AddDesktopSettingsStorage("Siren");
 
             // Add MCP with stdio transport (default)
             services.AddMcp(options =>
@@ -179,6 +181,17 @@ namespace Siren
             // Settings framework registration (new DI-friendly API)
             services.AddSettingsFramework();
             services.RegisterSettingsFromAssembly(typeof(HttpSettings).Assembly);
+        }
+
+        /// <summary>
+        /// Runs Siren as a standalone MCP server using stdio transport.
+        /// This is used by Claude Desktop and other MCP clients.
+        /// </summary>
+        private static async Task RunMcpServerAsync(string[] _)
+        {
+            var services = new ServiceCollection();
+
+            ConfigureMcpServices(services);
 
             var serviceProvider = services.BuildServiceProvider();
 
