@@ -19,6 +19,7 @@ jobs:
       app_name: "Siren"
       project_path: "Siren/Siren.csproj"
       test_project: "Siren.Test/Siren.Test.csproj"
+      global_json_file: "global.json"
       entitlements_path: "Siren/Siren.entitlements"
       icon_windows: "Siren/wwwroot/logo.ico"
       icon_linux: "Siren/wwwroot/logo5.png"

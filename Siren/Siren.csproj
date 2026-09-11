@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
-		<TargetFramework>net10.0</TargetFramework>
+		<TargetFramework>net11.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<ApplicationIcon>wwwroot\logo.ico</ApplicationIcon>
@@ -15,7 +15,7 @@
 		<SignAssembly>true</SignAssembly>
 	</PropertyGroup>
 	<ItemGroup>
-<PackageReference Include="Mythetech.Framework.Desktop" Version="0.18.3" />
+<PackageReference Include="Mythetech.Framework.Desktop" Version="0.19.0" />
 		<PackageReference Include="Nerdbank.GitVersioning" Version="3.9.50">
 		  <PrivateAssets>all</PrivateAssets>
 		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
