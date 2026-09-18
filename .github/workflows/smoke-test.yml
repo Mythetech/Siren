@@ -1,0 +1,30 @@
+# Build and launch Siren on each platform without signing or publishing
+#
+# Uses shared workflows from mythetech/workflows
+
+name: Smoke Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      platforms:
+        description: 'Platforms to smoke test'
+        type: choice
+        options: [all, windows, macos, linux]
+        default: all
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-test:
+    uses: mythetech/workflows/.github/workflows/desktop-smoke-test.yml@main
+    with:
+      app_name: "Siren"
+      project_path: "Siren/Siren.csproj"
+      test_project: "Siren.Test/Siren.Test.csproj"
+      global_json_file: "global.json"
+      icon_windows: "Siren/wwwroot/logo.ico"
+      icon_linux: "Siren/wwwroot/logo5.png"
+      icon_macos: "Siren/wwwroot/logo.icns"
+      platforms: ${{ inputs.platforms }}
