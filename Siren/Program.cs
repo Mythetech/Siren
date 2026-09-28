@@ -7,12 +7,14 @@ using Mythetech.Framework.Desktop;
 using Mythetech.Framework.Desktop.Environment;
 using Mythetech.Framework.Desktop.Hermes;
 using Mythetech.Framework.Infrastructure.Guards;
+using Mythetech.Framework.Infrastructure.Initialization;
 using Mythetech.Framework.Infrastructure.Mcp;
 using Mythetech.Framework.Infrastructure.Mcp.Server;
 using Mythetech.Framework.Infrastructure.MessageBus;
 using Mythetech.Framework.Infrastructure.Plugins;
 using Mythetech.Framework.Infrastructure.Secrets;
 using Mythetech.Framework.Infrastructure.Settings;
+using Mythetech.Framework.Infrastructure.Smoke;
 using Mythetech.Framework.Desktop.Updates;
 using Siren.Collections;
 using Siren.Components;
@@ -20,13 +22,14 @@ using Siren.Components.History;
 using Siren.Components.Http;
 using Siren.Components.NativeMenu;
 using Siren.Components.Settings;
-using Siren.Components.Infrastructure;
 using Siren.Components.Variables;
 using Siren.History;
 using Siren.Infrastructure;
+using Siren.Infrastructure.Initialization;
 using Siren.Mcp;
 using Siren.MockServer;
 using Siren.NativeMenu;
+using Siren.Smoke;
 using Siren.Variables;
 using Velopack;
 using Mythetech.Framework.Desktop.Storage.LiteDb;
@@ -150,7 +153,15 @@ namespace Siren
                 typeof(DesktopHost).Assembly,
                 typeof(SettingsBase).Assembly);
 
-            services.AddSingleton<IAppAsyncInitializer, AppAsyncInitializer>();
+            services.AddAsyncInitialization();
+            services.AddInitializationHook<SettingsMigrationHook>();
+            services.AddInitializationHook<SettingsInitializationHook>();
+            services.AddInitializationHook<PluginLoadingHook>();
+
+            services.AddSmokeChecks()
+                .WithSmokeCheck<DatabaseSmokeCheck>()
+                .WithSmokeCheck<EditorScriptsSmokeCheck>();
+
             services.AddJsGuards();
 
             // Native menu services

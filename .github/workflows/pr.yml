@@ -22,3 +22,20 @@ jobs:
       run: dotnet test Siren.Test/Siren.Test.csproj
       env:
         Configuration: Release 
+
+  # Packages Siren unsigned on every platform and fails the PR unless each build reports a
+  # passing Hermes smoke verdict. Unit tests already run in the job above.
+  smoke-test:
+    permissions:
+      contents: read
+      packages: read
+    uses: mythetech/workflows/.github/workflows/desktop-smoke-test.yml@main
+    with:
+      app_name: "Siren"
+      project_path: "Siren/Siren.csproj"
+      global_json_file: "global.json"
+      icon_windows: "Siren/wwwroot/logo.ico"
+      icon_linux: "Siren/wwwroot/logo5.png"
+      icon_macos: "Siren/wwwroot/logo.icns"
+      enable_tests: false
+      require_verdict: true

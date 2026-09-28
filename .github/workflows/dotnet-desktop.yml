@@ -7,10 +7,12 @@ name: Publish Desktop
 on:
   workflow_dispatch:
 
-# Required for reusable workflow to use Azure login (id-token) and upload artifacts (contents)
+# Required for reusable workflow to use Azure login (id-token), upload artifacts (contents),
+# and restore from the Mythetech GitHub Packages feed (packages)
 permissions:
   contents: read
   id-token: write
+  packages: read
 
 jobs:
   publish:
@@ -27,6 +29,8 @@ jobs:
       versioning: "run_number"
       storage_account: "stmythetechglobal"
       storage_container: "preview"
+      # Siren reports a Hermes smoke verdict, so a build that only stays alive no longer passes
+      require_verdict: true
     secrets:
       # Windows Signing (org-level)
       AZURE_TRUSTED_SIGNING_ENDPOINT: ${{ secrets.AZURE_TRUSTED_SIGNING_ENDPOINT }}

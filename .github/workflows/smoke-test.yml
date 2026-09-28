@@ -13,8 +13,10 @@ on:
         options: [all, windows, macos, linux]
         default: all
 
+# The shared workflow's smoke job asks for packages: read, which a caller must grant
 permissions:
   contents: read
+  packages: read
 
 jobs:
   smoke-test:
@@ -28,3 +30,4 @@ jobs:
       icon_linux: "Siren/wwwroot/logo5.png"
       icon_macos: "Siren/wwwroot/logo.icns"
       platforms: ${{ inputs.platforms }}
+      require_verdict: true
