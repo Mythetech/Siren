@@ -7,10 +7,12 @@ name: Publish Desktop
 on:
   workflow_dispatch:
 
-# Required for reusable workflow to use Azure login (id-token) and upload artifacts (contents)
+# Required for reusable workflow to use Azure login (id-token), upload artifacts (contents),
+# and restore from the Mythetech GitHub Packages feed (packages)
 permissions:
   contents: read
   id-token: write
+  packages: read
 
 jobs:
   publish:
