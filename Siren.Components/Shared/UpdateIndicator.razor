@@ -1,0 +1,36 @@
+@using Mythetech.Framework.Desktop.Updates
+@using Mythetech.Framework.Desktop.Updates.Components
+@using Mythetech.Framework.Desktop.Updates.Events
+@using Mythetech.Framework.Infrastructure.MessageBus
+@using Siren.Components.Shared.Dialogs.Commands
+@inherits ComponentConsumer<UpdateAvailable>
+
+@if (UpdateService.AvailableUpdate is { } update)
+{
+    <MudBadge Color="Color.Primary" Dot="true" Overlap="true">
+        <SirenIconButton Icon="@SirenIcons.UpdateAvailable" Class="icon-btn-sm"
+                         Tooltip="@($"Update available: v{update.TargetVersion}")" OnClick="OpenUpdateDialog" />
+    </MudBadge>
+}
+
+@code {
+    [Inject] private IUpdateService UpdateService { get; set; } = default!;
+
+    protected override Task Consume(UpdateAvailable message, CancellationToken cancellationToken)
+    {
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private Task OpenUpdateDialog()
+    {
+        var options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            BackgroundClass = "siren-dialog",
+            MaxWidth = MaxWidth.Medium
+        };
+
+        return MessageBus.PublishAsync(new ShowDialog(typeof(UpdateProgressDialog), "Update Available", options));
+    }
+}

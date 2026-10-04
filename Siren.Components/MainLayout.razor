@@ -43,7 +43,11 @@
             </MudTooltip>
             <MudText Class="app-header-font no-drag" Typo="Typo.h6">Siren</MudText>
             <div class="no-drag" style="flex:1;min-width:0;">
-                <HttpRequestTabs />
+                <HttpRequestTabs>
+                    <HeaderContent>
+                        <UpdateIndicator />
+                    </HeaderContent>
+                </HttpRequestTabs>
             </div>
         </div>
     </Hermes.Blazor.Components.HermesTitleBar>

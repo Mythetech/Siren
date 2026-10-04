@@ -138,14 +138,9 @@
         StateHasChanged();
         await Task.Yield();
 
-        var containerWidth = await GetOuterSplitterWidthAsync();
-
-        if (sidePanelClosed)
+        if (!sidePanelClosed)
         {
-            await _outerSplitter.SetDividerPositionAsync(containerWidth - 52);
-        }
-        else
-        {
+            var containerWidth = await GetOuterSplitterWidthAsync();
             await _outerSplitter.SetDividerPositionAsync((int)(containerWidth * 0.7));
 
             if (!string.IsNullOrWhiteSpace(selectedTab))
@@ -221,12 +216,6 @@
             // release feed and could offer an update.
             if (!SmokeTest.IsEnabled)
                 await UpdateService.CheckForUpdatesOnStartupAsync();
-
-            if (sidePanelClosed)
-            {
-                var containerWidth = await GetOuterSplitterWidthAsync();
-                await _outerSplitter.SetDividerPositionAsync(containerWidth - 52);
-            }
         }
     }
 
