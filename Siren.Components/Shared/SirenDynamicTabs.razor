@@ -4,7 +4,7 @@
 @using MouseEvent = MudBlazor.MouseEvent
 @typeparam T
 
-<MudDynamicTabs @ref="@DynamicTabs"
+<SirenDynamicTabBar @ref="@DynamicTabs"
                 AddTab="@AddTabCallback"
                 CloseTab="@CloseTabCallback"
                 ActivePanelIndexChanged="@(async (x) => await TabChanged.InvokeAsync(Items[x]))"
@@ -20,6 +20,7 @@
                 Elevation="@Elevation"
                 Rounded="@Rounded"
                 ScrollIconColor="MudBlazor.Color.Primary"
+                HeaderContent="@HeaderContent"
                 ApplyEffectsToContainer>
     @if (Items != null)
     {
@@ -50,7 +51,7 @@
             <MudTabPanel ID="@tab.Id" Text="@tab.Label" ShowCloseIcon="@tab.ShowCloseIcon">@tab.Content</MudTabPanel>
         }
     }
-</MudDynamicTabs>
+</SirenDynamicTabBar>
 
 @code {
     [Parameter]
@@ -67,6 +68,9 @@
 
     [Parameter]
     public RenderFragment ItemContentDisplay { get; set; } = default;
+
+    [Parameter]
+    public RenderFragment? HeaderContent { get; set; }
 
     [Parameter]
     public EventCallback<T> ItemClosed { get; set; } = default;

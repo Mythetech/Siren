@@ -13,9 +13,13 @@
                   ItemClosed="HandleNetworkRequestRemoved"
                   TabChanged="HandleTabChange"
                   TabDuplicated="HandleTabDuplicated"
+                  HeaderContent="@HeaderContent"
                   ItemLabelDisplayFunc="@ItemDisplayFunc" />
 
 @code {
+    [Parameter]
+    public RenderFragment? HeaderContent { get; set; }
+
     [Inject]
     protected SirenAppState AppState { get; set; } = default!;
 
