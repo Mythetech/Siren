@@ -8,7 +8,7 @@ Please make sure that you follow our [code of conduct](CODE_OF_CONDUCT.md).
 
 ## Minimal Prerequisites to Compile from Source
 
-- [.NET 10.0 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
+- [.NET 11 SDK](https://dotnet.microsoft.com/download/dotnet/11.0); the exact build is pinned in [global.json](global.json)
 
 ## Pull Requests
 
