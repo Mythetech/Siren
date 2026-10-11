@@ -23,6 +23,8 @@ public sealed class EditorTextSync
     private bool _reading;
     private bool _changedDuringRead;
     private int _loads;
+    private Guid _requestedDocumentId;
+    private string _requestedText;
 
     public EditorTextSync(
         Guid documentId,
@@ -34,6 +36,8 @@ public sealed class EditorTextSync
     {
         DocumentId = documentId;
         LastKnownText = text;
+        _requestedDocumentId = documentId;
+        _requestedText = text;
         _read = read;
         _write = write;
         _changed = changed;
@@ -60,10 +64,22 @@ public sealed class EditorTextSync
     }
 
     /// <summary>
-    /// Shows another document, or new text for the same one.
+    /// Tells the sync which document and text its owner wants shown. The editor is written to only
+    /// when that request changes and no longer matches the editor. Text the editor reported comes
+    /// back here as a request a moment later, and an owner that has not caught up yet repeats its
+    /// old request. Neither may overwrite what has been typed since.
     /// </summary>
     public Task LoadAsync(Guid documentId, string text)
     {
+        if (documentId == _requestedDocumentId && text == _requestedText)
+            return Task.CompletedTask;
+
+        _requestedDocumentId = documentId;
+        _requestedText = text;
+
+        if (documentId == DocumentId && text == LastKnownText)
+            return Task.CompletedTask;
+
         // The switch and the write are issued together so that every read issued earlier is known
         // to hold the previous load's text, whenever it completes
         _loads++;

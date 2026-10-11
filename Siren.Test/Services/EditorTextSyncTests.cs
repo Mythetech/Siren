@@ -154,6 +154,47 @@ public class EditorTextSyncTests
         sync.DocumentId.ShouldBe(Second);
     }
 
+    [Fact(DisplayName = "An owner that repeats its old request does not overwrite what was typed")]
+    public async Task RepeatedRequest_DoesNotOverwriteTypedText()
+    {
+        var sync = CreateSync();
+        var notified = sync.NotifyChangedAsync();
+        CompleteRead(0, "typed");
+        await notified;
+
+        await sync.LoadAsync(First, "");
+
+        _writes.ShouldBeEmpty();
+        sync.LastKnownText.ShouldBe("typed");
+    }
+
+    [Fact(DisplayName = "Text the editor reported is not written back when the owner asks for it")]
+    public async Task ReportedTextRequestedBack_IsNotWritten()
+    {
+        var sync = CreateSync();
+        var notified = sync.NotifyChangedAsync();
+        CompleteRead(0, "typed");
+        await notified;
+
+        await sync.LoadAsync(First, "typed");
+
+        _writes.ShouldBeEmpty();
+    }
+
+    [Fact(DisplayName = "A request for other text than the editor shows is written")]
+    public async Task ChangedRequest_IsWritten()
+    {
+        var sync = CreateSync();
+        var notified = sync.NotifyChangedAsync();
+        CompleteRead(0, "typed");
+        await notified;
+
+        await sync.LoadAsync(First, "loaded from elsewhere");
+
+        _writes.ShouldBe(["loaded from elsewhere"]);
+        sync.LastKnownText.ShouldBe("loaded from elsewhere");
+    }
+
     [Fact(DisplayName = "Flush waits for reads that are still out")]
     public async Task Flush_WaitsForOutstandingReads()
     {

@@ -1,7 +1,9 @@
-﻿@using Mythetech.Framework.Infrastructure.Guards
+﻿@using Microsoft.Extensions.Logging
+@using Mythetech.Framework.Infrastructure.Guards
 
 <JsGuard Name="monaco">
-    <StandaloneCodeEditor @ref="@_editor" Id="@EditorId" ConstructionOptions="EditorConstructionOptions" OnDidInit="OnDidInit" />
+    <StandaloneCodeEditor @ref="@_editor" Id="@EditorId" ConstructionOptions="EditorConstructionOptions"
+                          OnDidInit="HandleDidInitAsync" OnDidChangeModelContent="@_contentChanged" />
 </JsGuard>
 
 
@@ -9,19 +11,54 @@
     [Parameter]
     public string EditorId { get; set; } = "siren-editor";
 
+    /// <summary>
+    /// Identifies what <see cref="Text"/> belongs to, such as a request tab, so that text read from
+    /// the editor is reported against the document it was typed in.
+    /// </summary>
     [Parameter]
-    public string Text { get; set; } = "{ \n\n }";
+    public Guid DocumentId { get; set; }
+
+    /// <summary>
+    /// The text the editor should show. The editor is written to only when this stops matching what
+    /// it was last known to show.
+    /// </summary>
+    [Parameter]
+    public string Text { get; set; } = "";
+
+    /// <summary>
+    /// Raised when the text in the editor changes. Leave unset for an editor nobody types in.
+    /// </summary>
+    [Parameter]
+    public EventCallback<EditorTextChange> TextChanged { get; set; }
 
     [Parameter]
     public bool ReadOnly { get; set; } = true;
 
     [Parameter] public EventCallback OnDidInit { get; set; }
 
-    private StandaloneCodeEditor _editor;
+    [Inject] private ILogger<SirenEditor> Logger { get; set; } = default!;
+
+    private StandaloneCodeEditor _editor = default!;
+    private EventCallback<ModelContentChangedEvent> _contentChanged;
+    private EditorTextSync? _sync;
+    private bool _initialised;
 
     public StandaloneCodeEditor Editor { get => _editor; }
 
-    private string _text { get; set; } = "";
+    protected override void OnInitialized()
+    {
+        // BlazorMonaco attaches a change listener only when a handler is bound on first render,
+        // and an editor nobody types in has no use for one
+        if (TextChanged.HasDelegate)
+            _contentChanged = EventCallback.Factory.Create<ModelContentChangedEvent>(this, HandleContentChangedAsync);
+    }
+
+    protected override Task OnAfterRenderAsync(bool firstRender) => ReconcileAsync();
+
+    /// <summary>
+    /// Completes when text the editor is still reading has been reported through <see cref="TextChanged"/>.
+    /// </summary>
+    public Task FlushAsync() => _sync?.FlushAsync() ?? Task.CompletedTask;
 
     public async Task ToggleReadonly()
     {
@@ -33,31 +70,49 @@
 
     private StandaloneEditorConstructionOptions EditorConstructionOptions(StandaloneCodeEditor editor)
     {
+        var text = Text ?? "";
+        _sync = new EditorTextSync(DocumentId, text, ReadAsync, WriteAsync, change => TextChanged.InvokeAsync(change), Logger);
+
         return new StandaloneEditorConstructionOptions
         {
             ReadOnly = ReadOnly,
             AutomaticLayout = true,
             Language = "json",
-            Value = "{\n" +
-                    " \n" +
-                    "}"
+            Value = text
         };
     }
-    protected override void OnParametersSet()
+
+    private async Task HandleDidInitAsync()
     {
-        _text = Text;
-        base.OnParametersSet();
+        _initialised = true;
+        await OnDidInit.InvokeAsync();
+        await ReconcileAsync();
     }
 
-    protected override void OnInitialized()
+    private Task HandleContentChangedAsync(ModelContentChangedEvent change)
+        => _sync?.NotifyChangedAsync() ?? Task.CompletedTask;
+
+    // Writing to Monaco is a JS call, so the parameters are handed over after the render rather than in
+    // OnParametersSet. The sync decides whether they amount to a new request that needs a write.
+    private Task ReconcileAsync()
     {
-        _text = Text;
-        base.OnInitialized();
+        if (!_initialised || _sync == null)
+            return Task.CompletedTask;
+
+        return _sync.LoadAsync(DocumentId, Text ?? "");
     }
 
-    protected override async Task OnInitializedAsync()
+    private async Task<string?> ReadAsync() => await _editor.GetValue();
+
+    private async Task WriteAsync(string text)
     {
-
+        try
+        {
+            await _editor.SetValue(text);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to write the editor text");
+        }
     }
-
 }

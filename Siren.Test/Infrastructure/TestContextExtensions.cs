@@ -1,6 +1,9 @@
 ﻿using Bunit;
 using MudBlazor;
 using MudBlazor.Services;
+using Microsoft.Extensions.DependencyInjection;
+using Mythetech.Framework.Infrastructure.Guards;
+using NSubstitute;
 
 namespace Siren.Test.Infrastructure
 {
@@ -15,6 +18,17 @@ namespace Siren.Test.Infrastructure
             context.JSInterop.SetupVoid("mudKeyInterceptor.connect", _ => true);
 
             return context.RenderComponent<MudPopoverProvider>();
+        }
+
+        /// <summary>
+        /// Makes every JsGuard render its content at once, as it does in the app once the script has loaded.
+        /// Call it before AddMudServicesWithPopover, which locks service registration.
+        /// </summary>
+        public static void AddReadyJsGuards(this TestContext context)
+        {
+            var guards = Substitute.For<IJsGuardService>();
+            guards.IsReady(Arg.Any<string>()).Returns(true);
+            context.Services.AddSingleton(guards);
         }
     }
 }
