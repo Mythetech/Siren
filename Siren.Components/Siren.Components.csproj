@@ -47,4 +47,7 @@
     <None Remove="Collections\" />
     <None Remove="RequestContextPanel\" />
   </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Siren.Test" />
+  </ItemGroup>
 </Project>

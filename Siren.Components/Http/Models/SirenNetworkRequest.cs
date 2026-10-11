@@ -13,6 +13,8 @@ namespace Siren.Components.Http.Models
 
         public string? DisplayText { get; set; }
 
+        public bool IsSending { get; internal set; }
+
         public SirenNetworkRequest Copy()
         {
             return new SirenNetworkRequest

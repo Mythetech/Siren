@@ -37,7 +37,7 @@ namespace Siren.Components.Http.Models
         {
             return new HttpRequest
             {
-                Method = new HttpMethod(Method.ToString()),
+                Method = Method is null ? default! : new HttpMethod(Method.Method),
                 RequestUri = RequestUri,
                 DisplayUri = DisplayUri,
                 QueryParameters = QueryParameters?.ToDictionary(entry => entry.Key, entry => entry.Value),
