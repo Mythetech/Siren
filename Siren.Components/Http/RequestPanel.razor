@@ -7,6 +7,9 @@
 @using Siren.Components.Http.QueryParams
 @using Siren.Components.Variables
 @using Siren.Components.RequestContextPanel.Authentication
+@using Mythetech.Framework.Infrastructure.MessageBus
+@using Siren.Components.Http.Commands
+@implements IConsumer<CommitRequestEdits>
 @implements IDisposable
 
 <SirenStack Spacing="3" Class="h-100">
@@ -14,19 +17,19 @@
         <MudPaper Width="100%" Outlined="false" Class="d-flex px-4 pt-8 pb-3" Elevation="0">
             <SirenStack Row="true" Class="w-100 http-request-group"
                 Style="border-bottom: solid 1px var(--http-request-dropdown-color); border-top: solid 1px var(--http-request-dropdown-color); border-right: solid 1px var(--http-request-dropdown-color); ">
-                <HttpRequestMethodDropdown @ref="_httpMethodDropdown" SelectedMethodChanged="UpdateHttpMethod" />
+                <HttpRequestMethodDropdown @ref="_httpMethodDropdown" SelectedMethod="@Tab.Request?.Method?.Method" SelectedMethodChanged="UpdateHttpMethod" />
                 <TokenizedInput
                     Style="border-left:solid 1px var(--mud-palette-tertiary);border-right:none;border-top-right-radius:0px;border-bottom-right-radius:0px;"
                     Placeholder="Enter Request URL... e.g., https://api.example.com/v1/resource"
-                    Value="@AppState?.Active?.Request?.RequestUri"
+                    Value="@Tab.Request?.RequestUri"
                     Class="http-request-input"
                     @ref="_requestUriInput"
                     ValueChanged="UpdateRequestUri"
                     VariableInfoProvider="GetVariableInfo" />
 
                 <SirenButton OnClick="@OnSendClicked" Variant="Variant.Text"
-                    Color="@(Loading? Color.Dark: Color.Inherit)" Class="send-request-button">
-                    @(Loading ? "Cancel" : "Send")
+                    Color="@(Tab.IsSending ? Color.Dark : Color.Inherit)" Class="send-request-button">
+                    @(Tab.IsSending ? "Cancel" : "Send")
                 </SirenButton>
             </SirenStack>
         </MudPaper>
@@ -67,19 +70,20 @@
     {
         @if (CurrentBodyType == RequestBodyType.FormData)
         {
-            <FormDataPanel NetworkRequest="@AppState.Active" />
+            <FormDataPanel NetworkRequest="@Tab" />
         }
         else if (CurrentBodyType == RequestBodyType.MultipartFormData)
         {
-            <MultipartFormDataPanel NetworkRequest="@AppState.Active" />
+            <MultipartFormDataPanel NetworkRequest="@Tab" />
         }
         else if (CurrentBodyType == RequestBodyType.Raw)
         {
-            <SirenEditor @ref="_editor" EditorId="siren-request-editor" ReadOnly="false" />
+            <SirenEditor @ref="_editor" EditorId="siren-request-editor" ReadOnly="false"
+                         DocumentId="@Tab.Id" Text="@(Tab.Request?.RawBody ?? "")" TextChanged="HandleBodyChanged" />
         }
         else if (CurrentBodyType == RequestBodyType.Binary)
         {
-            <BinaryAttachmentPanel NetworkRequest="@AppState.Active" />
+            <BinaryAttachmentPanel NetworkRequest="@Tab" />
         }
         else
         {
@@ -92,7 +96,7 @@
     }
     else if (_currentPanelView == RequestPanelViewType.Headers)
     {
-        <HeadersEditor Headers="@_requestHeaders"
+        <HeadersEditor Headers="@HeaderRows()"
                        HeadersChanged="@HandleRequestHeadersChanged"
                        ReadOnly="false"
                        AllowEnable="true"
@@ -101,7 +105,7 @@
     }
     else if (_currentPanelView == RequestPanelViewType.QueryParams)
     {
-        <QueryParamsEditor RequestUri="@AppState?.Active?.Request?.RequestUri"
+        <QueryParamsEditor RequestUri="@Tab.Request?.RequestUri"
                            RequestUriChanged="@HandleQueryParamsUriChanged" />
     }
 </SirenStack>
@@ -109,14 +113,16 @@
 
 
 @code {
-    private string? _requestUri = default!;
     private TokenizedInput? _requestUriInput = default!;
 
     private HttpRequestMethodDropdown _httpMethodDropdown = default!;
 
+    private SirenEditor? _editor;
+
     private RequestPanelViewType _currentPanelView = RequestPanelViewType.Body;
     private readonly RequestPanelViewType[] _panelViewTypes = Enum.GetValues<RequestPanelViewType>();
     private List<HeaderModel> _requestHeaders = new();
+    private Guid _headerRowsTabId;
 
     [Parameter]
     public EventCallback SendClicked { get; set; } = default!;
@@ -135,182 +141,86 @@
 
     [Inject] public IVariableService VariableService { get; set; } = default!;
 
-    [Parameter] public bool Loading { get; set; } = false;
+    [Inject] public SirenAppState AppState { get; set; } = default!;
 
-    private RequestBodyType CurrentBodyType => AppState?.Active?.Request?.BodyType ?? RequestBodyType.Raw;
+    [Inject] public RequestTabsState Tabs { get; set; } = default!;
 
-    private async Task HandleBodyTypeChanged(RequestBodyType newBodyType)
+    [Inject] private IMessageBus Bus { get; set; } = default!;
+
+    private SirenNetworkRequest Tab => Tabs.Active;
+
+    private RequestBodyType CurrentBodyType => Tab.Request?.BodyType ?? RequestBodyType.Raw;
+
+    protected override void OnInitialized()
     {
-        await SyncEditorToModel();
-
-        if (AppState?.Active?.Request != null)
-        {
-            AppState.Active.Request.BodyType = newBodyType;
-        }
-
-        StateHasChanged();
-
-        if (newBodyType == RequestBodyType.Raw)
-        {
-            await Task.Yield();
-            await SyncModelToEditor();
-        }
+        Tabs.ActiveTabChanged += HandleTabChanged;
+        Tabs.RequestChanged += HandleTabChanged;
+        Tabs.SendingChanged += HandleTabChanged;
+        AppState.OnActiveEnvironmentChanged += HandleEnvironmentChanged;
+        Bus.Subscribe<CommitRequestEdits>(this);
     }
 
-    private async Task HandlePanelViewChanged(RequestPanelViewType newView)
+    public void Dispose()
     {
-        // Sync editor content before switching away from Body view
-        if (_currentPanelView == RequestPanelViewType.Body)
-        {
-            await SyncEditorToModel();
-        }
-
-        // Load headers when switching to Headers view
-        if (newView == RequestPanelViewType.Headers)
-        {
-            LoadRequestHeaders();
-        }
-
-        _currentPanelView = newView;
-        StateHasChanged();
-
-        // Restore editor content when switching back to Body view
-        if (newView == RequestPanelViewType.Body && CurrentBodyType == RequestBodyType.Raw)
-        {
-            await Task.Yield();
-            await SyncModelToEditor();
-        }
+        Tabs.ActiveTabChanged -= HandleTabChanged;
+        Tabs.RequestChanged -= HandleTabChanged;
+        Tabs.SendingChanged -= HandleTabChanged;
+        AppState.OnActiveEnvironmentChanged -= HandleEnvironmentChanged;
+        Bus.Unsubscribe<CommitRequestEdits>(this);
     }
 
-    private void LoadRequestHeaders()
+    private void HandleTabChanged(SirenNetworkRequest tab)
     {
-        _requestHeaders = AppState?.Active?.Request?.Headers?.ToViewModel() ?? new();
+        InvokeAsync(StateHasChanged);
     }
 
-    private async Task HandleRequestHeadersChanged(List<HeaderModel> headers)
+    protected void HandleEnvironmentChanged(string? environment)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public Task Consume(CommitRequestEdits message) => InvokeAsync(FlushEditorAsync);
+
+    private Task FlushEditorAsync() => _editor?.FlushAsync() ?? Task.CompletedTask;
+
+    // The editor says which tab the text was typed in, which is not always the tab that is active by now
+    private void HandleBodyChanged(EditorTextChange change) => Tabs.SetRawBody(change.DocumentId, change.Text);
+
+    private void HandleBodyTypeChanged(RequestBodyType newBodyType) => Tabs.SetBodyType(Tab.Id, newBodyType);
+
+    private void HandlePanelViewChanged(RequestPanelViewType newView) => _currentPanelView = newView;
+
+    // Rows can be blank or switched off, which the request does not record, so they are kept here
+    // and rebuilt only when the tab changes or its headers stop matching them
+    private List<HeaderModel> HeaderRows()
+    {
+        var headers = Tab.Request?.Headers ?? [];
+
+        if (_headerRowsTabId != Tab.Id || !SentHeaders(_requestHeaders).SequenceEqual(headers))
+        {
+            _headerRowsTabId = Tab.Id;
+            _requestHeaders = headers.ToViewModel();
+        }
+
+        return _requestHeaders;
+    }
+
+    private static IEnumerable<KeyValuePair<string, string>> SentHeaders(IEnumerable<HeaderModel> rows) => rows
+        .Where(h => !string.IsNullOrWhiteSpace(h.Key) && h.Enabled)
+        .Select(h => new KeyValuePair<string, string>(h.Key!, h.Value ?? ""));
+
+    private void HandleRequestHeadersChanged(List<HeaderModel> headers)
     {
         _requestHeaders = headers;
-        if (AppState?.Active?.Request != null)
-        {
-            AppState.Active.Request.Headers = headers
-                .Where(h => !string.IsNullOrWhiteSpace(h.Key) && h.Enabled)
-                .Select(h => new KeyValuePair<string, string>(h.Key!, h.Value ?? ""))
-                .ToList();
-            AppState.NotifyActiveRequestChanged();
-        }
-        await Task.CompletedTask;
+        Tabs.SetHeaders(Tab.Id, SentHeaders(headers));
     }
 
-    private async Task HandleQueryParamsUriChanged(string newUri)
-    {
-        if (AppState?.Active?.Request != null)
-        {
-            AppState.Active.Request.RequestUri = newUri;
-            StateHasChanged();
-        }
-        await Task.CompletedTask;
-    }
+    private void HandleQueryParamsUriChanged(string newUri) => Tabs.SetUri(Tab.Id, newUri);
 
-    private async Task SyncEditorToModel()
-    {
-        if (_currentPanelView == RequestPanelViewType.Body && CurrentBodyType == RequestBodyType.Raw && _editor?.Editor != null && AppState?.Active?.Request != null)
-        {
-            try
-            {
-                AppState.Active.Request.RawBody = await _editor.Editor.GetValue() ?? "";
-            }
-            catch (Exception ex)
-            {
-                Logger.LogWarning(ex, "Failed to sync editor content to model");
-            }
-        }
-    }
+    protected void UpdateHttpMethod(string? method)
+        => Tabs.SetMethod(Tab.Id, string.IsNullOrWhiteSpace(method) ? null : new HttpMethod(method));
 
-    private async Task SyncModelToEditor()
-    {
-        if (_editor?.Editor != null && AppState?.Active?.Request != null)
-        {
-            try
-            {
-                await _editor.Editor.SetValue(AppState.Active.Request.RawBody ?? "");
-            }
-            catch (Exception ex)
-            {
-                Logger.LogWarning(ex, "Failed to sync model content to editor");
-            }
-        }
-    }
-
-    public async Task<string> GetPayload()
-    {
-        if (CurrentBodyType == RequestBodyType.FormData)
-        {
-            return "";
-        }
-        
-        await SyncEditorToModel();
-        return AppState?.Active?.Request?.RawBody ?? "";
-    }
-
-    public string GetBodyType()
-    {
-        return CurrentBodyType switch
-        {
-            RequestBodyType.None => "none",
-            RequestBodyType.Raw => "raw",
-            RequestBodyType.FormData => "form-data",
-            RequestBodyType.Binary => "binary",
-            RequestBodyType.MultipartFormData => "multipart-form-data",
-            _ => "raw"
-        };
-    }
-
-    public async Task<string> GetBodyContentAsync()
-    {
-        if (CurrentBodyType == RequestBodyType.Raw && _editor != null)
-        {
-            try
-            {
-                return await _editor.Editor.GetValue() ?? "";
-            }
-            catch (Exception ex)
-            {
-                Logger.LogWarning(ex, "Failed to get body content from editor");
-                return "";
-            }
-        }
-        return "";
-    }
-
-    public async Task SetBodyContentAsync(string content, string? bodyType = null)
-    {
-        if (!string.IsNullOrEmpty(bodyType) && AppState?.Active?.Request != null)
-        {
-            AppState.Active.Request.BodyType = bodyType switch
-            {
-                "none" => RequestBodyType.None,
-                "raw" => RequestBodyType.Raw,
-                "form-data" => RequestBodyType.FormData,
-                "binary" => RequestBodyType.Binary,
-                "multipart-form-data" => RequestBodyType.MultipartFormData,
-                _ => RequestBodyType.Raw
-            };
-            AppState.Active.Request.RawBody = content ?? "";
-            StateHasChanged();
-        }
-
-        if (_editor != null && CurrentBodyType == RequestBodyType.Raw)
-        {
-            try
-            {
-                await _editor.Editor.SetValue(content ?? "");
-            }
-            catch (Exception ex)
-            {
-                Logger.LogWarning(ex, "Failed to set body content in editor");
-            }
-        }
-    }
+    protected void UpdateRequestUri(string uri) => Tabs.SetUri(Tab.Id, uri);
 
     public async Task FocusUriInputAsync()
     {
@@ -328,15 +238,10 @@
         }
     }
 
-    private SirenEditor _editor = default;
-    private Guid? _previousActiveRequestId;
-
-    public async void Copy()
+    public async Task Copy()
     {
-        if (_editor == null)
-            return;
-
-        string value = await _editor.Editor?.GetValue();
+        await FlushEditorAsync();
+        var value = Tab.Request?.RawBody;
 
         if (!string.IsNullOrWhiteSpace(value))
             await JsApiService.CopyToClipboardAsync(value);
@@ -366,15 +271,11 @@
 
     private async Task OnPreviewClicked()
     {
-        var request = AppState?.Active?.Request;
+        await FlushEditorAsync();
+
+        var request = Tab.Request;
         if (request == null)
             return;
-
-        // Sync editor content before preview if we're in raw body mode
-        if (CurrentBodyType == RequestBodyType.Raw)
-        {
-            await SyncEditorToModel();
-        }
 
         var parameters = new DialogParameters
         {
@@ -390,131 +291,6 @@
 
         var options = new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "siren-dialog", MaxWidth = MaxWidth.Large };
         await DialogService.ShowAsync<RequestPreviewDialog>("Request Preview", parameters, options);
-    }
-
-    [Inject] public SirenAppState AppState { get; set; } = default!;
-
-    public string Method => _httpMethodDropdown?.SelectedMethod ?? "";
-
-    public string Address => _requestUri ?? "";
-
-    protected override void OnInitialized()
-    {
-        AppState.OnAppStateChanged += HandleAppStateChanged;
-        AppState.OnActiveEnvironmentChanged += HandleEnvironmentChanged;
-        AppState.OnActiveNetworkRequestChanged += HandleActiveNetworkRequestChanged;
-    }
-
-    public void Dispose()
-    {
-        AppState.OnAppStateChanged -= HandleAppStateChanged;
-        AppState.OnActiveEnvironmentChanged -= HandleEnvironmentChanged;
-        AppState.OnActiveNetworkRequestChanged -= HandleActiveNetworkRequestChanged;
-    }
-
-    protected async void HandleActiveNetworkRequestChanged(SirenNetworkRequest? request)
-    {
-        if (_previousActiveRequestId.HasValue && _previousActiveRequestId != request?.Id)
-        {
-            var previousRequest = AppState.NetworkRequests.FirstOrDefault(x => x.Id == _previousActiveRequestId);
-            if (previousRequest?.Request != null && previousRequest.Request.BodyType == RequestBodyType.Raw && _editor?.Editor != null)
-            {
-                try
-                {
-                    previousRequest.Request.RawBody = await _editor.Editor.GetValue() ?? "";
-                }
-                catch (Exception ex)
-                {
-                    Logger.LogWarning(ex, "Failed to save previous request body from editor");
-                }
-            }
-        }
-
-        _previousActiveRequestId = request?.Id;
-        
-        StateHasChanged();
-        
-        await Task.Yield();
-
-        if (request == null)
-        {
-            try
-            {
-                if (_editor?.Editor != null)
-                {
-                    await _editor.Editor.SetValue("");
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.LogWarning(ex, "Failed to clear editor content");
-            }
-            return;
-        }
-
-        if (request.Request?.BodyType == RequestBodyType.Raw)
-        {
-            await SyncModelToEditor();
-        }
-    }
-
-    protected async void HandleAppStateChanged(SirenAppState state)
-    {
-        if (state?.Active?.Request?.Method?.Method != _httpMethodDropdown.SelectedMethod)
-        {
-            await _httpMethodDropdown.SetMethod(state?.Active?.Request?.Method?.Method!);
-        }
-        StateHasChanged();
-    }
-
-    protected void HandleEnvironmentChanged(string? environment)
-    {
-        StateHasChanged();
-    }
-
-    protected void UpdateHttpMethod(string? method)
-    {
-        var req = AppState.Active;
-
-        if (string.IsNullOrWhiteSpace(method))
-        {
-            req.Request.Method = default!;
-        }
-        else
-        {
-            req.Request.Method = new HttpMethod(method);
-        }
-
-        AppState.Active = req;
-
-        StateHasChanged();
-    }
-
-    protected void UpdateRequestUri(string uri)
-    {
-        var req = AppState.Active;
-
-        req.Request.RequestUri = uri;
-
-        AppState.Active = req;
-
-        StateHasChanged();
-    }
-
-    string GetColor(string method)
-    {
-        return method switch
-        {
-            "GET" => "#4caf50",
-            "POST" => "#2196f3",
-            "PUT" => "#ff9800",
-            "DELETE" => "#f44336",
-            "PATCH" => "#9c27b0",
-            "OPTIONS" => "#3f51b5",
-            "HEAD" => "#009688",
-            "QUERY" => "#00bcd4",
-            _ => "var(--mud-palette-surface)",
-        };
     }
 
     private TokenizedInput.VariableDisplayInfo? GetVariableInfo(string? variableName)

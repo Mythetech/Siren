@@ -163,11 +163,12 @@ namespace Siren.Components
             IsDarkMode = await _themeProvider.GetSystemDarkModeAsync();
         }
 
-        public event Action? OnFormatRequest;
+        public event Func<Task>? OnFormatRequest;
 
-        public void TriggerFormatRequest()
+        public async Task TriggerFormatRequest()
         {
-            OnFormatRequest?.Invoke();
+            if (OnFormatRequest != null)
+                await OnFormatRequest.Invoke();
         }
 
         public event Action<string?, string>? OnImportRequestBody;
