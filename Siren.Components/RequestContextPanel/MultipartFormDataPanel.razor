@@ -152,6 +152,9 @@
     public SirenNetworkRequest NetworkRequest { get; set; } = default!;
 
     [Inject]
+    public RequestTabsState Tabs { get; set; } = default!;
+
+    [Inject]
     public IFileOpenService FileOpenService { get; set; } = default!;
 
     [Inject]
@@ -255,10 +258,10 @@
 
     private void SyncToNetworkRequest()
     {
-        if (NetworkRequest?.Request != null)
+        if (NetworkRequest != null)
         {
-            NetworkRequest.Request.FormData = formDataEntries.ToSafeDictionary();
-            NetworkRequest.Request.BinaryAttachments = attachments.ToList();
+            Tabs.SetFormData(NetworkRequest.Id, formDataEntries.ToSafeDictionary());
+            Tabs.SetAttachments(NetworkRequest.Id, attachments);
         }
     }
 

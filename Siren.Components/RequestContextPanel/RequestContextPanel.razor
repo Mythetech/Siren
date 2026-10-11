@@ -11,7 +11,7 @@
             </Tab>
             <Tab Name="Headers" Icon="@SirenIcons.Headers">
                 <ChildContent>
-                    <HeadersPanel NetworkRequest="@AppState.Active" />
+                    <HeadersPanel />
                 </ChildContent>
             </Tab>
             <Tab Name="Cookies" Icon="@SirenIcons.Cookies">
@@ -37,8 +37,6 @@
 </SirenStack>
 
 @code {
-    [Inject] SirenAppState AppState { get; set; }
-
     [Parameter] public EventCallback PanelClosed { get; set; } = default!;
 
     [Parameter] public bool IsOpen { get; set; } = false;

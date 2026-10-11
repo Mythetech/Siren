@@ -1,5 +1,6 @@
 ﻿@using Siren.Components.History
 @using System.Net
+@using Siren.Components.Http
 @using Siren.Components.Http.Models
 @using Siren.Components.MockServer
 @using Siren.Components.MockServer.Models
@@ -70,7 +71,7 @@ else
 
 @code {
     [Inject]
-    protected SirenAppState AppState { get; set; } = default!;
+    protected RequestTabsState Tabs { get; set; } = default!;
 
     [Inject]
     protected IHistoryService HistoryService { get; set; } = default!;
@@ -159,15 +160,12 @@ else
 
     protected void LoadHistoryRecord(HistoryRecord record)
     {
-        var n = new SirenNetworkRequest()
+        Tabs.Open(new SirenNetworkRequest()
         {
             Request = record?.Request?.Copy(),
-            Name = record?.RequestUri ?? "",
             Response = record?.Response?.Copy(),
             DisplayText = record?.DisplayText
-        };
-
-        AppState.AddNetworkRequest(n);
+        });
 
         StateHasChanged();
     }

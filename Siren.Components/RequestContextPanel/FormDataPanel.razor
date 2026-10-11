@@ -104,6 +104,9 @@
     public SirenNetworkRequest NetworkRequest { get; set; }
 
     [Inject]
+    public RequestTabsState Tabs { get; set; } = default!;
+
+    [Inject]
     public IJsApiService JsApiService { get; set; } = default!;
 
     [Inject]
@@ -160,9 +163,9 @@
 
     private void SyncToNetworkRequest()
     {
-        if (NetworkRequest?.Request != null)
+        if (NetworkRequest != null)
         {
-            NetworkRequest.Request.FormData = formDataEntries.ToSafeDictionary();
+            Tabs.SetFormData(NetworkRequest.Id, formDataEntries.ToSafeDictionary());
         }
     }
 }

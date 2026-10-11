@@ -1,4 +1,5 @@
-﻿@using Siren.Components.Http.Models
+﻿@using Siren.Components.Http
+@using Siren.Components.Http.Models
 @using Siren.Components.Collections
 @using Siren.Components.Shared.Notifications
 @implements IDisposable
@@ -79,7 +80,7 @@
     IDialogService DialogService { get; set; } = default!;
 
     [Inject]
-    SirenAppState AppState { get; set; } = default!;
+    RequestTabsState Tabs { get; set; } = default!;
 
     [Inject]
     ILogger<CollectionsPanel> Logger { get; set; } = default!;
@@ -276,7 +277,7 @@
 
     protected async Task AddActiveRequestToCollection(Guid collectionId)
     {
-        var req = AppState?.Active;
+        var req = Tabs.Active;
 
         var collection = _collections.FirstOrDefault(x => x.Id == collectionId);
 
