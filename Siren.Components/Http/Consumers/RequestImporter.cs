@@ -14,18 +14,18 @@ namespace Siren.Components.Http.Consumers
         private readonly IFileOpenService _fileOpenService;
         private readonly IMessageBus _bus;
         private readonly ILogger<RequestImporter> _logger;
-        private readonly SirenAppState _appState;
+        private readonly RequestTabsState _tabs;
 
         public RequestImporter(
             IFileOpenService fileOpenService,
             IMessageBus bus,
             ILogger<RequestImporter> logger,
-            SirenAppState appState)
+            RequestTabsState tabs)
         {
             _fileOpenService = fileOpenService;
             _bus = bus;
             _logger = logger;
-            _appState = appState;
+            _tabs = tabs;
         }
 
         public async Task Consume(ImportRequest message)
@@ -70,24 +70,8 @@ namespace Siren.Components.Http.Consumers
                     return;
                 }
 
-                var request = ConvertFromCommand(saveRequest);
-                var networkRequest = new SirenNetworkRequest
-                {
-                    Name = saveRequest.RequestUri ?? "Imported Request",
-                    Request = request
-                };
-
-                _appState.AddNetworkRequest(networkRequest);
-                _appState.SetActive(networkRequest.Id);
-
-                if (saveRequest.BodyType == "raw" && !string.IsNullOrEmpty(saveRequest.Body))
-                {
-                    _appState.ImportRequestBody(saveRequest.Body, saveRequest.BodyType);
-                }
-                else if (saveRequest.BodyType != "none")
-                {
-                    _appState.ImportRequestBody(null, saveRequest.BodyType);
-                }
+                // The request carries its own body type and body, so the editor needs no separate push
+                _tabs.Open(new SirenNetworkRequest { Request = ConvertFromCommand(saveRequest) });
 
                 await _bus.PublishAsync(new AddNotification("Request imported successfully", Severity.Success));
             }
