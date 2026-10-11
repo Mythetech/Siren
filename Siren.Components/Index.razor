@@ -138,8 +138,6 @@
         AppState.OnAppStateChanged += HandleAppStateChanged;
         AppState.OnFormatRequest += HandleFormatRequest;
         AppState.OnOpenRequestContextPanel += HandleOpenRequestContextPanel;
-        AppState.OnSendRequest += HandleSendRequestFromPalette;
-        AppState.OnNewTab += HandleNewTabFromPalette;
     }
 
     private void HandleAppStateChanged(SirenAppState state)
@@ -169,10 +167,6 @@
     {
         await InvokeAsync(async () => await ToggleSidePanel(tab));
     }
-
-    private Task HandleSendRequestFromPalette() => InvokeAsync(HandleSendClicked);
-
-    private Task HandleNewTabFromPalette() => InvokeAsync(HandleNewTab);
 
     protected async Task HandleFocusUri()
     {
@@ -219,8 +213,6 @@
         AppState.OnAppStateChanged -= HandleAppStateChanged;
         AppState.OnFormatRequest -= HandleFormatRequest;
         AppState.OnOpenRequestContextPanel -= HandleOpenRequestContextPanel;
-        AppState.OnSendRequest -= HandleSendRequestFromPalette;
-        AppState.OnNewTab -= HandleNewTabFromPalette;
 
         if (_module == null)
             return;

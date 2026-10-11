@@ -212,22 +212,6 @@ namespace Siren.Components
             if (OnOpenSettings != null)
                 await OnOpenSettings.Invoke();
         }
-
-        public event Func<Task>? OnSendRequest;
-
-        public async Task TriggerSendRequest()
-        {
-            if (OnSendRequest != null)
-                await OnSendRequest.Invoke();
-        }
-
-        public event Func<Task>? OnNewTab;
-
-        public async Task TriggerNewTab()
-        {
-            if (OnNewTab != null)
-                await OnNewTab.Invoke();
-        }
     }
 }
 

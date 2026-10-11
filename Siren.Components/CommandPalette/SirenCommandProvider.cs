@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using Mythetech.Framework.Components.CommandPalette;
+using Siren.Components.Http;
 using Siren.Components.Theme;
 
 namespace Siren.Components.CommandPalette;
@@ -8,11 +9,15 @@ public sealed class SirenCommandProvider : ICommandProvider
 {
     private readonly SirenAppState _appState;
     private readonly NavigationManager _nav;
+    private readonly RequestTabsState _tabs;
+    private readonly IRequestSender _sender;
 
-    public SirenCommandProvider(SirenAppState appState, NavigationManager nav)
+    public SirenCommandProvider(SirenAppState appState, NavigationManager nav, RequestTabsState tabs, IRequestSender sender)
     {
         _appState = appState;
         _nav = nav;
+        _tabs = tabs;
+        _sender = sender;
     }
 
     public ValueTask<IReadOnlyList<PaletteCommand>> GetCommandsAsync(
@@ -107,7 +112,7 @@ public sealed class SirenCommandProvider : ICommandProvider
                 Description: "Ctrl+Enter",
                 Icon: SirenIcons.Play,
                 Keywords: ["send", "run", "execute", "http"],
-                InvokeAsync: _ => NavigateHomeAndRun(_appState.TriggerSendRequest),
+                InvokeAsync: _ => SendActiveRequestAsync(),
                 Group: "Actions"),
 
             new(
@@ -116,7 +121,7 @@ public sealed class SirenCommandProvider : ICommandProvider
                 Description: "Ctrl+T",
                 Icon: SirenIcons.Add,
                 Keywords: ["new", "tab", "request", "create"],
-                InvokeAsync: _ => NavigateHomeAndRun(_appState.TriggerNewTab),
+                InvokeAsync: _ => OpenNewTab(),
                 Group: "Actions"),
 
             new(
@@ -134,25 +139,33 @@ public sealed class SirenCommandProvider : ICommandProvider
 
     private async Task NavigateAndOpenRequestContext(string tab)
     {
-        var relativePath = _nav.ToBaseRelativePath(_nav.Uri);
-        if (relativePath != "" && relativePath != "/" && relativePath != "index")
-        {
-            _nav.NavigateTo("/");
+        // The request context panel belongs to the requests page, which needs a moment to render
+        if (NavigateHome())
             await Task.Delay(100);
-        }
 
         await _appState.TriggerOpenRequestContextPanel(tab);
     }
 
-    private async Task NavigateHomeAndRun(Func<Task> action)
+    private async Task SendActiveRequestAsync()
+    {
+        NavigateHome();
+        await _sender.SendAsync(_tabs.Active.Id);
+    }
+
+    private Task OpenNewTab()
+    {
+        NavigateHome();
+        _tabs.OpenNew();
+        return Task.CompletedTask;
+    }
+
+    private bool NavigateHome()
     {
         var relativePath = _nav.ToBaseRelativePath(_nav.Uri);
-        if (relativePath != "" && relativePath != "/" && relativePath != "index")
-        {
-            _nav.NavigateTo("/");
-            await Task.Delay(100);
-        }
+        if (relativePath is "" or "/" or "index")
+            return false;
 
-        await action();
+        _nav.NavigateTo("/");
+        return true;
     }
 }
