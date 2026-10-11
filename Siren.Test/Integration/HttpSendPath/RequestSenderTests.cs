@@ -39,7 +39,7 @@ public class RequestSenderTests : IClassFixture<EchoHostFixture>
     {
         _host = host;
         _tabs = TestState.Tabs(_settings);
-        _appState = TestState.AppState(_tabs);
+        _appState = TestState.AppState();
 
         var variableService = Substitute.For<IVariableService>();
         variableService.GetVariables().Returns(_ => _variables.ToList());

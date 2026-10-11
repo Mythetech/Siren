@@ -44,7 +44,7 @@ namespace Siren.Test.Infrastructure
 
             context.Services.AddSingleton(settings);
             context.Services.AddSingleton(tabs);
-            context.Services.AddSingleton(TestState.AppState(tabs));
+            context.Services.AddSingleton(TestState.AppState());
 
             return tabs;
         }

@@ -5,8 +5,6 @@ namespace Siren.Components.Http.Models
     {
         public Guid Id { get; } = Guid.NewGuid();
 
-        public string Name { get; set; } = "";
-
         public HttpRequest? Request { get; set; }
 
         public RequestResult? Response { get; set; }
@@ -19,7 +17,6 @@ namespace Siren.Components.Http.Models
         {
             return new SirenNetworkRequest
             {
-                Name = Name,
                 Request = Request?.Copy(),
                 Response = Response?.Copy(),
                 DisplayText = DisplayText

@@ -1,6 +1,4 @@
 ﻿using MudBlazor;
-using Siren.Components.Http;
-using Siren.Components.Http.Models;
 
 namespace Siren.Components
 {
@@ -37,50 +35,11 @@ namespace Siren.Components
             }
         }
 
-        // The tabs live in RequestTabsState. The members below only keep components that have not
-        // moved to it yet working, and go away once the last of them has moved.
-        private readonly RequestTabsState _tabs;
-
-        public SirenAppState(RequestTabsState tabs)
-        {
-            _tabs = tabs;
-
-            _tabs.TabsChanged += () =>
-            {
-                NetworkRequestsChanged();
-                AppStateChanged();
-            };
-            _tabs.ActiveTabChanged += _ => ActiveNetworkRequestChanged();
-            _tabs.RequestChanged += _ => AppStateChanged();
-            _tabs.ResponseChanged += _ => ActiveNetworkRequestChanged();
-            _tabs.SendingChanged += _ => AppStateChanged();
-        }
-
-        public SirenNetworkRequest? Active
-        {
-            get => _tabs.Active;
-            set
-            {
-                if (value != null)
-                    _tabs.Activate(value.Id);
-
-                ActiveNetworkRequestChanged();
-            }
-        }
-
-        public List<SirenNetworkRequest> NetworkRequests => _tabs.Tabs.ToList();
-
         public event Action? OnChange;
-
-        public event Action? OnNetworkRequestsChanged;
 
         public event Action<SirenAppState>? OnAppStateChanged;
 
         public event Action<bool>? OnDarkModeChanged;
-
-        public event Action<int>? OnNetworkRequestIndexChanged;
-
-        public event Action<SirenNetworkRequest?>? OnActiveNetworkRequestChanged;
 
         public event Action<string?>? OnActiveEnvironmentChanged;
 
@@ -100,17 +59,7 @@ namespace Siren.Components
 
         private void IsDarkModeChanged() => OnDarkModeChanged?.Invoke(IsDarkMode);
 
-        private void NetworkRequestsChanged() => OnNetworkRequestsChanged?.Invoke();
-
         private void AppStateChanged() => OnAppStateChanged?.Invoke(this);
-
-        private void NetworkRequestIndexChanged(int index) => OnNetworkRequestIndexChanged?.Invoke(index);
-
-        private void ActiveNetworkRequestChanged()
-        {
-            OnActiveNetworkRequestChanged?.Invoke(Active);
-            AppStateChanged();
-        }
 
         private void ActiveEnvironmentChanged()
         {
@@ -118,40 +67,10 @@ namespace Siren.Components
             AppStateChanged();
         }
 
-        public void AddNetworkRequest(SirenNetworkRequest request)
-        {
-            _tabs.Open(request);
-            NetworkRequestIndexChanged(NetworkRequests.FindIndex(x => x.Id.Equals(request.Id)));
-            ActiveNetworkRequestChanged();
-        }
-
-        public void RemoveNetworkRequest(Guid id) => _tabs.Close(id);
-
-        public void SetActive(Guid id)
-        {
-            _tabs.Activate(id);
-            ActiveNetworkRequestChanged();
-        }
-
-        public void SetActive(SirenNetworkRequest request)
-        {
-            if (request != null)
-                SetActive(request.Id);
-        }
-
         public void ToggleSideBar()
         {
             SideBarOpen = !SideBarOpen;
 
-            AppStateChanged();
-        }
-
-        /// <summary>
-        /// Call this to notify subscribers when nested properties of Active are modified directly
-        /// (e.g., Active.Request.Headers). This ensures all components stay in sync.
-        /// </summary>
-        public void NotifyActiveRequestChanged()
-        {
             AppStateChanged();
         }
 
@@ -169,24 +88,6 @@ namespace Siren.Components
         {
             if (OnFormatRequest != null)
                 await OnFormatRequest.Invoke();
-        }
-
-        public event Action<string?, string>? OnImportRequestBody;
-
-        public void ImportRequestBody(string? body, string bodyType)
-        {
-            OnImportRequestBody?.Invoke(body, bodyType);
-        }
-
-        public event Func<Task<(string? body, string bodyType)>>? OnRequestBodyContent;
-
-        public async Task<(string? body, string bodyType)> RequestBodyContentAsync()
-        {
-            if (OnRequestBodyContent != null)
-            {
-                return await OnRequestBodyContent.Invoke();
-            }
-            return (null, "none");
         }
 
         public event Func<string, Task>? OnOpenContextPanel;
@@ -214,4 +115,3 @@ namespace Siren.Components
         }
     }
 }
-

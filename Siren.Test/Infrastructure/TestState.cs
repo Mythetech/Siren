@@ -28,8 +28,5 @@ internal static class TestState
 
     public static RequestTabsState Tabs(SettingsState? settings = null) => new(settings ?? Settings());
 
-    /// <summary>
-    /// The one place tests build a SirenAppState, so its constructor can change without touching every test.
-    /// </summary>
-    public static SirenAppState AppState(RequestTabsState tabs) => new(tabs);
+    public static SirenAppState AppState() => new();
 }

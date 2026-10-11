@@ -19,7 +19,7 @@ public class SirenCommandProviderTests
 
     public SirenCommandProviderTests()
     {
-        _appState = TestState.AppState(_tabs);
+        _appState = TestState.AppState();
         _provider = new SirenCommandProvider(_appState, _nav, _tabs, _sender);
     }
 
