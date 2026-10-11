@@ -118,7 +118,7 @@ namespace Siren.Components.Services
             {
                 foreach (var header in request.Headers)
                 {
-                    httpRequestMessage.Headers.Add(header.Key, header.Value);
+                    AddUserHeader(httpRequestMessage, header.Key, header.Value);
                 }
             }
 
@@ -308,6 +308,34 @@ namespace Siren.Components.Services
             }
 
             _historyService.AddHistoryRecord(record);
+        }
+
+        /// <summary>
+        /// Adds a header the user typed. Values are sent as typed rather than validated, because strict
+        /// validation throws on input a server would accept, and a testing tool has to be able to send it.
+        /// </summary>
+        private void AddUserHeader(HttpRequestMessage message, string name, string value)
+        {
+            if (message.Headers.TryAddWithoutValidation(name, value))
+                return;
+
+            // Request headers reject content headers such as Content-Type, which travel on the content instead
+            var content = message.Content ?? new ByteArrayContent(Array.Empty<byte>());
+
+            // The generated boundary has to match the body, so a copied Content-Type must not replace it
+            if (content is MultipartContent && string.Equals(name, "Content-Type", StringComparison.OrdinalIgnoreCase))
+                return;
+
+            if (content.Headers.TryGetValues(name, out _))
+                content.Headers.Remove(name);
+
+            if (content.Headers.TryAddWithoutValidation(name, value))
+            {
+                message.Content = content;
+                return;
+            }
+
+            _logger.LogWarning("Header {HeaderName} is not a valid header name and was not sent", name);
         }
 
         private void AddCookiesToRequest(HttpRequestMessage request)

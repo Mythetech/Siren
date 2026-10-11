@@ -385,7 +385,7 @@
             var payload = await _requestPanel.GetPayload();
             var payloadResult = await VariableSubstitutionService.SubstituteVariablesAsync(payload, activeEnvironment);
             resolutionErrors.AddRange(payloadResult.Errors);
-            content = new StringContent(payloadResult.Value, System.Text.Encoding.UTF8, contentType);
+            content = RawBodyContent.Create(payloadResult.Value, contentType);
         }
         else if (bodyType == "binary")
         {
