@@ -1,4 +1,6 @@
-﻿<MudDialog Style="min-width:33vw;">
+﻿@using Siren.Components.Shared.Notifications
+
+<MudDialog Style="min-width:33vw;">
     <DialogContent>
         <SirenClearableTextField T="string" Class="w-100" Placeholder="Url" @bind-Input="@url" />
         <SirenStack Class="w-100">
@@ -44,6 +46,12 @@
     [Inject]
     public ICollectionsService CollectionsService { get; set; } = default!;
 
+    [Inject]
+    private ISnackbar Snackbar { get; set; } = default!;
+
+    [Inject]
+    private ILogger<ImportDialog> Logger { get; set; } = default!;
+
     private Collection Collection { get; set; } = new();
 
     bool imported = false;
@@ -54,7 +62,21 @@
 
     private string url = "";
 
-    private void Submit() => MudDialog.Close(DialogResult.Ok(Collection));
+    private void Submit()
+    {
+        try
+        {
+            CollectionsService.CreateCollection(Collection.Name, Collection.Requests?.ToArray());
+            Snackbar.AddSirenSuccess($"Imported collection '{Collection.Name}'", opts => opts.SuccessIcon = SirenIcons.Collection);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error importing OpenAPI collection");
+            Snackbar.AddSirenError("Error importing collection");
+        }
+
+        MudDialog.Close(DialogResult.Ok(Collection));
+    }
 
     private void Cancel() => MudDialog.Cancel();
 

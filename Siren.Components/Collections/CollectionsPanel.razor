@@ -1,6 +1,7 @@
 ﻿@using Siren.Components.Http.Models
 @using Siren.Components.Collections
 @using Siren.Components.Shared.Notifications
+@implements IDisposable
 
 <SirenStack Spacing="6" Class="h-100 w-100 pa-1" AlignItems="AlignItems.Start">
     @if (_loading)
@@ -106,6 +107,11 @@
           .ToList();
     }
 
+    protected override void OnInitialized()
+    {
+        CollectionsService.CollectionsChanged += HandleCollectionsChanged;
+    }
+
     protected override async Task OnInitializedAsync()
     {
         _loading = true;
@@ -117,6 +123,17 @@
         {
             _loading = false;
         }
+    }
+
+    private void HandleCollectionsChanged(List<Collection> collections)
+    {
+        _collections = CollectionsService.GetCollections();
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        CollectionsService.CollectionsChanged -= HandleCollectionsChanged;
     }
 
     protected void ClearSelected()
@@ -312,31 +329,10 @@
         StateHasChanged();
     }
 
-    protected async Task OpenApiImportPrompt()
+    protected Task OpenApiImportPrompt()
     {
         var options = new DialogOptions() { CloseOnEscapeKey = true, BackgroundClass = "siren-dialog" };
 
-        var dialogRef = await DialogService.ShowAsync<ImportDialog>("Open API Import", options);
-
-        var result = await dialogRef.Result;
-
-        if (!result.Canceled)
-        {
-            try
-            {
-                CollectionsService.CreateCollection(((Collection)result.Data).Name, ((Collection)result.Data).Requests?.ToArray());
-                _collections = CollectionsService.GetCollections();
-                StateHasChanged();
-
-                Snackbar.Add($"Added `{((Collection)result.Data)?.Name ?? "new collection"}`", Severity.Success, configure: (opts) =>
-                {
-                    opts.SuccessIcon = SirenIcons.Collection;
-                });
-            }
-            catch (Exception ex)
-            {
-                Snackbar.Add("Error updating request", Severity.Error);
-            }
-        }
+        return DialogService.ShowAsync<ImportDialog>("Open API Import", options);
     }
 }

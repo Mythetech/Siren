@@ -1,4 +1,6 @@
-﻿<MudDialog>
+@using Siren.Components.Shared.Notifications
+
+<MudDialog>
     <DialogContent>
         <MudText>Are you sure you want to delete your history? This cannot be undone.</MudText>
     </DialogContent>
@@ -9,9 +11,32 @@
 </MudDialog>
 @code {
     [CascadingParameter]
-    private IMudDialogInstance MudDialog { get; set; }
+    private IMudDialogInstance MudDialog { get; set; } = default!;
 
-    private void Submit() => MudDialog.Close(DialogResult.Ok(true));
+    [Inject]
+    private IHistoryService HistoryService { get; set; } = default!;
+
+    [Inject]
+    private ISnackbar Snackbar { get; set; } = default!;
+
+    [Inject]
+    private ILogger<DeleteHistoryDialog> Logger { get; set; } = default!;
+
+    private void Submit()
+    {
+        try
+        {
+            HistoryService.DeleteAllHistoryRecords();
+            Snackbar.AddSirenSuccess("Successfully deleted history", opts => opts.Icon = SirenIcons.History);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error deleting history");
+            Snackbar.AddSirenError("Error deleting history");
+        }
+
+        MudDialog.Close(DialogResult.Ok(true));
+    }
 
     private void Cancel() => MudDialog.Cancel();
 }

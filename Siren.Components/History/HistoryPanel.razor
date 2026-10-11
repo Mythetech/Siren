@@ -122,29 +122,11 @@ else
         }
     }
 
-    protected async Task PromptDeleteHistory()
+    protected Task PromptDeleteHistory()
     {
         var options = new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "siren-dialog" };
 
-        var dialogRef = await DialogService.ShowAsync<DeleteHistoryDialog>("Delete History", options);
-
-        var result = await dialogRef.Result;
-
-        if (!result.Canceled)
-        {
-            try
-            {
-                HistoryService.DeleteAllHistoryRecords();
-                Snackbar.Add("Successfully deleted history", Severity.Success, configure: (opts) =>
-                {
-                    opts.Icon = SirenIcons.History;
-                });
-            }
-            catch (Exception ex)
-            {
-                Snackbar.Add("Error deleting history", Severity.Error);
-            }
-        }
+        return DialogService.ShowAsync<DeleteHistoryDialog>("Delete History", options);
     }
 
     private string _searchString = "";
