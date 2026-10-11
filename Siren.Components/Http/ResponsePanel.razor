@@ -21,24 +21,24 @@
                               DisplayTextSelector="@(v => v.ToString().ToLowerInvariant())"/>
         }
         <SirenSpacer/>
-        @if (AppState?.Active?.Response?.HttpStatusCode != null)
+        @if (Tab.Response?.HttpStatusCode != null)
         {
             <HttpStatusCodeChip IsDarkMode="@AppState.IsDarkMode"
-                                StatusCode="@(AppState?.Active?.Response?.HttpStatusCode ?? System.Net.HttpStatusCode.InternalServerError)"/>
+                                StatusCode="@(Tab.Response?.HttpStatusCode ?? System.Net.HttpStatusCode.InternalServerError)"/>
         }
-        @if (AppState?.Active?.Response?.NetworkInfo != null)
+        @if (Tab.Response?.NetworkInfo != null)
         {
-            <NetworkInfoTooltip NetworkInfo="@AppState.Active.Response.NetworkInfo" />
+            <NetworkInfoTooltip NetworkInfo="@Tab.Response.NetworkInfo" />
         }
-        @if (AppState?.Active?.Response != null)
+        @if (Tab.Response != null)
         {
-            <DurationTimelineTooltip Timeline="@AppState.Active.Response.Timeline"
+            <DurationTimelineTooltip Timeline="@Tab.Response.Timeline"
                                      DisplayText="@GetDurationDisplayText()" />
         }
-        @if (AppState?.Active?.Response != null)
+        @if (Tab.Response != null)
         {
-            <SizeBreakdownTooltip RequestSize="@AppState.Active.Response.RequestSize"
-                                 ResponseSize="@AppState.Active.Response.ResponseSize"
+            <SizeBreakdownTooltip RequestSize="@Tab.Response.RequestSize"
+                                 ResponseSize="@Tab.Response.ResponseSize"
                                  DisplayText="@GetSizeDisplayText()" />
         }
         @if (_panelViewType == ResponsePanelViewType.Body && _currentViewType == ResponseViewType.Json)
@@ -58,24 +58,24 @@
     {
         @if (_currentViewType == ResponseViewType.Json)
         {
-            <SirenEditor @ref="_editor" EditorId="siren-response-editor"/>
+            <SirenEditor @ref="_editor" EditorId="siren-response-editor" DocumentId="@Tab.Id" Text="@ResponseText"/>
         }
         else if (_currentViewType == ResponseViewType.Text)
         {
             <MudPaper Class="pa-4 overflow-auto"
                       Style="height: 100%; font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; white-space: pre-wrap; word-break: break-word;"
                       Elevation="0">
-                @(_responseText ?? "")
+                @ResponseText
             </MudPaper>
         }
         else if (_currentViewType == ResponseViewType.Html)
         {
-            <HtmlViewer HtmlContent="@_responseText" BaseUrl="@(AppState?.Active?.Request?.RequestUri)"/>
+            <HtmlViewer HtmlContent="@ResponseText" BaseUrl="@(Tab.Request?.RequestUri)"/>
         }
     }
     else if (_panelViewType == ResponsePanelViewType.Headers)
     {
-        <HeadersEditor Headers="@_responseHeaders"
+        <HeadersEditor Headers="@ResponseHeaderRows()"
                        ReadOnly="true"
                        AllowEnable="false"
                        ShowSystemHeaders="true"
@@ -85,6 +85,8 @@
 
 @code {
     [Inject] SirenAppState AppState { get; set; } = default!;
+
+    [Inject] RequestTabsState Tabs { get; set; } = default!;
 
     [Inject] IJsApiService JsApiService { get; set; } = default!;
 
@@ -99,150 +101,86 @@
     private ResponsePanelViewType _panelViewType = ResponsePanelViewType.Body;
     private readonly ResponsePanelViewType[] _panelViewTypes = Enum.GetValues<ResponsePanelViewType>();
     private List<HeaderModel> _responseHeaders = new();
+    private RequestResult? _responseHeadersSource;
 
     private ResponseViewType _currentViewType = ResponseViewType.Json;
     private readonly ResponseViewType[] _viewTypes = Enum.GetValues<ResponseViewType>();
-    private string? _responseText;
+
+    private SirenNetworkRequest Tab => Tabs.Active;
+
+    private string ResponseText => Tab.DisplayText ?? "";
 
     protected override void OnInitialized()
     {
-        AppState.OnAppStateChanged += HandleAppStateChanged;
+        Tabs.ActiveTabChanged += HandleTabChanged;
+        Tabs.ResponseChanged += HandleTabChanged;
+        AppState.OnDarkModeChanged += HandleDarkModeChanged;
         Settings.SettingsChanged += HandleSettingsChanged;
     }
 
     public void Dispose()
     {
-        AppState.OnAppStateChanged -= HandleAppStateChanged;
+        Tabs.ActiveTabChanged -= HandleTabChanged;
+        Tabs.ResponseChanged -= HandleTabChanged;
+        AppState.OnDarkModeChanged -= HandleDarkModeChanged;
         Settings.SettingsChanged -= HandleSettingsChanged;
+    }
+
+    private void HandleTabChanged(SirenNetworkRequest tab)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleDarkModeChanged(bool isDarkMode)
+    {
+        InvokeAsync(StateHasChanged);
     }
 
     public void HandleSettingsChanged(SettingsState state)
     {
-        StateHasChanged();
+        InvokeAsync(StateHasChanged);
     }
 
     private string GetDurationDisplayText()
     {
-        if (AppState?.Active?.Response == null)
+        if (Tab.Response == null)
             return "";
 
-        return FormattingUtils.FormatTime(AppState.Active.Response.Duration, Settings.TimeDisplay);
+        return FormattingUtils.FormatTime(Tab.Response.Duration, Settings.TimeDisplay);
     }
 
     private string GetSizeDisplayText()
     {
-        if (AppState?.Active?.Response?.ResponseSize == null)
+        if (Tab.Response?.ResponseSize == null)
             return "";
 
-        var totalSize = AppState.Active.Response.ResponseSize.Body + AppState.Active.Response.ResponseSize.Headers;
+        var totalSize = Tab.Response.ResponseSize.Body + Tab.Response.ResponseSize.Headers;
         return FormattingUtils.FormatSize(totalSize, Settings.SizeDisplay);
     }
 
-    private async Task HandlePanelViewTypeChanged(ResponsePanelViewType newViewType)
+    private void HandlePanelViewTypeChanged(ResponsePanelViewType newViewType) => _panelViewType = newViewType;
+
+    private void HandleViewTypeChanged(ResponseViewType newViewType) => _currentViewType = newViewType;
+
+    // Rebuilt only for a new response, so the rows keep their identity while the same response is on screen
+    private List<HeaderModel> ResponseHeaderRows()
     {
-        _panelViewType = newViewType;
+        var response = Tab.Response;
 
-        if (_panelViewType == ResponsePanelViewType.Headers)
+        if (!ReferenceEquals(response, _responseHeadersSource))
         {
-            LoadResponseHeaders();
+            _responseHeadersSource = response;
+            _responseHeaders = response?.Headers
+                .Select(header => new HeaderModel { Key = header.Key, Value = header.Value, IsSystemHeader = true, Enabled = true })
+                .ToList() ?? new();
         }
 
-        StateHasChanged();
-
-        if (_panelViewType == ResponsePanelViewType.Body && _currentViewType == ResponseViewType.Json && _editor?.Editor != null)
-        {
-            await Task.Yield();
-            try
-            {
-                await _editor.Editor.SetValue(_responseText ?? "");
-            }
-            catch (Exception ex)
-            {
-                Logger.LogWarning(ex, "Failed to update response editor on panel view change");
-            }
-        }
+        return _responseHeaders;
     }
 
-    private void LoadResponseHeaders()
+    public async Task Copy()
     {
-        _responseHeaders.Clear();
-
-        if (AppState?.Active?.Response?.Headers != null)
-        {
-            foreach (var header in AppState.Active.Response.Headers)
-            {
-                _responseHeaders.Add(new HeaderModel
-                {
-                    Key = header.Key,
-                    Value = header.Value,
-                    IsSystemHeader = true,
-                    Enabled = true
-                });
-            }
-        }
-    }
-
-    private async Task HandleViewTypeChanged(ResponseViewType newViewType)
-    {
-        _currentViewType = newViewType;
-        StateHasChanged();
-
-        if (_currentViewType == ResponseViewType.Json && _editor?.Editor != null)
-        {
-            await Task.Yield();
-            try
-            {
-                await _editor.Editor.SetValue(_responseText ?? "");
-            }
-            catch (Exception ex)
-            {
-                Logger.LogWarning(ex, "Failed to update response editor on view type change");
-            }
-        }
-    }
-
-    public async void HandleAppStateChanged(SirenAppState state)
-    {
-        _responseText = state?.Active?.DisplayText ?? "";
-
-        // Reload response headers if viewing Headers panel
-        if (_panelViewType == ResponsePanelViewType.Headers)
-        {
-            LoadResponseHeaders();
-        }
-
-        if (_currentViewType == ResponseViewType.Json)
-        {
-            if (state?.Active?.Response != null)
-            {
-                try
-                {
-                    await _editor.Editor.SetValue(state.Active.DisplayText);
-                }
-                catch (Exception ex)
-                {
-                    Logger.LogWarning(ex, "Failed to set response content in editor");
-                }
-            }
-            else
-            {
-                try
-                {
-                    await _editor.Editor.SetValue("");
-                }
-                catch (Exception ex)
-                {
-                    Logger.LogWarning(ex, "Failed to clear response editor");
-                }
-            }
-        }
-
-        await InvokeAsync(StateHasChanged);
-    }
-
-    public async void Copy()
-    {
-        string value = _responseText ?? "";
+        string value = ResponseText;
 
         if (_currentViewType == ResponseViewType.Json && _editor?.Editor != null)
         {
