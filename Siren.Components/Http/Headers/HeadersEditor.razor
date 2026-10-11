@@ -33,8 +33,8 @@
         <Columns>
             <MudBlazor.PropertyColumn Property="x => x.Key" Title="Header">
                 <EditTemplate>
-                    <MudTextField @bind-Value="@context.Item.Key"
-                                  OnBlur="(() => HandleUpdate(context.Item))"
+                    <MudTextField Value="@context.Item.Key"
+                                  ValueChanged="@((string? key) => SetKey(context.Item, key))"
                                   Disabled="@context.Item.IsSystemHeader"
                                   Class="w-100"/>
                 </EditTemplate>
@@ -48,8 +48,8 @@
 
             <MudBlazor.PropertyColumn Property="x => x.Value" Title="Value">
                 <EditTemplate>
-                    <MudTextField @bind-Value="@context.Item.Value"
-                                  OnBlur="(() => HandleUpdate(context.Item))"
+                    <MudTextField Value="@context.Item.Value"
+                                  ValueChanged="@((string? value) => SetValue(context.Item, value))"
                                   Disabled="@context.Item.IsSystemHeader"
                                   Class="w-100"/>
                 </EditTemplate>
@@ -142,6 +142,21 @@
         if (model.IsSystemHeader) return DataGridEditFormAction.Close;
         await HeadersChanged.InvokeAsync(Headers);
         return DataGridEditFormAction.Close;
+    }
+
+    // A row and the owner's copy change in the same handler, so no render sees them disagree
+    private async Task SetKey(HeaderModel model, string? key)
+    {
+        if (model.IsSystemHeader) return;
+        model.Key = key;
+        await HeadersChanged.InvokeAsync(Headers);
+    }
+
+    private async Task SetValue(HeaderModel model, string? value)
+    {
+        if (model.IsSystemHeader) return;
+        model.Value = value;
+        await HeadersChanged.InvokeAsync(Headers);
     }
 
     private async Task ToggleEnabled(HeaderModel model, bool enabled)

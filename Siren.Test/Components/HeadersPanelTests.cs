@@ -1,4 +1,6 @@
+using AngleSharp.Dom;
 using Bunit;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
 using MudBlazor;
@@ -27,7 +29,16 @@ public class HeadersPanelTests : TestContext
     }
 
     private static IEnumerable<string?> RowKeys(IRenderedComponent<HeadersPanel> cut)
-        => cut.FindComponent<MudDataGrid<HeaderModel>>().Instance.Items.Select(h => h.Key);
+        => (cut.FindComponent<MudDataGrid<HeaderModel>>().Instance.Items ?? []).Select(h => h.Key);
+
+    private static IEnumerable<string?> RowValues(IRenderedComponent<HeadersPanel> cut)
+        => (cut.FindComponent<MudDataGrid<HeaderModel>>().Instance.Items ?? []).Select(h => h.Value);
+
+    /// <summary>
+    /// The text boxes of the header rows in reading order: each row's name, then its value.
+    /// </summary>
+    private static IReadOnlyList<IElement> CellInputs(IRenderedComponent<HeadersPanel> cut)
+        => cut.FindAll("input").Where(input => input.GetAttribute("type") == "text").ToList();
 
     [Fact(DisplayName = "The panel shows the active tab's header rows")]
     public void Panel_ShowsActiveTabHeaders()
@@ -65,6 +76,58 @@ public class HeadersPanelTests : TestContext
 
         _tabs.Active.Request.ShouldNotBeNull().Headers.ShouldBe([new KeyValuePair<string, string>("Key", "Value")]);
         changes.ShouldBe(1);
+    }
+
+    [Fact(DisplayName = "Editing a header value in the panel stores the new value on the tab")]
+    public async Task EditingValue_StoresOnTab()
+    {
+        _tabs.SetHeaders(_tabs.Active.Id, [new("X-A", "1")]);
+        var cut = RenderComponent<HeadersPanel>();
+
+        // The browser reports a cell edit as a change, then a blur when focus leaves the cell
+        await CellInputs(cut)[1].ChangeAsync(new ChangeEventArgs { Value = "2" });
+        await CellInputs(cut)[1].BlurAsync(new FocusEventArgs());
+
+        _tabs.Active.Request.ShouldNotBeNull().Headers.ShouldBe([new KeyValuePair<string, string>("X-A", "2")]);
+        RowValues(cut).ShouldBe(["2"]);
+    }
+
+    [Fact(DisplayName = "Renaming a header in the panel replaces the old name on the tab")]
+    public async Task RenamingHeader_ReplacesOldName()
+    {
+        _tabs.SetHeaders(_tabs.Active.Id, [new("X-Old", "1")]);
+        var cut = RenderComponent<HeadersPanel>();
+
+        await CellInputs(cut)[0].ChangeAsync(new ChangeEventArgs { Value = "X-New" });
+        await CellInputs(cut).Single(input => input.GetAttribute("value") == "X-New").BlurAsync(new FocusEventArgs());
+
+        _tabs.Active.Request.ShouldNotBeNull().Headers.ShouldBe([new KeyValuePair<string, string>("X-New", "1")]);
+        RowKeys(cut).ShouldBe(["X-New"]);
+    }
+
+    [Fact(DisplayName = "Switching a header off keeps its row where it is")]
+    public async Task SwitchingOff_KeepsRowInPlace()
+    {
+        _tabs.SetHeaders(_tabs.Active.Id, [new("X-First", "1"), new("X-Second", "2")]);
+        var cut = RenderComponent<HeadersPanel>();
+
+        var firstSwitch = cut.FindComponents<SirenSwitch<bool>>()[0];
+        await cut.InvokeAsync(() => firstSwitch.Instance.ValueChanged.InvokeAsync(false));
+
+        _tabs.Active.Request.ShouldNotBeNull().Headers.ShouldBe([new KeyValuePair<string, string>("X-Second", "2")]);
+        cut.WaitForAssertion(() => RowKeys(cut).ShouldBe(["X-First", "X-Second"]));
+    }
+
+    [Fact(DisplayName = "Headers changed elsewhere show up in the panel")]
+    public void HeadersChangedElsewhere_ShowUp()
+    {
+        _tabs.SetHeaders(_tabs.Active.Id, [new("X-A", "1")]);
+        var cut = RenderComponent<HeadersPanel>();
+
+        _tabs.SetHeaders(_tabs.Active.Id, [new("X-A", "9"), new("X-B", "2")]);
+
+        cut.WaitForAssertion(() => RowKeys(cut).ShouldBe(["X-A", "X-B"]));
+        RowValues(cut).ShouldBe(["9", "2"]);
     }
 
     [Fact(DisplayName = "Two header rows with the same name do not break the panel")]

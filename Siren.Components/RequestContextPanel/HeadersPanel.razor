@@ -36,8 +36,8 @@
                     <Columns>
                         <MudBlazor.PropertyColumn Property="x => x.Key" Title="Header">
                             <EditTemplate>
-                                <MudTextField @bind-Value="@context.Item.Key" 
-                                              OnBlur="(() => UpdateHeader(context.Item))"
+                                <MudTextField Value="@context.Item.Key"
+                                              ValueChanged="@((string? key) => SetKey(context.Item, key))"
                                               Disabled="@context.Item.IsSystemHeader"
                                               Class="w-100"/>
                             </EditTemplate>
@@ -51,8 +51,8 @@
 
                         <MudBlazor.PropertyColumn Property="x => x.Value" Title="Value">
                             <EditTemplate>
-                                <MudTextField @bind-Value="@context.Item.Value" 
-                                              OnBlur="(() => UpdateHeader(context.Item))"
+                                <MudTextField Value="@context.Item.Value"
+                                              ValueChanged="@((string? value) => SetValue(context.Item, value))"
                                               Disabled="@context.Item.IsSystemHeader"
                                               Class="w-100"/>
                             </EditTemplate>
@@ -272,7 +272,9 @@
         InvokeAsync(StateHasChanged);
     }
 
-    // Runs at the start of every render, so the rows are right for the active tab before they are drawn
+    // Runs at the start of every render, so the rows are right for the active tab before they are drawn.
+    // The rows are the panel's working copy. While they say what the tab says they are left alone, so a
+    // row keeps its place and a row that is blank or switched off, which the tab does not record, stays.
     private void RefreshRows()
     {
         if (_rowsTabId != NetworkRequest.Id)
@@ -282,20 +284,19 @@
             requestHeaders = new();
         }
 
-        LoadOrMergeHeaders();
+        var headers = NetworkRequest.Request?.Headers ?? [];
+        if (!SentHeaders().SequenceEqual(headers))
+            MergeHeaders(headers);
+
+        responseHeaders = NetworkRequest.Response?.Headers?.ToViewModel() ?? new();
         UpdateAllHeaders();
     }
 
-    private void LoadOrMergeHeaders()
+    // Only for headers that were changed somewhere else. The panel's own edits reach the tab in the
+    // handler that makes them, so they never get here.
+    private void MergeHeaders(List<KeyValuePair<string, string>> headers)
     {
-        responseHeaders = NetworkRequest?.Response?.Headers?.ToViewModel() ?? new();
-
-        if (NetworkRequest?.Request?.Headers == null)
-        {
-            return;
-        }
-
-        var newHeaders = NetworkRequest.Request.Headers.ToViewModel();
+        var newHeaders = headers.ToViewModel();
         var existingHeadersByKey = new Dictionary<string, HeaderModel>(StringComparer.OrdinalIgnoreCase);
         foreach (var header in requestHeaders.Where(h => !string.IsNullOrWhiteSpace(h.Key)))
         {
@@ -420,12 +421,36 @@
         StateHasChanged();
     }
 
-    private void SyncToNetworkRequest()
+    private void SetKey(HeaderModel row, string? key)
     {
-        Tabs.SetHeaders(NetworkRequest.Id, requestHeaders
-            .Where(x => !string.IsNullOrWhiteSpace(x.Key) && x.Enabled)
-            .Select(x => new KeyValuePair<string, string>(x.Key!, x.Value ?? "")));
+        if (row.IsSystemHeader)
+            return;
+
+        row.Key = key;
+        CommitRows();
     }
+
+    private void SetValue(HeaderModel row, string? value)
+    {
+        if (row.IsSystemHeader)
+            return;
+
+        row.Value = value;
+        CommitRows();
+    }
+
+    // A row and the tab change in the same handler, so no render sees them disagree
+    private void CommitRows()
+    {
+        SyncToNetworkRequest();
+        UpdateAllHeaders();
+    }
+
+    private IEnumerable<KeyValuePair<string, string>> SentHeaders() => requestHeaders
+        .Where(x => !string.IsNullOrWhiteSpace(x.Key) && x.Enabled)
+        .Select(x => new KeyValuePair<string, string>(x.Key!, x.Value ?? ""));
+
+    private void SyncToNetworkRequest() => Tabs.SetHeaders(NetworkRequest.Id, SentHeaders());
 
 }
 
