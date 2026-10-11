@@ -1,32 +1,26 @@
 using Microsoft.Extensions.Logging.Abstractions;
-using Mythetech.Framework.Infrastructure.Settings;
 using NSubstitute;
 using Siren.Components.History;
-using Siren.Components.Http;
 using Siren.Components.RequestContextPanel.Authentication;
 using Siren.Components.Services;
 using Siren.Components.Settings;
+using Siren.Test.Infrastructure;
 
 namespace Siren.Test.Integration.HttpSendPath;
 
 internal static class TestHttpRequestClient
 {
     /// <summary>
-    /// Builds the real client with default settings, an empty cookie jar and no authentication.
+    /// Builds the real client with an empty cookie jar and no authentication, over default settings
+    /// unless the test supplies its own.
     /// </summary>
-    public static HttpRequestClient Create()
+    public static HttpRequestClient Create(SettingsState? settings = null)
     {
-        var settingsProvider = Substitute.For<ISettingsProvider>();
-        settingsProvider.GetSettings<HttpSettings>().Returns(new HttpSettings());
-        settingsProvider.GetSettings<ResponseSettings>().Returns(new ResponseSettings());
-        settingsProvider.GetSettings<HistorySettings>().Returns(new HistorySettings { SaveHttpContent = true });
-        settingsProvider.GetSettings<EnvironmentSettings>().Returns(new EnvironmentSettings());
-
         return new HttpRequestClient(
             Substitute.For<IHttpClientFactory>(),
             Substitute.For<IHistoryService>(),
             new NullLogger<HttpRequestClient>(),
-            new SettingsState(settingsProvider),
+            settings ?? TestState.Settings(),
             new CookieService(),
             new RequestAuthenticationState());
     }

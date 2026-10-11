@@ -24,6 +24,9 @@ namespace Siren.Components.Services
         private readonly ICookieService _cookieService;
         private readonly RequestAuthenticationState _authState;
 
+        // CancellationTokenSource cannot time anything longer than this
+        private static readonly TimeSpan LongestTimeout = TimeSpan.FromMilliseconds(uint.MaxValue - 1);
+
         public HttpRequestClient(IHttpClientFactory httpClientFactory, IHistoryService historyService, ILogger<HttpRequestClient> logger, SettingsState settings, ICookieService cookieService, RequestAuthenticationState authState)
         {
             _httpClientFactory = httpClientFactory;
@@ -40,15 +43,30 @@ namespace Siren.Components.Services
             var retryDelayMs = _settings.RetryDelayMs;
             RequestResult? lastResult = null;
 
+            // One limit for the whole call, so retries and a slow body cannot stretch it
+            using var timeout = new CancellationTokenSource();
+            if (request.Timeout > TimeSpan.Zero && request.Timeout <= LongestTimeout)
+                timeout.CancelAfter(request.Timeout);
+
+            using var limited = CancellationTokenSource.CreateLinkedTokenSource(ct, timeout.Token);
+
             for (int attempt = 0; attempt <= maxRetries; attempt++)
             {
                 if (attempt > 0)
                 {
                     _logger.LogInformation("Retry attempt {Attempt} of {MaxRetries} for {Uri}", attempt, maxRetries, request.RequestUri);
-                    await Task.Delay(retryDelayMs, ct);
+
+                    try
+                    {
+                        await Task.Delay(retryDelayMs, limited.Token);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
                 }
 
-                lastResult = await SendHttpRequestInternalAsync(request, ct);
+                lastResult = await SendHttpRequestInternalAsync(request, limited.Token);
 
                 // Don't retry on success or client errors (4xx)
                 if (lastResult.Error == null || (lastResult.StatusCode >= 400 && lastResult.StatusCode < 500))
@@ -57,13 +75,18 @@ namespace Siren.Components.Services
                 }
 
                 // Don't retry if cancelled
-                if (ct.IsCancellationRequested)
+                if (limited.IsCancellationRequested)
                 {
                     break;
                 }
             }
 
-            return lastResult!;
+            if (lastResult!.Error != null && timeout.IsCancellationRequested && !ct.IsCancellationRequested)
+            {
+                lastResult.Error = new TimeoutException($"The request timed out after {request.Timeout.TotalSeconds:0.##} seconds", lastResult.Error);
+            }
+
+            return lastResult;
         }
 
         private async Task<RequestResult> SendHttpRequestInternalAsync(HttpRequest request, CancellationToken ct)
@@ -106,7 +129,8 @@ namespace Siren.Components.Services
                 }
             };
 
-            using var client = new HttpClient(handler);
+            // The token carries the request's own limit, which may be longer than HttpClient's 100 seconds
+            using var client = new HttpClient(handler) { Timeout = Timeout.InfiniteTimeSpan };
             var httpRequestMessage = new HttpRequestMessage
             {
                 Method = request.Method,
@@ -135,7 +159,8 @@ namespace Siren.Components.Services
             var phaseStopwatch = new Stopwatch();
             HttpResponseMessage? response;
             RequestResult? result = null!;
-            
+            string sc;
+
             TimeSpan waitingForResponse = TimeSpan.Zero;
             TimeSpan contentDownload = TimeSpan.Zero;
 
@@ -144,8 +169,11 @@ namespace Siren.Components.Services
                 phaseStopwatch.Restart();
                 response = await client.SendAsync(httpRequestMessage, HttpCompletionOption.ResponseHeadersRead, ct);
                 waitingForResponse = phaseStopwatch.Elapsed;
-                
+
+                // Only the headers have arrived, so the body is still a network read that has to stay cancellable
                 phaseStopwatch.Restart();
+                sc = await response.Content.ReadAsStringAsync(ct);
+                contentDownload = phaseStopwatch.Elapsed;
             }
             catch (Exception ex)
             {
@@ -166,12 +194,6 @@ namespace Siren.Components.Services
                 return result;
             }
 
-            string sc = "";
-            if (response != null)
-            {
-                sc = await response?.Content?.ReadAsStringAsync(CancellationToken.None) ?? "";
-                contentDownload = phaseStopwatch.Elapsed;
-            }
             stopwatch.Stop();
 
             if (networkInfo != null)

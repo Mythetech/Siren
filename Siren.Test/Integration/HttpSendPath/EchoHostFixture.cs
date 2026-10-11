@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Server;
@@ -17,8 +18,20 @@ public sealed class EchoHostFixture : IAsyncLifetime
     };
 
     private WebApplication? _app;
+    private readonly ConcurrentDictionary<string, HeldResponse> _held = new();
 
     public string BaseUrl { get; private set; } = "";
+
+    /// <summary>
+    /// Reserves a URL on the given route whose response the host holds back until the test releases it.
+    /// </summary>
+    public HeldResponse Hold(string route = "/slow")
+    {
+        var id = Guid.NewGuid().ToString("N");
+        var held = new HeldResponse($"{BaseUrl}{route}?id={id}");
+        _held[id] = held;
+        return held;
+    }
 
     public async Task InitializeAsync()
     {
@@ -28,6 +41,10 @@ public sealed class EchoHostFixture : IAsyncLifetime
 
         _app = builder.Build();
         _app.MapMethods("/echo", SupportedVerbs, EchoHandlerAsync);
+        _app.MapGet("/slow", SlowHandlerAsync);
+        _app.MapGet("/slow-body", SlowBodyHandlerAsync);
+        _app.MapGet("/abort", AbortHandler);
+        _app.MapGet("/plain", (HttpContext ctx) => ctx.Response.WriteAsync("plain text, not JSON"));
 
         await _app.StartAsync();
 
@@ -47,6 +64,34 @@ public sealed class EchoHostFixture : IAsyncLifetime
 
         await _app.StopAsync();
         await _app.DisposeAsync();
+    }
+
+    private HeldResponse HeldFor(HttpContext ctx) => _held[ctx.Request.Query["id"].ToString()];
+
+    private async Task SlowHandlerAsync(HttpContext ctx)
+    {
+        var held = HeldFor(ctx);
+        held.MarkArrived();
+        await held.WaitForReleaseAsync(ctx.RequestAborted);
+        await ctx.Response.WriteAsJsonAsync(new { released = true });
+    }
+
+    private async Task SlowBodyHandlerAsync(HttpContext ctx)
+    {
+        var held = HeldFor(ctx);
+        ctx.Response.ContentType = "text/plain";
+        await ctx.Response.WriteAsync("first part,");
+        await ctx.Response.Body.FlushAsync();
+        held.MarkArrived();
+        await held.WaitForReleaseAsync(ctx.RequestAborted);
+        await ctx.Response.WriteAsync("second part");
+    }
+
+    private Task AbortHandler(HttpContext ctx)
+    {
+        HeldFor(ctx).MarkArrived();
+        ctx.Abort();
+        return Task.CompletedTask;
     }
 
     private static async Task EchoHandlerAsync(HttpContext ctx)
