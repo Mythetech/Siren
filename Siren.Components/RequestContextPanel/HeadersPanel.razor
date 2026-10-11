@@ -1,6 +1,7 @@
 ﻿@using Siren.Components.Http
 @using Siren.Components.Http.Models
 @implements IDisposable
+@{ RefreshRows(); }
 
 <SirenStack Class="w-100 h-100 d-flex">
     <SirenSplitter Horizontal="true" Class="w-100">
@@ -35,8 +36,8 @@
                     <Columns>
                         <MudBlazor.PropertyColumn Property="x => x.Key" Title="Header">
                             <EditTemplate>
-                                <MudTextField @bind-Value="@context.Item.Key" 
-                                              OnBlur="(() => UpdateHeader(context.Item))"
+                                <MudTextField Value="@context.Item.Key"
+                                              ValueChanged="@((string? key) => SetKey(context.Item, key))"
                                               Disabled="@context.Item.IsSystemHeader"
                                               Class="w-100"/>
                             </EditTemplate>
@@ -50,8 +51,8 @@
 
                         <MudBlazor.PropertyColumn Property="x => x.Value" Title="Value">
                             <EditTemplate>
-                                <MudTextField @bind-Value="@context.Item.Value" 
-                                              OnBlur="(() => UpdateHeader(context.Item))"
+                                <MudTextField Value="@context.Item.Value"
+                                              ValueChanged="@((string? value) => SetValue(context.Item, value))"
                                               Disabled="@context.Item.IsSystemHeader"
                                               Class="w-100"/>
                             </EditTemplate>
@@ -235,8 +236,12 @@
 </SirenStack>
 
 @code {
-    [Parameter]
-    public SirenNetworkRequest NetworkRequest { get; set; }
+    [Inject]
+    public RequestTabsState Tabs { get; set; } = default!;
+
+    private SirenNetworkRequest NetworkRequest => Tabs.Active;
+
+    private Guid _rowsTabId;
 
     [Inject]
     public IJsApiService JsApiService { get; set; } = default!;
@@ -244,55 +249,60 @@
     [Inject]
     public ISnackbar Snackbar { get; set; } = default!;
 
-    [Inject]
-    public SirenAppState AppState { get; set; } = default!;
-
     private List<HeaderModel> requestHeaders = new();
     private List<HeaderModel> allHeaders = new();
     private List<DictionaryViewModel> responseHeaders = new();
 
     protected override void OnInitialized()
     {
-        AppState.OnAppStateChanged += HandleAppStateChanged;
-        LoadOrMergeHeaders();
-        UpdateAllHeaders();
-    }
-
-    protected override void OnParametersSet()
-    {
-        LoadOrMergeHeaders();
-        UpdateAllHeaders();
+        Tabs.ActiveTabChanged += HandleTabChanged;
+        Tabs.RequestChanged += HandleTabChanged;
+        Tabs.ResponseChanged += HandleTabChanged;
     }
 
     public void Dispose()
     {
-        AppState.OnAppStateChanged -= HandleAppStateChanged;
+        Tabs.ActiveTabChanged -= HandleTabChanged;
+        Tabs.RequestChanged -= HandleTabChanged;
+        Tabs.ResponseChanged -= HandleTabChanged;
     }
 
-    private async void HandleAppStateChanged(SirenAppState state)
+    private void HandleTabChanged(SirenNetworkRequest tab)
     {
-        if (state?.Active != null)
-        {
-            NetworkRequest = state.Active;
-            LoadOrMergeHeaders();
-            UpdateAllHeaders();
-            await InvokeAsync(StateHasChanged);
-        }
+        InvokeAsync(StateHasChanged);
     }
 
-    private void LoadOrMergeHeaders()
+    // Runs at the start of every render, so the rows are right for the active tab before they are drawn.
+    // The rows are the panel's working copy. While they say what the tab says they are left alone, so a
+    // row keeps its place and a row that is blank or switched off, which the tab does not record, stays.
+    private void RefreshRows()
     {
-        responseHeaders = NetworkRequest?.Response?.Headers?.ToViewModel() ?? new();
-
-        if (NetworkRequest?.Request?.Headers == null)
+        if (_rowsTabId != NetworkRequest.Id)
         {
-            return;
+            // Rows that are blank or switched off belong to the tab they were typed in
+            _rowsTabId = NetworkRequest.Id;
+            requestHeaders = new();
         }
 
-        var newHeaders = NetworkRequest.Request.Headers.ToViewModel();
-        var existingHeadersByKey = requestHeaders
-            .Where(h => !string.IsNullOrWhiteSpace(h.Key))
-            .ToDictionary(h => h.Key!.ToLowerInvariant(), h => h, StringComparer.OrdinalIgnoreCase);
+        var headers = NetworkRequest.Request?.Headers ?? [];
+        if (!SentHeaders().SequenceEqual(headers))
+            MergeHeaders(headers);
+
+        responseHeaders = NetworkRequest.Response?.Headers?.ToViewModel() ?? new();
+        UpdateAllHeaders();
+    }
+
+    // Only for headers that were changed somewhere else. The panel's own edits reach the tab in the
+    // handler that makes them, so they never get here.
+    private void MergeHeaders(List<KeyValuePair<string, string>> headers)
+    {
+        var newHeaders = headers.ToViewModel();
+        var existingHeadersByKey = new Dictionary<string, HeaderModel>(StringComparer.OrdinalIgnoreCase);
+        foreach (var header in requestHeaders.Where(h => !string.IsNullOrWhiteSpace(h.Key)))
+        {
+            // Two rows can share a name. The first keeps its row, and the merge must not throw while rendering.
+            existingHeadersByKey.TryAdd(header.Key!, header);
+        }
 
         var mergedHeaders = new List<HeaderModel>();
 
@@ -411,16 +421,36 @@
         StateHasChanged();
     }
 
-    private void SyncToNetworkRequest()
+    private void SetKey(HeaderModel row, string? key)
     {
-        if (NetworkRequest?.Request != null)
-        {
-            NetworkRequest.Request.Headers = requestHeaders
-                .Where(x => !string.IsNullOrWhiteSpace(x.Key) && x.Enabled)
-                .Select(x => new KeyValuePair<string, string>(x.Key!, x.Value ?? ""))
-                .ToList();
-        }
+        if (row.IsSystemHeader)
+            return;
+
+        row.Key = key;
+        CommitRows();
     }
+
+    private void SetValue(HeaderModel row, string? value)
+    {
+        if (row.IsSystemHeader)
+            return;
+
+        row.Value = value;
+        CommitRows();
+    }
+
+    // A row and the tab change in the same handler, so no render sees them disagree
+    private void CommitRows()
+    {
+        SyncToNetworkRequest();
+        UpdateAllHeaders();
+    }
+
+    private IEnumerable<KeyValuePair<string, string>> SentHeaders() => requestHeaders
+        .Where(x => !string.IsNullOrWhiteSpace(x.Key) && x.Enabled)
+        .Select(x => new KeyValuePair<string, string>(x.Key!, x.Value ?? ""));
+
+    private void SyncToNetworkRequest() => Tabs.SetHeaders(NetworkRequest.Id, SentHeaders());
 
 }
 

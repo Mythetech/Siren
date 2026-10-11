@@ -4,6 +4,8 @@
     <TargetFramework>net11.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- A component tag that does not resolve renders as an empty HTML element, so the UI silently loses the component -->
+    <WarningsAsErrors>$(WarningsAsErrors);RZ10012</WarningsAsErrors>
   </PropertyGroup>
 
 
@@ -44,5 +46,8 @@
     <None Remove="Settings\" />
     <None Remove="Collections\" />
     <None Remove="RequestContextPanel\" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Siren.Test" />
   </ItemGroup>
 </Project>

@@ -1,3 +1,4 @@
+@using Siren.Components.Http
 @using Siren.Components.Http.Models
 @using Siren.Components.Theme
 @using Siren.Components.Shared.Notifications
@@ -52,6 +53,9 @@
 @code {
     [Parameter]
     public SirenNetworkRequest NetworkRequest { get; set; } = default!;
+
+    [Inject]
+    public RequestTabsState Tabs { get; set; } = default!;
 
     [Inject]
     public IFileOpenService FileOpenService { get; set; } = default!;
@@ -124,9 +128,9 @@
 
     private void SyncToNetworkRequest()
     {
-        if (NetworkRequest?.Request != null)
+        if (NetworkRequest != null)
         {
-            NetworkRequest.Request.BinaryAttachments = attachments.ToList();
+            Tabs.SetAttachments(NetworkRequest.Id, attachments);
         }
     }
 

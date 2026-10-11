@@ -27,7 +27,7 @@
             <MudPaper Elevation="0" Height="100%" Width="100%" Class="d-flex flex-column">
                 <SirenText Typo="Typo.body1" Class="p-1">Response Cookies</SirenText>
                 <div class="flex-grow-1" style="min-height: 0;">
-                    <SirenEditor @ref="_cookiesEditor" EditorId="siren-cookie-panel-editor" OnDidInit="UpdateCookiesEditor" />
+                    <SirenEditor EditorId="siren-cookie-panel-editor" DocumentId="@Tabs.Active.Id" Text="@GetCookiesJson()" />
                 </div>
             </MudPaper>
         </Panel2>
@@ -36,65 +36,30 @@
 
 
 @code {
-    [Parameter]
-    public SirenNetworkRequest NetworkRequest { get; set; }
-
     [Inject] public ICookieService CookieService { get; set; } = default!;
 
-    [Inject] public SirenAppState AppState { get; set; } = default!;
-
-    [Inject] public ILogger<CookiePanel> Logger { get; set; } = default!;
-
-    private SirenEditor _cookiesEditor { get; set; } = default!;
-
-    private List<Cookie> _cookies = new();
+    [Inject] public RequestTabsState Tabs { get; set; } = default!;
 
     protected override void OnInitialized()
     {
-        AppState.OnActiveNetworkRequestChanged += HandleActiveNetworkRequestChanged;
-    }
-
-    protected override async Task OnInitializedAsync()
-    {
-        await UpdateCookiesEditor();
-        await base.OnInitializedAsync();
+        Tabs.ActiveTabChanged += HandleTabChanged;
+        Tabs.ResponseChanged += HandleTabChanged;
     }
 
     public void Dispose()
     {
-        AppState.OnActiveNetworkRequestChanged -= HandleActiveNetworkRequestChanged;
+        Tabs.ActiveTabChanged -= HandleTabChanged;
+        Tabs.ResponseChanged -= HandleTabChanged;
     }
 
-    private async void HandleActiveNetworkRequestChanged(SirenNetworkRequest? request)
+    private void HandleTabChanged(SirenNetworkRequest tab)
     {
-        await InvokeAsync(async () =>
-        {
-            await UpdateCookiesEditor();
-            StateHasChanged();
-        });
-    }
-
-    private async Task UpdateCookiesEditor()
-    {
-        await Task.Yield();
-        
-        if (_cookiesEditor?.Editor == null)
-            return;
-
-        try
-        {
-            var cookiesJson = GetCookiesJson();
-            await _cookiesEditor.Editor.SetValue(cookiesJson);
-        }
-        catch (Exception ex)
-        {
-            Logger.LogWarning(ex, "Failed to update cookies editor");
-        }
+        InvokeAsync(StateHasChanged);
     }
 
     private string GetCookiesJson()
     {
-        var cookies = AppState?.Active?.Response?.Cookies ?? NetworkRequest?.Response?.Cookies;
+        var cookies = Tabs.Active.Response?.Cookies;
         
         if (cookies == null || !cookies.Any())
         {

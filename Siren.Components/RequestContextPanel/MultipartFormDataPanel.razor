@@ -42,7 +42,7 @@
                             <MudBlazor.PropertyColumn Property="x => x.Key" Title="Key">
                                 <EditTemplate>
                                     <SirenStack Row="true" Class="w-100 hover-zone">
-                                        <MudTextField @bind-Value="@context.Item.Key" OnBlur="(() => UpdateFormDataEntry(context.Item))" />
+                                        <MudTextField Value="@context.Item.Key" ValueChanged="@((string? key) => SetKey(context.Item, key))" />
                                     </SirenStack>
                                 </EditTemplate>
                             </MudBlazor.PropertyColumn>
@@ -50,7 +50,7 @@
                             <MudBlazor.PropertyColumn Property="x => x.Value" Title="Value">
                                 <EditTemplate>
                                     <SirenStack Row="true" Class="w-100 hover-zone">
-                                        <MudTextField @bind-Value="@context.Item.Value" OnBlur="(() => UpdateFormDataEntry(context.Item))" />
+                                        <MudTextField Value="@context.Item.Value" ValueChanged="@((string? value) => SetValue(context.Item, value))" />
                                     </SirenStack>
                                 </EditTemplate>
                             </MudBlazor.PropertyColumn>
@@ -152,6 +152,9 @@
     public SirenNetworkRequest NetworkRequest { get; set; } = default!;
 
     [Inject]
+    public RequestTabsState Tabs { get; set; } = default!;
+
+    [Inject]
     public IFileOpenService FileOpenService { get; set; } = default!;
 
     [Inject]
@@ -162,11 +165,7 @@
 
     private List<DictionaryViewModel> formDataEntries = new();
     private List<BinaryAttachment> attachments = new();
-
-    protected override void OnInitialized()
-    {
-        LoadFromNetworkRequest();
-    }
+    private Guid _rowsTabId;
 
     protected override void OnParametersSet()
     {
@@ -175,19 +174,41 @@
 
     private void LoadFromNetworkRequest()
     {
-        if (NetworkRequest?.Request?.FormData != null)
-        {
-            formDataEntries = NetworkRequest.Request.FormData.ToViewModel();
-        }
         if (NetworkRequest?.Request?.BinaryAttachments != null)
         {
             attachments = NetworkRequest.Request.BinaryAttachments.ToList();
         }
+
+        // The field rows are the panel's working copy. They are rebuilt only for another tab, or when the
+        // tab's fields were changed somewhere else. Otherwise the same row objects stay, because the grid
+        // keys a row by its object and a new one would throw away the cell that has just taken focus.
+        var formData = NetworkRequest?.Request?.FormData;
+        if (NetworkRequest == null || formData == null)
+            return;
+
+        if (_rowsTabId == NetworkRequest.Id && formDataEntries.HoldSameEntries(formData))
+            return;
+
+        _rowsTabId = NetworkRequest.Id;
+        formDataEntries = formData.ToViewModel();
     }
 
     private void AddFormDataEntry(string key, string value)
     {
         formDataEntries.Add(new() { Key = key, Value = value });
+        SyncToNetworkRequest();
+    }
+
+    // A row and the tab change in the same handler, so no render sees them disagree
+    private void SetKey(DictionaryViewModel row, string? key)
+    {
+        row.Key = key;
+        SyncToNetworkRequest();
+    }
+
+    private void SetValue(DictionaryViewModel row, string? value)
+    {
+        row.Value = value;
         SyncToNetworkRequest();
     }
 
@@ -255,10 +276,10 @@
 
     private void SyncToNetworkRequest()
     {
-        if (NetworkRequest?.Request != null)
+        if (NetworkRequest != null)
         {
-            NetworkRequest.Request.FormData = formDataEntries.ToSafeDictionary();
-            NetworkRequest.Request.BinaryAttachments = attachments.ToList();
+            Tabs.SetFormData(NetworkRequest.Id, formDataEntries.ToSafeDictionary());
+            Tabs.SetAttachments(NetworkRequest.Id, attachments);
         }
     }
 

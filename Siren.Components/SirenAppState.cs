@@ -1,5 +1,4 @@
 ﻿using MudBlazor;
-using Siren.Components.Http.Models;
 
 namespace Siren.Components
 {
@@ -36,41 +35,11 @@ namespace Siren.Components
             }
         }
 
-        private SirenNetworkRequest? _active;
-
-        public SirenNetworkRequest? Active
-        {
-            get => _active;
-            set
-            {
-                _active = value;
-                ActiveNetworkRequestChanged();
-            }
-        }
-
-        private List<SirenNetworkRequest>? _networkRequests;
-
-        public List<SirenNetworkRequest> NetworkRequests
-        {
-            get => _networkRequests ??= new();
-            set
-            {
-                _networkRequests = value;
-                NetworkRequestsChanged();
-            }
-        }
-
         public event Action? OnChange;
-
-        public event Action? OnNetworkRequestsChanged;
 
         public event Action<SirenAppState>? OnAppStateChanged;
 
         public event Action<bool>? OnDarkModeChanged;
-
-        public event Action<int>? OnNetworkRequestIndexChanged;
-
-        public event Action<SirenNetworkRequest?>? OnActiveNetworkRequestChanged;
 
         public event Action<string?>? OnActiveEnvironmentChanged;
 
@@ -90,17 +59,7 @@ namespace Siren.Components
 
         private void IsDarkModeChanged() => OnDarkModeChanged?.Invoke(IsDarkMode);
 
-        private void NetworkRequestsChanged() => OnNetworkRequestsChanged?.Invoke();
-
         private void AppStateChanged() => OnAppStateChanged?.Invoke(this);
-
-        private void NetworkRequestIndexChanged(int index) => OnNetworkRequestIndexChanged?.Invoke(index);
-
-        private void ActiveNetworkRequestChanged()
-        {
-            OnActiveNetworkRequestChanged?.Invoke(Active);
-            AppStateChanged();
-        }
 
         private void ActiveEnvironmentChanged()
         {
@@ -108,69 +67,10 @@ namespace Siren.Components
             AppStateChanged();
         }
 
-        public void AddNetworkRequest(SirenNetworkRequest request)
-        {
-            if (!NetworkRequests.Any(x => x.Id.Equals(request.Id)))
-            {
-                NetworkRequests.Add(request);
-                NetworkRequestIndexChanged(NetworkRequests.Count - 1);
-            }
-            else
-            {
-                var index = NetworkRequests.FindIndex(x => x.Id.Equals(request.Id));
-                NetworkRequests[index] = request;
-                NetworkRequestIndexChanged(index);
-            }
-
-            SetActive(request);
-        }
-
-        public void RemoveNetworkRequest(Guid id)
-        {
-            bool wasActive = id.Equals(_active?.Id);
-
-            NetworkRequests = NetworkRequests.Where(x => !x.Id.Equals(id)).ToList();
-
-            if (wasActive)
-            {
-                SetActive(NetworkRequests.LastOrDefault());
-            }
-        }
-
-        public void SetActive(Guid id)
-        {
-            var r = NetworkRequests.FirstOrDefault(x => x.Id.Equals(id));
-
-            Active = r;
-
-            ActiveNetworkRequestChanged();
-        }
-
-        public void SetActive(SirenNetworkRequest request)
-        {
-            if (request == null)
-            {
-                _active = request;
-                ActiveNetworkRequestChanged();
-                return;
-            }
-
-            SetActive(request.Id);
-        }
-
         public void ToggleSideBar()
         {
             SideBarOpen = !SideBarOpen;
 
-            AppStateChanged();
-        }
-
-        /// <summary>
-        /// Call this to notify subscribers when nested properties of Active are modified directly
-        /// (e.g., Active.Request.Headers). This ensures all components stay in sync.
-        /// </summary>
-        public void NotifyActiveRequestChanged()
-        {
             AppStateChanged();
         }
 
@@ -182,29 +82,12 @@ namespace Siren.Components
             IsDarkMode = await _themeProvider.GetSystemDarkModeAsync();
         }
 
-        public event Action? OnFormatRequest;
+        public event Func<Task>? OnFormatRequest;
 
-        public void TriggerFormatRequest()
+        public async Task TriggerFormatRequest()
         {
-            OnFormatRequest?.Invoke();
-        }
-
-        public event Action<string?, string>? OnImportRequestBody;
-
-        public void ImportRequestBody(string? body, string bodyType)
-        {
-            OnImportRequestBody?.Invoke(body, bodyType);
-        }
-
-        public event Func<Task<(string? body, string bodyType)>>? OnRequestBodyContent;
-
-        public async Task<(string? body, string bodyType)> RequestBodyContentAsync()
-        {
-            if (OnRequestBodyContent != null)
-            {
-                return await OnRequestBodyContent.Invoke();
-            }
-            return (null, "none");
+            if (OnFormatRequest != null)
+                await OnFormatRequest.Invoke();
         }
 
         public event Func<string, Task>? OnOpenContextPanel;
@@ -230,22 +113,5 @@ namespace Siren.Components
             if (OnOpenSettings != null)
                 await OnOpenSettings.Invoke();
         }
-
-        public event Func<Task>? OnSendRequest;
-
-        public async Task TriggerSendRequest()
-        {
-            if (OnSendRequest != null)
-                await OnSendRequest.Invoke();
-        }
-
-        public event Func<Task>? OnNewTab;
-
-        public async Task TriggerNewTab()
-        {
-            if (OnNewTab != null)
-                await OnNewTab.Invoke();
-        }
     }
 }
-

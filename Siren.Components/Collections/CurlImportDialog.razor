@@ -1,5 +1,7 @@
 @using Siren.Components.Services
+@using Siren.Components.Http
 @using Siren.Components.Http.Models
+@using Siren.Components.Shared.Notifications
 
 <MudDialog>
     <TitleContent>
@@ -71,6 +73,12 @@
     [Inject]
     private ICurlImporter CurlImporter { get; set; } = default!;
 
+    [Inject]
+    private RequestTabsState Tabs { get; set; } = default!;
+
+    [Inject]
+    private ISnackbar Snackbar { get; set; } = default!;
+
     private string _curlCommand = "";
     private string? _parseError;
     private HttpRequest? _parsedRequest;
@@ -103,10 +111,13 @@
 
     private void Import()
     {
-        if (_parsedRequest != null)
-        {
-            MudDialog.Close(DialogResult.Ok(_parsedRequest));
-        }
+        if (_parsedRequest == null)
+            return;
+
+        Tabs.Open(new SirenNetworkRequest { Request = _parsedRequest });
+
+        Snackbar.AddSirenSuccess("Successfully imported cURL command");
+        MudDialog.Close(DialogResult.Ok(_parsedRequest));
     }
 
     private void Cancel()

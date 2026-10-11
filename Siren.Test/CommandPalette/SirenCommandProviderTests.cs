@@ -3,19 +3,44 @@ using Microsoft.AspNetCore.Components;
 using NSubstitute;
 using Siren.Components;
 using Siren.Components.CommandPalette;
+using Siren.Components.Http;
 using Siren.Components.Theme;
+using Siren.Test.Infrastructure;
 
 namespace Siren.Test.CommandPalette;
 
 public class SirenCommandProviderTests
 {
-    private readonly SirenAppState _appState = new();
-    private readonly NavigationManager _nav = Substitute.For<NavigationManager>();
+    private readonly RequestTabsState _tabs = TestState.Tabs();
+    private readonly SirenAppState _appState;
+    private readonly TestNavigationManager _nav = new();
+    private readonly IRequestSender _sender = Substitute.For<IRequestSender>();
     private readonly SirenCommandProvider _provider;
 
     public SirenCommandProviderTests()
     {
-        _provider = new SirenCommandProvider(_appState, _nav);
+        _appState = TestState.AppState();
+        _provider = new SirenCommandProvider(_appState, _nav, _tabs, _sender);
+    }
+
+    // The real NavigationManager is abstract and refuses to work until it is given a base address
+    private sealed class TestNavigationManager : NavigationManager
+    {
+        public TestNavigationManager()
+        {
+            Initialize("http://localhost/", "http://localhost/");
+        }
+
+        protected override void NavigateToCore(string uri, bool forceLoad)
+        {
+            Uri = ToAbsoluteUri(uri).ToString();
+        }
+    }
+
+    private async Task InvokeAsync(string commandId)
+    {
+        var commands = await _provider.GetCommandsAsync("", CancellationToken.None);
+        await commands.Single(c => c.Id == commandId).InvokeAsync(CancellationToken.None);
     }
 
     [Fact]
@@ -99,5 +124,36 @@ public class SirenCommandProviderTests
         var result = await _provider.GetCommandsAsync("", CancellationToken.None);
 
         result.Select(c => c.Id).Should().OnlyHaveUniqueItems();
+    }
+
+    [Fact]
+    public async Task SendRequest_SendsTheActiveTab()
+    {
+        await InvokeAsync("action.send-request");
+
+        await _sender.Received(1).SendAsync(_tabs.Active.Id);
+    }
+
+    [Fact]
+    public async Task SendRequest_GoesToTheRequestsPage()
+    {
+        _nav.NavigateTo("/mock-server");
+
+        await InvokeAsync("action.send-request");
+
+        _nav.ToBaseRelativePath(_nav.Uri).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task NewTab_OpensAndActivatesATab()
+    {
+        var before = _tabs.Active;
+        _nav.NavigateTo("/mock-server");
+
+        await InvokeAsync("action.new-tab");
+
+        _tabs.Tabs.Should().HaveCount(2);
+        _tabs.Active.Should().NotBeSameAs(before);
+        _nav.ToBaseRelativePath(_nav.Uri).Should().BeEmpty();
     }
 }

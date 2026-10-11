@@ -1,6 +1,5 @@
 ﻿@page "/"
 @page "/index"
-@implements IDisposable
 @implements IAsyncDisposable
 @using Siren.Components.Theme
 @using Siren.Components.Shared
@@ -30,7 +29,7 @@
             <MudSplitPanel Horizontal="true" PanelGap="2" Transparent="true" MinPanelSize="150" Class="w-100 h-100">
                 <FirstPanel>
                     <MudPaper Height="100%" Elevation="0" Width="100%">
-                        <RequestPanel Loading="@_loading" @ref="_requestPanel" SendClicked="HandleSendClicked" />
+                        <RequestPanel @ref="_requestPanel" SendClicked="HandleSendClicked" />
                     </MudPaper>
                 </FirstPanel>
                 <SecondPanel>
@@ -71,21 +70,12 @@
     protected SirenAppState AppState { get; set; } = default!;
 
     [Inject]
-    protected IHttpRequestClient HttpRequestClient { get; set; } = default!;
+    protected RequestTabsState Tabs { get; set; } = default!;
+
+    [Inject]
+    protected IRequestSender Sender { get; set; } = default!;
 
     [Inject] protected IJSRuntime JS { get; set; } = default!;
-
-    [Inject]
-    protected ILogger<Index> Logger { get; set; } = default!;
-
-    [Inject]
-    protected IVariableSubstitutionService VariableSubstitutionService { get; set; } = default!;
-
-    [Inject]
-    protected ISnackbar Snackbar { get; set; } = default!;
-
-    [Inject]
-    protected SettingsState Settings { get; set; } = default!;
 
     [Inject] protected PluginState PluginState { get; set; } = default!;
     [Inject] protected PluginLoader PluginLoader { get; set; } = default!;
@@ -93,8 +83,6 @@
     [Inject] protected IUpdateService UpdateService { get; set; } = default!;
 
     [Inject] protected ISmokeTestContext SmokeTest { get; set; } = default!;
-
-    [Inject] protected SessionStatsState SessionStats { get; set; } = default!;
 
     private IJSObjectReference? _module;
 
@@ -106,7 +94,7 @@
 
     private bool sidePanelClosed = true;
 
-    private bool _loading = false;
+    private bool _disposed;
 
     private string GetSplitterWidth()
     {
@@ -116,15 +104,6 @@
 
         return $"calc(100% - {drawerWidth})";
     }
-
-    private string _responseText = "";
-    private static readonly System.Text.Json.JsonSerializerOptions _jsonDisplayOptions = new()
-    {
-        WriteIndented = true,
-        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-    };
-
-    private CancellationTokenSource? _cts = default;
 
     private async Task<int> GetOuterSplitterWidthAsync()
     {
@@ -156,55 +135,18 @@
 
     protected override void OnInitialized()
     {
-        AppState.OnActiveNetworkRequestChanged += HandleNetworkRequestChanged;
+        AppState.OnAppStateChanged += HandleAppStateChanged;
         AppState.OnFormatRequest += HandleFormatRequest;
-        AppState.OnImportRequestBody += HandleImportRequestBody;
-        AppState.OnRequestBodyContent += HandleRequestBodyContent;
         AppState.OnOpenRequestContextPanel += HandleOpenRequestContextPanel;
-        AppState.OnSendRequest += HandleSendRequestFromPalette;
-        AppState.OnNewTab += HandleNewTabFromPalette;
-        if (AppState.Active == null)
-        {
-            var r = CreateNewNetworkRequest();
-
-            AppState.AddNetworkRequest(r);
-
-            AppState.SetActive(r);
-        }
-        AppState.OnAppStateChanged += (state) => StateHasChanged();
     }
 
-    private async Task<(string? body, string bodyType)> HandleRequestBodyContent()
+    private void HandleAppStateChanged(SirenAppState state)
     {
-        if (_requestPanel != null)
-        {
-            var bodyType = _requestPanel.GetBodyType();
-            var body = await _requestPanel.GetBodyContentAsync();
-            return (body, bodyType);
-        }
-        return (null, "none");
+        InvokeAsync(StateHasChanged);
     }
 
-    private async void HandleImportRequestBody(string? body, string bodyType)
-    {
-        if (_requestPanel != null)
-        {
-            await _requestPanel.SetBodyContentAsync(body ?? "", bodyType);
-        }
-    }
-
-    private async void HandleFormatRequest()
-    {
-        if (_requestPanel != null)
-        {
-            await _requestPanel.FormatDocumentAsync();
-        }
-    }
-
-    public void HandleNetworkRequestChanged(SirenNetworkRequest? n)
-    {
-        StateHasChanged();
-    }
+    private Task HandleFormatRequest()
+        => _requestPanel == null ? Task.CompletedTask : InvokeAsync(() => _requestPanel.FormatDocumentAsync());
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -219,56 +161,11 @@
         }
     }
 
-    public void Dispose()
-    {
-        AppState.OnActiveNetworkRequestChanged -= HandleNetworkRequestChanged;
-        AppState.OnFormatRequest -= HandleFormatRequest;
-        AppState.OnImportRequestBody -= HandleImportRequestBody;
-        AppState.OnRequestBodyContent -= HandleRequestBodyContent;
-        AppState.OnOpenRequestContextPanel -= HandleOpenRequestContextPanel;
-        AppState.OnSendRequest -= HandleSendRequestFromPalette;
-        AppState.OnNewTab -= HandleNewTabFromPalette;
-        AppState.OnAppStateChanged -= (state) => StateHasChanged();
-    }
-
-    protected async Task HandleNewTab()
-    {
-        var networkRequest = CreateNewNetworkRequest();
-
-        AppState.AddNetworkRequest(networkRequest);
-        AppState.SetActive(networkRequest.Id);
-        StateHasChanged();
-    }
-
-    private SirenNetworkRequest CreateNewNetworkRequest()
-    {
-        var request = new HttpRequest();
-
-        if (!string.IsNullOrWhiteSpace(Settings.DefaultHttpMethod))
-        {
-            request.Method = new HttpMethod(Settings.DefaultHttpMethod);
-        }
-
-        return new SirenNetworkRequest()
-        {
-            Name = "New Request",
-            Request = request,
-        };
-    }
+    protected void HandleNewTab() => Tabs.OpenNew();
 
     private async Task HandleOpenRequestContextPanel(string tab)
     {
         await InvokeAsync(async () => await ToggleSidePanel(tab));
-    }
-
-    private async Task HandleSendRequestFromPalette()
-    {
-        await InvokeAsync(HandleSendClicked);
-    }
-
-    private async Task HandleNewTabFromPalette()
-    {
-        await InvokeAsync(HandleNewTab);
     }
 
     protected async Task HandleFocusUri()
@@ -289,257 +186,46 @@
 
     protected async Task HandleSendClicked()
     {
-        if (string.IsNullOrWhiteSpace(AppState?.Active?.Request?.RequestUri))
+        var tab = Tabs.Active;
+
+        if (tab.IsSending)
         {
-            Snackbar.AddSirenError("Request URL Required");
-            await _requestPanel.FocusUriInputAsync();
+            Sender.Cancel(tab.Id);
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(AppState?.Active?.Request?.Method?.Method))
-        {
-            Snackbar.AddSirenError("HTTP Method Required");
+        var outcome = await Sender.SendAsync(tab.Id);
+
+        // The page may have been left while the request ran, and its fields are gone with it. The user
+        // may also be working in another tab by now, and focus must not be pulled out of what they type.
+        if (_disposed || Tabs.Active.Id != tab.Id)
+            return;
+
+        if (outcome == SendOutcome.MissingMethod)
             await _requestPanel.FocusHttpMethodDropdownAsync();
-            return;
-        }
-
-        if (_cts != null)
-        {
-            await _cts.CancelAsync();
-            _cts = null;
-            _loading = false;
-            _responseText = "Cancelled request.";
-            if (AppState?.Active != null)
-                AppState.Active.DisplayText = _responseText;
-            StateHasChanged();
-            return;
-        }
-
-        _cts = new();
-        _cts.CancelAfter(10_000);
-
-        _loading = true;
-        _responseText = "";
-        StateHasChanged();
-
-        var active = AppState.Active!;
-        var activeEnvironment = AppState.ActiveEnvironment;
-
-        var bodyType = _requestPanel.GetBodyType();
-        var contentType = "application/json";
-        HttpContent? content = null;
-
-        var resolutionErrors = new List<string>();
-
-        if (bodyType == "form-data")
-        {
-            contentType = "application/x-www-form-urlencoded";
-            var formData = active.Request?.FormData ?? new Dictionary<string, string>();
-            var substitutedFormData = new Dictionary<string, string>();
-            foreach (var kvp in formData)
-            {
-                var keyResult = await VariableSubstitutionService.SubstituteVariablesAsync(kvp.Key, activeEnvironment);
-                var valueResult = await VariableSubstitutionService.SubstituteVariablesAsync(kvp.Value, activeEnvironment);
-                resolutionErrors.AddRange(keyResult.Errors);
-                resolutionErrors.AddRange(valueResult.Errors);
-                substitutedFormData[keyResult.Value] = valueResult.Value;
-            }
-            content = new FormUrlEncodedContent(substitutedFormData);
-        }
-        else if (bodyType == "multipart-form-data")
-        {
-            var multipartContent = new MultipartFormDataContent();
-
-            var formData = active.Request?.FormData ?? new Dictionary<string, string>();
-            foreach (var kvp in formData)
-            {
-                var keyResult = await VariableSubstitutionService.SubstituteVariablesAsync(kvp.Key, activeEnvironment);
-                var valueResult = await VariableSubstitutionService.SubstituteVariablesAsync(kvp.Value, activeEnvironment);
-                resolutionErrors.AddRange(keyResult.Errors);
-                resolutionErrors.AddRange(valueResult.Errors);
-                multipartContent.Add(new StringContent(valueResult.Value), keyResult.Value);
-            }
-
-            var attachments = active.Request?.BinaryAttachments ?? new List<BinaryAttachment>();
-            foreach (var attachment in attachments)
-            {
-                var fileContent = new ByteArrayContent(attachment.Data ?? Array.Empty<byte>());
-                fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(attachment.ContentType);
-                multipartContent.Add(fileContent, "file", attachment.FileName);
-            }
-
-            contentType = multipartContent.Headers.ContentType?.ToString() ?? "multipart/form-data";
-            content = multipartContent;
-        }
-        else if (bodyType == "raw")
-        {
-            if (active.Request?.Headers != null)
-            {
-                var contentTypeHeader = active.Request.Headers.FirstOrDefault(h =>
-                string.Equals(h.Key, "Content-Type", StringComparison.OrdinalIgnoreCase));
-                if (contentTypeHeader.Key != null)
-                {
-                    contentType = contentTypeHeader.Value;
-                }
-            }
-            var payload = await _requestPanel.GetPayload();
-            var payloadResult = await VariableSubstitutionService.SubstituteVariablesAsync(payload, activeEnvironment);
-            resolutionErrors.AddRange(payloadResult.Errors);
-            content = new StringContent(payloadResult.Value, System.Text.Encoding.UTF8, contentType);
-        }
-        else if (bodyType == "binary")
-        {
-            var attachments = active.Request?.BinaryAttachments ?? new List<BinaryAttachment>();
-
-            if (attachments.Count == 1)
-            {
-                var attachment = attachments.First();
-                contentType = attachment.ContentType;
-                content = new ByteArrayContent(attachment.Data ?? Array.Empty<byte>());
-                content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(attachment.ContentType);
-            }
-            else if (attachments.Count > 1)
-            {
-                var multipartContent = new MultipartFormDataContent();
-                foreach (var attachment in attachments)
-                {
-                    var fileContent = new ByteArrayContent(attachment.Data ?? Array.Empty<byte>());
-                    fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(attachment.ContentType);
-                    multipartContent.Add(fileContent, "file", attachment.FileName);
-                }
-                contentType = multipartContent.Headers.ContentType?.ToString() ?? "multipart/form-data";
-                content = multipartContent;
-            }
-            else
-            {
-                content = null;
-            }
-        }
-        else
-        {
-            content = null;
-        }
-
-        var uriResult = await VariableSubstitutionService.SubstituteVariablesAsync(active.Request?.RequestUri ?? "",
-activeEnvironment);
-        resolutionErrors.AddRange(uriResult.Errors);
-        var requestUri = uriResult.Value;
-
-        var substitutedHeaders = new List<KeyValuePair<string, string>>();
-        if (active.Request?.Headers != null)
-        {
-            foreach (var header in active.Request.Headers)
-            {
-                var keyResult = await VariableSubstitutionService.SubstituteVariablesAsync(header.Key, activeEnvironment);
-                var valueResult = await VariableSubstitutionService.SubstituteVariablesAsync(header.Value, activeEnvironment);
-                resolutionErrors.AddRange(keyResult.Errors);
-                resolutionErrors.AddRange(valueResult.Errors);
-                substitutedHeaders.Add(new KeyValuePair<string, string>(keyResult.Value, valueResult.Value));
-            }
-        }
-
-        // Show warning if there were resolution errors but still proceed with request
-        if (resolutionErrors.Count > 0)
-        {
-            var distinctErrors = resolutionErrors.Distinct().ToList();
-            Logger.LogWarning("Variable resolution errors: {Errors}", string.Join("; ", distinctErrors));
-            Snackbar.Add($"Warning: {distinctErrors.Count} variable(s) could not be fully resolved", Severity.Warning);
-        }
-
-        var req = new HttpRequest()
-        {
-            ContentType = contentType,
-            RequestUri = requestUri,
-            Method = active.Request?.Method ?? HttpMethod.Get,
-            Headers = substitutedHeaders,
-            FormData = active.Request?.FormData != null ? new Dictionary<string, string>(active.Request.FormData) : new
-        Dictionary<string, string>(),
-            BinaryAttachments = active.Request?.BinaryAttachments != null ? active.Request.BinaryAttachments.Select(a =>
-            a.Copy()).ToList() : new List<BinaryAttachment>(),
-            Content = content,
-            BodyType = active.Request?.BodyType ?? RequestBodyType.Raw,
-            RawBody = active.Request?.RawBody ?? ""
-        };
-
-        bool valid = ValidateRequest(req);
-
-        if (!valid)
-            return;
-
-        Logger.LogInformation("Sending HTTP request to {RequestUri}", req.RequestUri);
-
-        var r = await HttpRequestClient.SendHttpRequestAsync(req, _cts.Token);
-
-        _cts = default;
-
-        if (r.Error != null)
-        {
-            string errorMessage;
-            if (r.Error is UriFormatException)
-            {
-                errorMessage = "Invalid URL";
-            }
-            else if (r.Error is System.Net.Http.HttpRequestException ||
-            r.Error is System.Net.Sockets.SocketException)
-            {
-                errorMessage = "Invalid URL or hostname could not be resolved";
-            }
-            else
-            {
-                errorMessage = r.Error.Message;
-            }
-
-            Snackbar.AddSirenError(errorMessage);
+        else if (outcome is SendOutcome.MissingUrl or SendOutcome.Failed or SendOutcome.TimedOut)
             await _requestPanel.FocusUriInputAsync();
-
-            _loading = false;
-            StateHasChanged();
-            return;
-        }
-
-        _responseText = r.ResponseText;
-
-        // Pretty-print JSON for display
-        try
-        {
-            using var doc = System.Text.Json.JsonDocument.Parse(_responseText);
-            _responseText = System.Text.Json.JsonSerializer.Serialize(doc, _jsonDisplayOptions);
-        }
-        catch
-        {
-            // Not valid JSON — use raw text as-is
-        }
-
-        var state = AppState.Active ?? new();
-        state.Response = r;
-        state.Name = active.Request?.RequestUri ?? req.RequestUri;
-        state.DisplayText = _responseText;
-
-        // Record session stats
-        SessionStats.RecordRequest(req.RequestUri, r.StatusCode, r.Duration.TotalMilliseconds);
-
-        AppState.SetActive(state.Id);
-
-        _loading = false;
-        StateHasChanged();
-    }
-
-    private bool ValidateRequest(HttpRequest req)
-    {
-
-        if (string.IsNullOrWhiteSpace(req.RequestUri))
-            return false;
-
-        if (string.IsNullOrWhiteSpace(req.Method.Method))
-            return false;
-
-        return true;
     }
 
     public async ValueTask DisposeAsync()
     {
-        if (_module != null)
+        _disposed = true;
+
+        AppState.OnAppStateChanged -= HandleAppStateChanged;
+        AppState.OnFormatRequest -= HandleFormatRequest;
+        AppState.OnOpenRequestContextPanel -= HandleOpenRequestContextPanel;
+
+        if (_module == null)
+            return;
+
+        try
+        {
             await _module.DisposeAsync();
+        }
+        catch (JSDisconnectedException)
+        {
+            // The WebView has already gone, and the module went with it
+        }
     }
 
 }

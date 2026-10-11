@@ -175,7 +175,8 @@ namespace Siren
         /// </summary>
         public static void ConfigureMcpServices(IServiceCollection services)
         {
-            services.AddLogging(builder => builder.AddConsole());
+            // stdout carries the JSON-RPC frames in stdio mode, so every log line has to go to stderr
+            services.AddLogging(builder => builder.AddConsole(options => options.LogToStandardErrorThreshold = LogLevel.Trace));
             services.AddHttpClient();
             services.AddMessageBus();
 

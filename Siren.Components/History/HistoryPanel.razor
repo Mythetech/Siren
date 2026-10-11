@@ -1,5 +1,6 @@
 ﻿@using Siren.Components.History
 @using System.Net
+@using Siren.Components.Http
 @using Siren.Components.Http.Models
 @using Siren.Components.MockServer
 @using Siren.Components.MockServer.Models
@@ -26,7 +27,7 @@ else
     <RowTemplate>
 
         <MudTd Class="px-0">
-            <HttpMethodChip Method="@(context.HttpMethod)" />
+            <Siren.Components.Http.HttpMethodChip Method="@(context.HttpMethod)" />
         </MudTd>
 
         <MudTd Class="px-0">
@@ -70,7 +71,7 @@ else
 
 @code {
     [Inject]
-    protected SirenAppState AppState { get; set; } = default!;
+    protected RequestTabsState Tabs { get; set; } = default!;
 
     [Inject]
     protected IHistoryService HistoryService { get; set; } = default!;
@@ -122,29 +123,11 @@ else
         }
     }
 
-    protected async Task PromptDeleteHistory()
+    protected Task PromptDeleteHistory()
     {
         var options = new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "siren-dialog" };
 
-        var dialogRef = await DialogService.ShowAsync<DeleteHistoryDialog>("Delete History", options);
-
-        var result = await dialogRef.Result;
-
-        if (!result.Canceled)
-        {
-            try
-            {
-                HistoryService.DeleteAllHistoryRecords();
-                Snackbar.Add("Successfully deleted history", Severity.Success, configure: (opts) =>
-                {
-                    opts.Icon = SirenIcons.History;
-                });
-            }
-            catch (Exception ex)
-            {
-                Snackbar.Add("Error deleting history", Severity.Error);
-            }
-        }
+        return DialogService.ShowAsync<DeleteHistoryDialog>("Delete History", options);
     }
 
     private string _searchString = "";
@@ -177,15 +160,12 @@ else
 
     protected void LoadHistoryRecord(HistoryRecord record)
     {
-        var n = new SirenNetworkRequest()
+        Tabs.Open(new SirenNetworkRequest()
         {
             Request = record?.Request?.Copy(),
-            Name = record?.RequestUri ?? "",
             Response = record?.Response?.Copy(),
             DisplayText = record?.DisplayText
-        };
-
-        AppState.AddNetworkRequest(n);
+        });
 
         StateHasChanged();
     }

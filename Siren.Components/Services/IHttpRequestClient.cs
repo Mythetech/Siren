@@ -24,6 +24,9 @@ namespace Siren.Components.Services
         private readonly ICookieService _cookieService;
         private readonly RequestAuthenticationState _authState;
 
+        // CancellationTokenSource cannot time anything longer than this
+        private static readonly TimeSpan LongestTimeout = TimeSpan.FromMilliseconds(uint.MaxValue - 1);
+
         public HttpRequestClient(IHttpClientFactory httpClientFactory, IHistoryService historyService, ILogger<HttpRequestClient> logger, SettingsState settings, ICookieService cookieService, RequestAuthenticationState authState)
         {
             _httpClientFactory = httpClientFactory;
@@ -40,15 +43,30 @@ namespace Siren.Components.Services
             var retryDelayMs = _settings.RetryDelayMs;
             RequestResult? lastResult = null;
 
+            // One limit for the whole call, so retries and a slow body cannot stretch it
+            using var timeout = new CancellationTokenSource();
+            if (request.Timeout > TimeSpan.Zero && request.Timeout <= LongestTimeout)
+                timeout.CancelAfter(request.Timeout);
+
+            using var limited = CancellationTokenSource.CreateLinkedTokenSource(ct, timeout.Token);
+
             for (int attempt = 0; attempt <= maxRetries; attempt++)
             {
                 if (attempt > 0)
                 {
                     _logger.LogInformation("Retry attempt {Attempt} of {MaxRetries} for {Uri}", attempt, maxRetries, request.RequestUri);
-                    await Task.Delay(retryDelayMs, ct);
+
+                    try
+                    {
+                        await Task.Delay(retryDelayMs, limited.Token);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
                 }
 
-                lastResult = await SendHttpRequestInternalAsync(request, ct);
+                lastResult = await SendHttpRequestInternalAsync(request, limited.Token);
 
                 // Don't retry on success or client errors (4xx)
                 if (lastResult.Error == null || (lastResult.StatusCode >= 400 && lastResult.StatusCode < 500))
@@ -57,13 +75,18 @@ namespace Siren.Components.Services
                 }
 
                 // Don't retry if cancelled
-                if (ct.IsCancellationRequested)
+                if (limited.IsCancellationRequested)
                 {
                     break;
                 }
             }
 
-            return lastResult!;
+            if (lastResult!.Error != null && timeout.IsCancellationRequested && !ct.IsCancellationRequested)
+            {
+                lastResult.Error = new TimeoutException($"The request timed out after {request.Timeout.TotalSeconds:0.##} seconds", lastResult.Error);
+            }
+
+            return lastResult;
         }
 
         private async Task<RequestResult> SendHttpRequestInternalAsync(HttpRequest request, CancellationToken ct)
@@ -106,7 +129,8 @@ namespace Siren.Components.Services
                 }
             };
 
-            using var client = new HttpClient(handler);
+            // The token carries the request's own limit, which may be longer than HttpClient's 100 seconds
+            using var client = new HttpClient(handler) { Timeout = Timeout.InfiniteTimeSpan };
             var httpRequestMessage = new HttpRequestMessage
             {
                 Method = request.Method,
@@ -118,7 +142,7 @@ namespace Siren.Components.Services
             {
                 foreach (var header in request.Headers)
                 {
-                    httpRequestMessage.Headers.Add(header.Key, header.Value);
+                    AddUserHeader(httpRequestMessage, header.Key, header.Value);
                 }
             }
 
@@ -128,14 +152,16 @@ namespace Siren.Components.Services
 
             var actualRequestHeaders = CaptureActualRequestHeaders(httpRequestMessage, client);
 
-            var remoteAddress = await ResolveRemoteAddressAsync(uri.Host);
+            // The lookup takes the token too, or a resolver that hangs would hold the request past Cancel and its limit
+            var remoteAddress = await ResolveRemoteAddressAsync(uri.Host, ct);
             var localAddress = GetLocalAddress();
 
             var stopwatch = Stopwatch.StartNew();
             var phaseStopwatch = new Stopwatch();
             HttpResponseMessage? response;
             RequestResult? result = null!;
-            
+            string sc;
+
             TimeSpan waitingForResponse = TimeSpan.Zero;
             TimeSpan contentDownload = TimeSpan.Zero;
 
@@ -144,8 +170,11 @@ namespace Siren.Components.Services
                 phaseStopwatch.Restart();
                 response = await client.SendAsync(httpRequestMessage, HttpCompletionOption.ResponseHeadersRead, ct);
                 waitingForResponse = phaseStopwatch.Elapsed;
-                
+
+                // Only the headers have arrived, so the body is still a network read that has to stay cancellable
                 phaseStopwatch.Restart();
+                sc = await response.Content.ReadAsStringAsync(ct);
+                contentDownload = phaseStopwatch.Elapsed;
             }
             catch (Exception ex)
             {
@@ -166,12 +195,6 @@ namespace Siren.Components.Services
                 return result;
             }
 
-            string sc = "";
-            if (response != null)
-            {
-                sc = await response?.Content?.ReadAsStringAsync(CancellationToken.None) ?? "";
-                contentDownload = phaseStopwatch.Elapsed;
-            }
             stopwatch.Stop();
 
             if (networkInfo != null)
@@ -230,12 +253,30 @@ namespace Siren.Components.Services
             return result;
         }
 
-        private async Task<string?> ResolveRemoteAddressAsync(string host)
+        protected internal virtual Task<IPAddress[]> ResolveHostAsync(string host, CancellationToken ct)
+            => Dns.GetHostAddressesAsync(host, ct);
+
+        private async Task<string?> ResolveRemoteAddressAsync(string host, CancellationToken ct)
         {
             try
             {
-                var addresses = await Dns.GetHostAddressesAsync(host);
-                return addresses.FirstOrDefault()?.ToString();
+                // On macOS and Linux the system resolver cannot be interrupted once it has started, so the
+                // request stops waiting for it when it is cancelled or out of time, and the lookup ends on its own
+                var addresses = await LookUpAsync(host, ct).WaitAsync(ct);
+                return addresses?.FirstOrDefault()?.ToString();
+            }
+            catch (OperationCanceledException)
+            {
+                return null;
+            }
+        }
+
+        // Never fails, so a lookup that nobody is waiting for any more cannot end in an exception nobody sees
+        private async Task<IPAddress[]?> LookUpAsync(string host, CancellationToken ct)
+        {
+            try
+            {
+                return await ResolveHostAsync(host, ct);
             }
             catch (Exception ex)
             {
@@ -308,6 +349,34 @@ namespace Siren.Components.Services
             }
 
             _historyService.AddHistoryRecord(record);
+        }
+
+        /// <summary>
+        /// Adds a header the user typed. Values are sent as typed rather than validated, because strict
+        /// validation throws on input a server would accept, and a testing tool has to be able to send it.
+        /// </summary>
+        private void AddUserHeader(HttpRequestMessage message, string name, string value)
+        {
+            if (message.Headers.TryAddWithoutValidation(name, value))
+                return;
+
+            // Request headers reject content headers such as Content-Type, which travel on the content instead
+            var content = message.Content ?? new ByteArrayContent(Array.Empty<byte>());
+
+            // The generated boundary has to match the body, so a copied Content-Type must not replace it
+            if (content is MultipartContent && string.Equals(name, "Content-Type", StringComparison.OrdinalIgnoreCase))
+                return;
+
+            if (content.Headers.TryGetValues(name, out _))
+                content.Headers.Remove(name);
+
+            if (content.Headers.TryAddWithoutValidation(name, value))
+            {
+                message.Content = content;
+                return;
+            }
+
+            _logger.LogWarning("Header {HeaderName} is not a valid header name and was not sent", name);
         }
 
         private void AddCookiesToRequest(HttpRequestMessage request)

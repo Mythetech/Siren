@@ -54,36 +54,12 @@
     public string Placeholder { get; set; } = "Method";
 
     [Parameter]
-    public string? SelectedMethod 
-    { 
-        get => _selectedMethod;
-        set
-        {
-            if (_selectedMethod != value)
-            {
-                _selectedMethod = value;
-                StateHasChanged();
-            }
-        }
-    } 
+    public string? SelectedMethod { get; set; }
 
     protected override void OnParametersSet()
     {
-        if (_selectedMethod != SelectedMethod)
-        {
-            _selectedMethod = SelectedMethod;
-        }
+        _selectedMethod = SelectedMethod;
         base.OnParametersSet();
-    }
-
-    public async Task SetMethod(string? method)
-    {
-        if (!string.IsNullOrWhiteSpace(method))
-            method = method.ToUpper();
-
-        _selectedMethod = method;
-        await SelectedMethodChanged.InvokeAsync(_selectedMethod);
-        StateHasChanged();
     }
 
     [Parameter]

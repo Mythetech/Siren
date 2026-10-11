@@ -11,23 +11,25 @@ using Siren.Components.History;
 using Siren.Components.Http;
 using Siren.Components.MockServer;
 using Siren.Components.Http.Models;
+using Siren.Components.Shared;
+using Siren.Test.Infrastructure;
 
 namespace Siren.Test.Components
 {
     public class HistoryPanelTests : TestContext
     {
-        private SirenAppState _state;
         private IHistoryService _historyService;
 
         public HistoryPanelTests()
         {
-            _state = new();
             _historyService = Substitute.For<IHistoryService>();
-            Services.AddSingleton(_state);
+            this.AddRequestTabs();
             Services.AddSingleton(_historyService);
             Services.AddSingleton(Substitute.For<IMockServerService>());
             Services.AddSingleton<MockServerState>();
             Services.AddMudServices();
+            Services.AddLogging();
+            JSInterop.Mode = JSRuntimeMode.Loose;
             JSInterop.SetupVoid("mudPopover.initialize", _ => true);
             JSInterop.Setup<int>("mudpopoverHelper.countProviders");
             JSInterop.SetupVoid("mudPopover.connect", _ => true);
@@ -81,6 +83,24 @@ namespace Siren.Test.Components
 
             // Assert
             result.Should().BeFalse();
+        }
+
+        [Fact(DisplayName = "Deleting history from the panel deletes it exactly once")]
+        public async Task DeleteHistory_Confirmed_DeletesOnce()
+        {
+            _historyService.GetHistory().Returns(new List<HistoryRecord>());
+            var dialogs = RenderComponent<MudDialogProvider>();
+            var cut = RenderComponent<HistoryPanel>();
+            cut.WaitForAssertion(() => cut.FindComponents<SirenIconButton>().Should().NotBeEmpty());
+
+            var deleteButton = cut.FindComponents<SirenIconButton>().Single(b => b.Instance.Tooltip == "Delete History");
+            var prompt = deleteButton.Find("button").ClickAsync(new());
+            dialogs.WaitForAssertion(() => dialogs.HasOpenDialog().Should().BeTrue());
+            await dialogs.ClickButtonAsync("Delete");
+            await prompt;
+
+            _historyService.Received(1).DeleteAllHistoryRecords();
+            Services.GetRequiredService<ISnackbar>().ShownSnackbars.Should().ContainSingle();
         }
     }
 }

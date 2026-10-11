@@ -1,15 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using FluentAssertions;
-using Microsoft.Extensions.Logging.Abstractions;
-using Mythetech.Framework.Infrastructure.Settings;
-using NSubstitute;
-using Siren.Components.History;
-using Siren.Components.Http;
 using Siren.Components.Http.Models;
-using Siren.Components.RequestContextPanel.Authentication;
-using Siren.Components.Services;
-using Siren.Components.Settings;
 
 namespace Siren.Test.Integration.HttpSendPath;
 
@@ -54,7 +46,7 @@ public class HttpVerbRoundTripTests : IClassFixture<EchoHostFixture>
             ContentType = "application/json",
         };
 
-        var client = BuildClient();
+        var client = TestHttpRequestClient.Create();
         var result = await client.SendHttpRequestAsync(request, CancellationToken.None);
 
         result.Should().NotBeNull();
@@ -84,29 +76,5 @@ public class HttpVerbRoundTripTests : IClassFixture<EchoHostFixture>
             json.RootElement.GetProperty("body").GetString().Should().Be(bodyJson);
             json.RootElement.GetProperty("contentType").GetString().Should().Contain("application/json");
         }
-    }
-
-    private static HttpRequestClient BuildClient()
-    {
-        var historyService = Substitute.For<IHistoryService>();
-        var factory = Substitute.For<IHttpClientFactory>();
-
-        var settingsProvider = Substitute.For<ISettingsProvider>();
-        settingsProvider.GetSettings<HttpSettings>().Returns(new HttpSettings());
-        settingsProvider.GetSettings<ResponseSettings>().Returns(new ResponseSettings());
-        settingsProvider.GetSettings<HistorySettings>().Returns(new HistorySettings { SaveHttpContent = true });
-        settingsProvider.GetSettings<EnvironmentSettings>().Returns(new EnvironmentSettings());
-
-        var settings = new SettingsState(settingsProvider);
-        var cookieService = new CookieService();
-        var authState = new RequestAuthenticationState();
-
-        return new HttpRequestClient(
-            factory,
-            historyService,
-            new NullLogger<HttpRequestClient>(),
-            settings,
-            cookieService,
-            authState);
     }
 }

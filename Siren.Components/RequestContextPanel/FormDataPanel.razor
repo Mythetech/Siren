@@ -34,7 +34,7 @@
                 <MudBlazor.PropertyColumn Property="x => x.Key" Title="Key">
                     <EditTemplate>
                         <SirenStack Row="true" Class="w-100 hover-zone">
-                            <MudTextField @bind-Value="@context.Item.Key" OnBlur="(() => UpdateFormDataEntry(context.Item))"/>
+                            <MudTextField Value="@context.Item.Key" ValueChanged="@((string? key) => SetKey(context.Item, key))"/>
                             <SirenSpacer/>
                             <SirenIconButton OnClick="@(async () =>
                                                       {
@@ -54,7 +54,7 @@
                 <MudBlazor.PropertyColumn Property="x => x.Value" Title="Value">
                     <EditTemplate>
                         <SirenStack Row="true" Class="w-100 hover-zone">
-                            <MudTextField @bind-Value="@context.Item.Value" OnBlur="(() => UpdateFormDataEntry(context.Item))"/>
+                            <MudTextField Value="@context.Item.Value" ValueChanged="@((string? value) => SetValue(context.Item, value))"/>
                             <SirenSpacer/>
                             <SirenIconButton OnClick="@(async () =>
                                                       {
@@ -104,27 +104,31 @@
     public SirenNetworkRequest NetworkRequest { get; set; }
 
     [Inject]
+    public RequestTabsState Tabs { get; set; } = default!;
+
+    [Inject]
     public IJsApiService JsApiService { get; set; } = default!;
 
     [Inject]
     public ISnackbar Snackbar { get; set; } = default!;
 
     private List<DictionaryViewModel> formDataEntries = new();
+    private Guid _rowsTabId;
 
-    protected override void OnInitialized()
-    {
-        if (NetworkRequest?.Request?.FormData != null)
-        {
-            formDataEntries = NetworkRequest.Request.FormData.ToViewModel();
-        }
-    }
-
+    // The rows are the panel's working copy. They are rebuilt only for another tab, or when the tab's
+    // fields were changed somewhere else. Otherwise the same row objects stay, because the grid keys a
+    // row by its object and a new one would throw away the cell that has just taken focus.
     protected override void OnParametersSet()
     {
-        if (NetworkRequest?.Request?.FormData != null)
-        {
-            formDataEntries = NetworkRequest.Request.FormData.ToViewModel();
-        }
+        var formData = NetworkRequest?.Request?.FormData;
+        if (NetworkRequest == null || formData == null)
+            return;
+
+        if (_rowsTabId == NetworkRequest.Id && formDataEntries.HoldSameEntries(formData))
+            return;
+
+        _rowsTabId = NetworkRequest.Id;
+        formDataEntries = formData.ToViewModel();
     }
 
     private void AddFormDataEntry(string key, string value)
@@ -136,6 +140,19 @@
     protected void NotifyCopied(string value)
     {
         Snackbar.Add($"Copied `{value}` to clipboard", Severity.Info);
+    }
+
+    // A row and the tab change in the same handler, so no render sees them disagree
+    private void SetKey(DictionaryViewModel row, string? key)
+    {
+        row.Key = key;
+        SyncToNetworkRequest();
+    }
+
+    private void SetValue(DictionaryViewModel row, string? value)
+    {
+        row.Value = value;
+        SyncToNetworkRequest();
     }
 
     protected Task<DataGridEditFormAction> UpdateFormDataEntry(DictionaryViewModel m)
@@ -160,9 +177,9 @@
 
     private void SyncToNetworkRequest()
     {
-        if (NetworkRequest?.Request != null)
+        if (NetworkRequest != null)
         {
-            NetworkRequest.Request.FormData = formDataEntries.ToSafeDictionary();
+            Tabs.SetFormData(NetworkRequest.Id, formDataEntries.ToSafeDictionary());
         }
     }
 }

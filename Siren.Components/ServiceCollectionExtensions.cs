@@ -8,6 +8,7 @@ using Mythetech.Framework.Infrastructure.Settings;
 using Siren.Components.Collections;
 using Siren.Components.Configuration;
 using Siren.Components.History;
+using Siren.Components.Http;
 using Siren.Components.MockServer;
 using Siren.Components.RequestContextPanel.Authentication;
 using Siren.Components.Services;
@@ -55,6 +56,7 @@ public static class ServiceCollectionExtensions
             return new SettingsState(settingsProvider);
         });
         services.AddSingleton<VariableState>();
+        services.AddSingleton<RequestTabsState>();
 
         services.AddHttpClient();
 
@@ -73,6 +75,8 @@ public static class ServiceCollectionExtensions
         services.AddSecretManagerFramework();
 
         services.AddSingleton<IVariableSubstitutionService, VariableSubstitutionService>();
+        services.AddSingleton<IRequestComposer, RequestComposer>();
+        services.AddSingleton<IRequestSender, RequestSender>();
 
         services.AddSingleton<RequestAuthenticationState>();
 

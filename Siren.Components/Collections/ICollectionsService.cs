@@ -20,6 +20,8 @@ namespace Siren.Components.Collections
         public void DeleteCollections();
 
         public void UpdateCollection(Collection collection);
+
+        public event Action<List<Collection>>? CollectionsChanged;
     }
 }
 

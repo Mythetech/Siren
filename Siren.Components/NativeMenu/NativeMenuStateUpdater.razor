@@ -1,3 +1,4 @@
+@using Siren.Components.Http
 @using Siren.Components.Http.Models
 @using Siren.Components.Variables
 @using Mythetech.Framework.Infrastructure.MessageBus
@@ -14,6 +15,7 @@
     [Inject] private INativeMenuService MenuService { get; set; } = default!;
     [Inject] private IMessageBus Bus { get; set; } = default!;
     [Inject] private SirenAppState AppState { get; set; } = default!;
+    [Inject] private RequestTabsState Tabs { get; set; } = default!;
     [Inject] private VariableState VariableState { get; set; } = default!;
     [Inject] private IUpdateService UpdateService { get; set; } = default!;
     [Inject] private PluginState PluginState { get; set; } = default!;
@@ -24,7 +26,8 @@
         Bus.Subscribe<UpdateAvailable>(this);
 
         AppState.OnActiveEnvironmentChanged += OnActiveEnvironmentChanged;
-        AppState.OnActiveNetworkRequestChanged += OnActiveRequestChanged;
+        Tabs.ActiveTabChanged += OnActiveRequestChanged;
+        Tabs.ResponseChanged += OnActiveRequestChanged;
         VariableState.StateChanged += OnVariableStateChanged;
         PluginState.StateChanged += OnPluginStateChanged;
 
@@ -160,8 +163,8 @@
         if (!MenuService.IsActive)
             return;
 
-        var hasResponse = AppState.Active?.Response != null;
-        var hasRequest = AppState.Active?.Request != null;
+        var hasResponse = Tabs.Active.Response != null;
+        var hasRequest = Tabs.Active.Request != null;
 
         MenuService.SetItemEnabled(MenuItemIds.FileSaveResponse, hasResponse);
         MenuService.SetItemEnabled(MenuItemIds.ToolsCurlExport, hasRequest);
@@ -174,7 +177,8 @@
         _pluginRebuildCts?.Dispose();
         Bus.Unsubscribe<UpdateAvailable>(this);
         AppState.OnActiveEnvironmentChanged -= OnActiveEnvironmentChanged;
-        AppState.OnActiveNetworkRequestChanged -= OnActiveRequestChanged;
+        Tabs.ActiveTabChanged -= OnActiveRequestChanged;
+        Tabs.ResponseChanged -= OnActiveRequestChanged;
         VariableState.StateChanged -= OnVariableStateChanged;
         PluginState.StateChanged -= OnPluginStateChanged;
     }

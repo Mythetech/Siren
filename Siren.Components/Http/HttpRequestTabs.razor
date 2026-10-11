@@ -1,20 +1,18 @@
 ﻿@using Siren.Components.Http.Models
-@using Siren.Components.Settings
 @implements IDisposable
 
 <SirenDynamicTabs T="SirenNetworkRequest"
                   @ref="_tabs"
                   Elevation="0"
                   Color="Color.Primary"
-                  Items="@AppState.NetworkRequests"
+                  Items="@Tabs.Tabs"
                   Class="@($"w-100 {(AppState.SideBarOpen ? "siren-app-short-tabs" : "siren-app-tabs")}")"
                   Style="height:38px"
-                  ItemAdded="HandleNetworkRequestAdded"
-                  ItemClosed="HandleNetworkRequestRemoved"
-                  TabChanged="HandleTabChange"
+                  ItemAdded="HandleTabAdded"
+                  ItemClosed="HandleTabClosed"
+                  TabChanged="HandleTabSelected"
                   TabDuplicated="HandleTabDuplicated"
-                  HeaderContent="@HeaderContent"
-                  ItemLabelDisplayFunc="@ItemDisplayFunc" />
+                  HeaderContent="@HeaderContent" />
 
 @code {
     [Parameter]
@@ -24,185 +22,55 @@
     protected SirenAppState AppState { get; set; } = default!;
 
     [Inject]
-    protected SettingsState Settings { get; set; } = default!;
+    protected RequestTabsState Tabs { get; set; } = default!;
 
-    private Func<SirenNetworkRequest, string> ItemDisplayFunc => (x) =>
-    {
-        var requestUri = x?.Request?.RequestUri;
-
-        if (string.IsNullOrWhiteSpace(x?.Request?.Method?.Method))
-        {
-            if (string.IsNullOrWhiteSpace(requestUri))
-            {
-                return "New Request";
-            }
-            else
-            {
-                return requestUri;
-            }
-        }
-        else
-        {
-            if (string.IsNullOrWhiteSpace(requestUri))
-                return $"{x?.Request?.Method?.Method}";
-
-            requestUri = requestUri.Replace("http:", "").Replace("https:", "").Replace("//", "");
-
-            return $"{x?.Request?.Method?.Method} | {(requestUri.Length > 15 ? requestUri[0..12] + "..." : requestUri)}";
-        }
-    };
-
-    protected SirenDynamicTabs<SirenNetworkRequest> _tabs = default!;
-    private bool _isReady;
-    private Guid? _pendingActivation;
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await Task.Yield();
-
-            if (_tabs != null && _tabs?.UserTabs == null || _tabs?.UserTabs?.Count() < 1)
-            {
-                RefreshTabsFromState();
-            }
-
-            _isReady = true;
-        }
-
-        if (_pendingActivation is { } requestId)
-        {
-            _pendingActivation = null;
-            var index = AppState.NetworkRequests.FindIndex(x => x.Id.Equals(requestId));
-            if (index >= 0 && _tabs?.DynamicTabs?.Panels != null && index < _tabs.DynamicTabs.Panels.Count)
-            {
-                _tabs.ActivateTab(index);
-            }
-        }
-    }
-
-    protected void RefreshTabsFromState()
-    {
-        if (AppState.NetworkRequests.Count < 1)
-        {
-            var request = new HttpRequest();
-            
-            if (!string.IsNullOrWhiteSpace(Settings.DefaultHttpMethod))
-            {
-                request.Method = new HttpMethod(Settings.DefaultHttpMethod);
-            }
-
-            var r = new SirenNetworkRequest()
-            {
-                Name = "Untitled",
-                Request = request
-            };
-
-            AppState.AddNetworkRequest(r);
-            _tabs.AddTab(r.Id, r.Name);
-            StateHasChanged();
-        }
-        StateHasChanged();
-    }
+    private SirenDynamicTabs<SirenNetworkRequest> _tabs = default!;
 
     protected override void OnInitialized()
     {
-        AppState.OnNetworkRequestsChanged += HandleNetworkRequestsChanged;
-        AppState.OnNetworkRequestIndexChanged += HandleNetworkRequestIndexChanged;
-        AppState.OnActiveNetworkRequestChanged += HandleActiveNetworkRequestChanged;
+        Tabs.TabsChanged += HandleTabsChanged;
+        Tabs.ActiveTabChanged += HandleTabChanged;
+        Tabs.RequestChanged += HandleTabChanged;
         AppState.OnAppStateChanged += HandleAppStateChanged;
     }
 
     public void Dispose()
     {
-        AppState.OnNetworkRequestsChanged -= StateHasChanged;
-        AppState.OnNetworkRequestIndexChanged -= HandleNetworkRequestIndexChanged;
+        Tabs.TabsChanged -= HandleTabsChanged;
+        Tabs.ActiveTabChanged -= HandleTabChanged;
+        Tabs.RequestChanged -= HandleTabChanged;
         AppState.OnAppStateChanged -= HandleAppStateChanged;
-        AppState.OnActiveNetworkRequestChanged -= HandleActiveNetworkRequestChanged;
     }
 
-    public void HandleAppStateChanged(SirenAppState state)
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        AppState = state;
-        StateHasChanged();
+        // The strip keeps its own active panel, so it is told whenever the state's active tab is not the
+        // one it shows. It can only be told after a render, once the panel for a new tab exists.
+        var activeId = Tabs.Active.Id;
+        if (_tabs.ActivePanelId != activeId)
+            await _tabs.ActivateAsync(activeId);
     }
-    
-    protected void HandleActiveNetworkRequestChanged(SirenNetworkRequest? request)
+
+    private void HandleTabsChanged()
     {
-        if (request == null || _tabs?.Items == null) return;
-
-        if (!_tabs.Items.Any(x => x.Id.Equals(request.Id)))
-        {
-            _tabs.AddTab(request.Id, request.Name);
-        }
-
-        if (!_isReady) return;
-
-        // Defer activation to OnAfterRenderAsync so child panels are fully rendered.
-        _pendingActivation = request.Id;
         InvokeAsync(StateHasChanged);
     }
 
-    protected void HandleNetworkRequestsChanged()
+    private void HandleTabChanged(SirenNetworkRequest tab)
     {
-        StateHasChanged();
+        InvokeAsync(StateHasChanged);
     }
 
-    protected async void HandleNetworkRequestIndexChanged(int index)
+    private void HandleAppStateChanged(SirenAppState state)
     {
-        await Task.Yield();
-
-        if (_tabs?.DynamicTabs?.Panels != null && index >= 0 && index < _tabs.DynamicTabs.Panels.Count)
-        {
-            _tabs.ActivateTab(index);
-            StateHasChanged();
-        }
+        InvokeAsync(StateHasChanged);
     }
 
-    protected void HandleNetworkRequestAdded()
-    {
-        var request = new HttpRequest();
-        
-        if (!string.IsNullOrWhiteSpace(Settings.DefaultHttpMethod))
-        {
-            request.Method = new HttpMethod(Settings.DefaultHttpMethod);
-        }
+    private void HandleTabAdded() => Tabs.OpenNew();
 
-        var networkRequest = new SirenNetworkRequest()
-        {
-            Name = "New Request",
-            Request = request,
-        };
+    private void HandleTabClosed(SirenNetworkRequest tab) => Tabs.Close(tab.Id);
 
-        AppState.AddNetworkRequest(networkRequest);
+    private void HandleTabSelected(SirenNetworkRequest tab) => Tabs.Activate(tab.Id);
 
-        AppState.SetActive(networkRequest.Id);
-
-        StateHasChanged();
-    }
-
-    protected void HandleNetworkRequestRemoved(SirenNetworkRequest request)
-    {
-        AppState.RemoveNetworkRequest(request.Id);
-
-        StateHasChanged();
-    }
-
-    protected void HandleTabChange(SirenNetworkRequest n)
-    {
-        AppState.SetActive(n);
-        StateHasChanged();
-    }
-
-    protected void HandleTabDuplicated(SirenNetworkRequest t)
-    {
-        if (t == null) return;
-
-        var duplicatedRequest = t.Copy();
-        AppState.AddNetworkRequest(duplicatedRequest);
-        AppState.SetActive(duplicatedRequest.Id);
-
-        StateHasChanged();
-    }
+    private void HandleTabDuplicated(SirenNetworkRequest tab) => Tabs.Duplicate(tab.Id);
 }
-
