@@ -4,6 +4,8 @@ using MudBlazor.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Mythetech.Framework.Infrastructure.Guards;
 using NSubstitute;
+using Siren.Components.Http;
+using Siren.Components.Settings;
 
 namespace Siren.Test.Infrastructure
 {
@@ -29,6 +31,22 @@ namespace Siren.Test.Infrastructure
             var guards = Substitute.For<IJsGuardService>();
             guards.IsReady(Arg.Any<string>()).Returns(true);
             context.Services.AddSingleton(guards);
+        }
+
+        /// <summary>
+        /// Registers the request tabs state and the app state built on it, and returns the tabs state so
+        /// a test can arrange and assert on it. Call it before AddMudServicesWithPopover.
+        /// </summary>
+        public static RequestTabsState AddRequestTabs(this TestContext context, SettingsState? settings = null)
+        {
+            settings ??= TestState.Settings();
+            var tabs = TestState.Tabs(settings);
+
+            context.Services.AddSingleton(settings);
+            context.Services.AddSingleton(tabs);
+            context.Services.AddSingleton(TestState.AppState(tabs));
+
+            return tabs;
         }
     }
 }

@@ -18,14 +18,12 @@ namespace Siren.Test.Components
 {
     public class HistoryPanelTests : TestContext
     {
-        private SirenAppState _state;
         private IHistoryService _historyService;
 
         public HistoryPanelTests()
         {
-            _state = new();
             _historyService = Substitute.For<IHistoryService>();
-            Services.AddSingleton(_state);
+            this.AddRequestTabs();
             Services.AddSingleton(_historyService);
             Services.AddSingleton(Substitute.For<IMockServerService>());
             Services.AddSingleton<MockServerState>();

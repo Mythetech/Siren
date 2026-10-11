@@ -4,6 +4,7 @@ using MudBlazor;
 using Shouldly;
 using Siren.Components;
 using Siren.Components.Collections;
+using Siren.Components.Http;
 using Siren.Components.Services;
 using Siren.Test.Infrastructure;
 
@@ -14,11 +15,11 @@ public class CurlImportDialogTests : TestContext
     private const string CurlCommand =
         """curl -X POST 'https://api.example.com/users' -H 'Accept: application/json' -d '{"name":"Ada"}'""";
 
-    private readonly SirenAppState _appState = new();
+    private readonly RequestTabsState _tabs;
 
     public CurlImportDialogTests()
     {
-        Services.AddSingleton(_appState);
+        _tabs = this.AddRequestTabs();
         Services.AddSingleton<ICurlImporter, CurlImporter>();
         Services.AddLogging();
         JSInterop.Mode = JSRuntimeMode.Loose;
@@ -44,7 +45,8 @@ public class CurlImportDialogTests : TestContext
 
         await provider.ClickButtonAsync("Import");
 
-        var request = _appState.NetworkRequests.ShouldHaveSingleItem().Request.ShouldNotBeNull();
+        _tabs.Tabs.Count.ShouldBe(2);
+        var request = _tabs.Tabs[^1].Request.ShouldNotBeNull();
         request.RequestUri.ShouldBe("https://api.example.com/users");
         request.Method.ShouldBe(HttpMethod.Post);
         request.RawBody.ShouldBe("""{"name":"Ada"}""");
@@ -57,7 +59,8 @@ public class CurlImportDialogTests : TestContext
 
         await provider.ClickButtonAsync("Import");
 
-        _appState.Active.ShouldNotBeNull().ShouldBeSameAs(_appState.NetworkRequests.Single());
+        _tabs.Active.ShouldBeSameAs(_tabs.Tabs[^1]);
+        _tabs.Active.Request.ShouldNotBeNull().RequestUri.ShouldBe("https://api.example.com/users");
     }
 
     [Fact(DisplayName = "Importing closes the dialog")]
@@ -87,7 +90,7 @@ public class CurlImportDialogTests : TestContext
 
         await provider.ClickButtonAsync("Cancel");
 
-        _appState.NetworkRequests.ShouldBeEmpty();
+        _tabs.Tabs.ShouldHaveSingleItem();
         Snackbar.ShownSnackbars.ShouldBeEmpty();
     }
 }

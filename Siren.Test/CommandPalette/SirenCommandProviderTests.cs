@@ -4,12 +4,13 @@ using NSubstitute;
 using Siren.Components;
 using Siren.Components.CommandPalette;
 using Siren.Components.Theme;
+using Siren.Test.Infrastructure;
 
 namespace Siren.Test.CommandPalette;
 
 public class SirenCommandProviderTests
 {
-    private readonly SirenAppState _appState = new();
+    private readonly SirenAppState _appState = TestState.AppState(TestState.Tabs());
     private readonly NavigationManager _nav = Substitute.For<NavigationManager>();
     private readonly SirenCommandProvider _provider;
 

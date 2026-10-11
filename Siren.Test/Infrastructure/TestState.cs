@@ -31,5 +31,5 @@ internal static class TestState
     /// <summary>
     /// The one place tests build a SirenAppState, so its constructor can change without touching every test.
     /// </summary>
-    public static SirenAppState AppState(RequestTabsState tabs) => new();
+    public static SirenAppState AppState(RequestTabsState tabs) => new(tabs);
 }

@@ -17,7 +17,7 @@ public class CollectionsPanelTests : TestContext
     public CollectionsPanelTests()
     {
         Services.AddSingleton<ICollectionsService>(_collections);
-        Services.AddSingleton<SirenAppState>();
+        this.AddRequestTabs();
         Services.AddLogging();
         JSInterop.Mode = JSRuntimeMode.Loose;
         this.AddMudServicesWithPopover();

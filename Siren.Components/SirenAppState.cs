@@ -1,4 +1,5 @@
 ﻿using MudBlazor;
+using Siren.Components.Http;
 using Siren.Components.Http.Models;
 
 namespace Siren.Components
@@ -36,29 +37,38 @@ namespace Siren.Components
             }
         }
 
-        private SirenNetworkRequest? _active;
+        // The tabs live in RequestTabsState. The members below only keep components that have not
+        // moved to it yet working, and go away once the last of them has moved.
+        private readonly RequestTabsState _tabs;
+
+        public SirenAppState(RequestTabsState tabs)
+        {
+            _tabs = tabs;
+
+            _tabs.TabsChanged += () =>
+            {
+                NetworkRequestsChanged();
+                AppStateChanged();
+            };
+            _tabs.ActiveTabChanged += _ => ActiveNetworkRequestChanged();
+            _tabs.RequestChanged += _ => AppStateChanged();
+            _tabs.ResponseChanged += _ => ActiveNetworkRequestChanged();
+            _tabs.SendingChanged += _ => AppStateChanged();
+        }
 
         public SirenNetworkRequest? Active
         {
-            get => _active;
+            get => _tabs.Active;
             set
             {
-                _active = value;
+                if (value != null)
+                    _tabs.Activate(value.Id);
+
                 ActiveNetworkRequestChanged();
             }
         }
 
-        private List<SirenNetworkRequest>? _networkRequests;
-
-        public List<SirenNetworkRequest> NetworkRequests
-        {
-            get => _networkRequests ??= new();
-            set
-            {
-                _networkRequests = value;
-                NetworkRequestsChanged();
-            }
-        }
+        public List<SirenNetworkRequest> NetworkRequests => _tabs.Tabs.ToList();
 
         public event Action? OnChange;
 
@@ -110,52 +120,23 @@ namespace Siren.Components
 
         public void AddNetworkRequest(SirenNetworkRequest request)
         {
-            if (!NetworkRequests.Any(x => x.Id.Equals(request.Id)))
-            {
-                NetworkRequests.Add(request);
-                NetworkRequestIndexChanged(NetworkRequests.Count - 1);
-            }
-            else
-            {
-                var index = NetworkRequests.FindIndex(x => x.Id.Equals(request.Id));
-                NetworkRequests[index] = request;
-                NetworkRequestIndexChanged(index);
-            }
-
-            SetActive(request);
+            _tabs.Open(request);
+            NetworkRequestIndexChanged(NetworkRequests.FindIndex(x => x.Id.Equals(request.Id)));
+            ActiveNetworkRequestChanged();
         }
 
-        public void RemoveNetworkRequest(Guid id)
-        {
-            bool wasActive = id.Equals(_active?.Id);
-
-            NetworkRequests = NetworkRequests.Where(x => !x.Id.Equals(id)).ToList();
-
-            if (wasActive)
-            {
-                SetActive(NetworkRequests.LastOrDefault());
-            }
-        }
+        public void RemoveNetworkRequest(Guid id) => _tabs.Close(id);
 
         public void SetActive(Guid id)
         {
-            var r = NetworkRequests.FirstOrDefault(x => x.Id.Equals(id));
-
-            Active = r;
-
+            _tabs.Activate(id);
             ActiveNetworkRequestChanged();
         }
 
         public void SetActive(SirenNetworkRequest request)
         {
-            if (request == null)
-            {
-                _active = request;
-                ActiveNetworkRequestChanged();
-                return;
-            }
-
-            SetActive(request.Id);
+            if (request != null)
+                SetActive(request.Id);
         }
 
         public void ToggleSideBar()

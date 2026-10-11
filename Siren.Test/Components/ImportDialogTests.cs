@@ -24,7 +24,7 @@ public class ImportDialogTests : TestContext
     public ImportDialogTests()
     {
         Services.AddSingleton<ICollectionsService>(_collections);
-        Services.AddSingleton<SirenAppState>();
+        this.AddRequestTabs();
         Services.AddLogging();
         JSInterop.Mode = JSRuntimeMode.Loose;
         this.AddMudServicesWithPopover();

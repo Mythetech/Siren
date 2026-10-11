@@ -12,12 +12,9 @@ namespace Siren.Test.Components
 {
     public class HttpMethodChipTests : TestContext
     {
-        private SirenAppState _state;
-
         public HttpMethodChipTests()
         {
-            _state = new();
-            Services.AddSingleton(_state);
+            this.AddRequestTabs();
             this.AddMudServicesWithPopover();
         }
 
