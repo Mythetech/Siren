@@ -196,8 +196,9 @@
 
         var outcome = await Sender.SendAsync(tab.Id);
 
-        // The page may have been left while the request ran, and its fields are gone with it
-        if (_disposed)
+        // The page may have been left while the request ran, and its fields are gone with it. The user
+        // may also be working in another tab by now, and focus must not be pulled out of what they type.
+        if (_disposed || Tabs.Active.Id != tab.Id)
             return;
 
         if (outcome == SendOutcome.MissingMethod)
