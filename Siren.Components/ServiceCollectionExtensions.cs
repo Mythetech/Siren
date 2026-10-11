@@ -76,6 +76,7 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<IVariableSubstitutionService, VariableSubstitutionService>();
         services.AddSingleton<IRequestComposer, RequestComposer>();
+        services.AddSingleton<IRequestSender, RequestSender>();
 
         services.AddSingleton<RequestAuthenticationState>();
 

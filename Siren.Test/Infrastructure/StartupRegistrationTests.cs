@@ -57,6 +57,15 @@ public class StartupRegistrationTests
     }
 
     [Fact]
+    public void AppServices_Register_One_RequestSender_For_The_Whole_App()
+    {
+        var sender = AppServices().Should().ContainSingle(d => d.ServiceType == typeof(IRequestSender)).Which;
+
+        sender.ImplementationType.Should().Be(typeof(RequestSender));
+        sender.Lifetime.Should().Be(ServiceLifetime.Singleton);
+    }
+
+    [Fact]
     public void McpServices_Log_To_StandardError_Because_Stdout_Carries_The_Protocol()
     {
         var services = new ServiceCollection();
