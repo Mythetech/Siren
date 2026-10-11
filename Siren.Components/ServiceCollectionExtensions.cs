@@ -75,6 +75,7 @@ public static class ServiceCollectionExtensions
         services.AddSecretManagerFramework();
 
         services.AddSingleton<IVariableSubstitutionService, VariableSubstitutionService>();
+        services.AddSingleton<IRequestComposer, RequestComposer>();
 
         services.AddSingleton<RequestAuthenticationState>();
 

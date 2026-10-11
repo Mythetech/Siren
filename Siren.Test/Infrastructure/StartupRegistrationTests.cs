@@ -50,6 +50,13 @@ public class StartupRegistrationTests
     }
 
     [Fact]
+    public void AppServices_Register_The_RequestComposer()
+    {
+        AppServices().Should().ContainSingle(d => d.ServiceType == typeof(IRequestComposer))
+            .Which.ImplementationType.Should().Be(typeof(RequestComposer));
+    }
+
+    [Fact]
     public void McpServices_Log_To_StandardError_Because_Stdout_Carries_The_Protocol()
     {
         var services = new ServiceCollection();
