@@ -152,7 +152,8 @@ namespace Siren.Components.Services
 
             var actualRequestHeaders = CaptureActualRequestHeaders(httpRequestMessage, client);
 
-            var remoteAddress = await ResolveRemoteAddressAsync(uri.Host);
+            // The lookup takes the token too, or a resolver that hangs would hold the request past Cancel and its limit
+            var remoteAddress = await ResolveRemoteAddressAsync(uri.Host, ct);
             var localAddress = GetLocalAddress();
 
             var stopwatch = Stopwatch.StartNew();
@@ -252,12 +253,30 @@ namespace Siren.Components.Services
             return result;
         }
 
-        private async Task<string?> ResolveRemoteAddressAsync(string host)
+        protected internal virtual Task<IPAddress[]> ResolveHostAsync(string host, CancellationToken ct)
+            => Dns.GetHostAddressesAsync(host, ct);
+
+        private async Task<string?> ResolveRemoteAddressAsync(string host, CancellationToken ct)
         {
             try
             {
-                var addresses = await Dns.GetHostAddressesAsync(host);
-                return addresses.FirstOrDefault()?.ToString();
+                // On macOS and Linux the system resolver cannot be interrupted once it has started, so the
+                // request stops waiting for it when it is cancelled or out of time, and the lookup ends on its own
+                var addresses = await LookUpAsync(host, ct).WaitAsync(ct);
+                return addresses?.FirstOrDefault()?.ToString();
+            }
+            catch (OperationCanceledException)
+            {
+                return null;
+            }
+        }
+
+        // Never fails, so a lookup that nobody is waiting for any more cannot end in an exception nobody sees
+        private async Task<IPAddress[]?> LookUpAsync(string host, CancellationToken ct)
+        {
+            try
+            {
+                return await ResolveHostAsync(host, ct);
             }
             catch (Exception ex)
             {

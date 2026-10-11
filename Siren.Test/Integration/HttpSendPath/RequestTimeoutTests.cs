@@ -127,6 +127,31 @@ public class RequestTimeoutTests : IClassFixture<EchoHostFixture>
         }
     }
 
+    [Fact(DisplayName = "The timeout also applies while the host name is looked up")]
+    public async Task Timeout_DuringHostLookup_ReturnsTimeoutError()
+    {
+        var result = await new HangingLookupClient()
+            .SendHttpRequestAsync(Get($"{_host.BaseUrl}/echo", TimeSpan.FromMilliseconds(200)), CancellationToken.None)
+            .WaitAsync(TestLimit);
+
+        result.Error.ShouldBeOfType<TimeoutException>();
+    }
+
+    [Fact(DisplayName = "Cancelling while the host name is looked up returns an error result")]
+    public async Task Cancel_DuringHostLookup_ReturnsErrorResult()
+    {
+        var client = new HangingLookupClient();
+        using var cancellation = new CancellationTokenSource();
+
+        var send = client.SendHttpRequestAsync(Get($"{_host.BaseUrl}/echo"), cancellation.Token);
+        await client.LookupStarted.WaitAsync(TestLimit);
+        await cancellation.CancelAsync();
+
+        var result = await send.WaitAsync(TestLimit);
+
+        result.Error.ShouldBeAssignableTo<OperationCanceledException>();
+    }
+
     [Theory(DisplayName = "A zero, negative or oversized timeout means no limit")]
     [InlineData(0)]
     [InlineData(-5)]
