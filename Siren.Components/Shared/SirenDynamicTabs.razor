@@ -5,9 +5,9 @@
 @typeparam T
 
 <SirenDynamicTabBar @ref="@DynamicTabs"
-                AddTab="@AddTabCallback"
-                CloseTab="@CloseTabCallback"
-                ActivePanelIndexChanged="@(async (x) => await TabChanged.InvokeAsync(Items[x]))"
+                AddTab="@HandleAddTab"
+                CloseTab="@HandleCloseTab"
+                ActivePanelIndexChanged="@HandleActivePanelIndexChanged"
                 AddIconToolTip="New Request"
                 AddIconClass="icon-btn-sm"
                 CloseIconToolTip="Close"
@@ -22,34 +22,23 @@
                 ScrollIconColor="MudBlazor.Color.Primary"
                 HeaderContent="@HeaderContent"
                 ApplyEffectsToContainer>
-    @if (Items != null)
+    @foreach (var item in Items)
     {
-        @foreach (var item in Items)
-        {
-            var request = item as SirenNetworkRequest;
-            <MudTabPanel ID="@(request.Id)" ShowCloseIcon="true" Icon="@SirenIcons.Close">
-                <TabContent>
-                    <MudMenu ActivationEvent="MudBlazor.MouseEvent.RightClick" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft" Dense="true" ListClass="pa-1">
-                        <ActivatorContent>
-                            <div @oncontextmenu="@context.ToggleAsync" @oncontextmenu:preventDefault="true" style="display: contents;">
-                                <NetworkRequestTab Request="@request" />
-                            </div>
-                        </ActivatorContent>
-                        <ChildContent>
-                            <MudMenuItem class="rounded-lg" OnClick="@(() => HandleDuplicate(item))">Duplicate</MudMenuItem>
-                        </ChildContent>
-                    </MudMenu>
-                </TabContent>
-            </MudTabPanel>
-
-        }
-    }
-    else
-    {
-        @foreach (var tab in UserTabs)
-        {
-            <MudTabPanel ID="@tab.Id" Text="@tab.Label" ShowCloseIcon="@tab.ShowCloseIcon">@tab.Content</MudTabPanel>
-        }
+        var request = item as SirenNetworkRequest;
+        <MudTabPanel @key="request!.Id" ID="@(request.Id)" ShowCloseIcon="true" Icon="@SirenIcons.Close">
+            <TabContent>
+                <MudMenu ActivationEvent="MudBlazor.MouseEvent.RightClick" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft" Dense="true" ListClass="pa-1">
+                    <ActivatorContent>
+                        <div @oncontextmenu="@context.ToggleAsync" @oncontextmenu:preventDefault="true" style="display: contents;">
+                            <NetworkRequestTab Request="@request" />
+                        </div>
+                    </ActivatorContent>
+                    <ChildContent>
+                        <MudMenuItem class="rounded-lg" OnClick="@(() => HandleDuplicate(item))">Duplicate</MudMenuItem>
+                    </ChildContent>
+                </MudMenu>
+            </TabContent>
+        </MudTabPanel>
     }
 </SirenDynamicTabBar>
 
@@ -61,143 +50,62 @@
     public int Elevation { get; set; } = 4;
 
     [Parameter]
-    public List<T> Items { get; set; } = default!;
-
-    [Parameter]
-    public Func<T, string> ItemLabelDisplayFunc { get; set; } = default!;
-
-    [Parameter]
-    public RenderFragment ItemContentDisplay { get; set; } = default;
+    public IReadOnlyList<T> Items { get; set; } = [];
 
     [Parameter]
     public RenderFragment? HeaderContent { get; set; }
 
     [Parameter]
-    public EventCallback<T> ItemClosed { get; set; } = default;
+    public EventCallback<T> ItemClosed { get; set; }
 
     [Parameter]
-    public EventCallback ItemAdded { get; set; } = default;
+    public EventCallback ItemAdded { get; set; }
 
     [Parameter]
-    public EventCallback<T> TabChanged { get; set; } = default!;
+    public EventCallback<T> TabChanged { get; set; }
 
     [Parameter]
-    public EventCallback<T> TabDuplicated { get; set; } = default!;
+    public EventCallback<T> TabDuplicated { get; set; }
 
     [Parameter]
     public bool Rounded { get; set; } = false;
 
-    public async Task ActivateTab(int index = 0)
+    public MudDynamicTabs DynamicTabs = default!;
+
+    /// <summary>
+    /// The id of the panel the strip shows as active, or null while it shows none.
+    /// </summary>
+    public Guid? ActivePanelId => DynamicTabs?.ActivePanel?.ID as Guid?;
+
+    /// <summary>
+    /// Makes the panel with the given id the active one. Returns false when the strip has no such panel yet.
+    /// </summary>
+    public async Task<bool> ActivateAsync(Guid id)
     {
-        await DynamicTabs.ActivatePanelAsync(DynamicTabs.Panels[index]);
-        StateHasChanged();
+        var panel = DynamicTabs?.Panels.FirstOrDefault(p => Equals(p.ID, id));
+        if (panel == null)
+            return false;
+
+        await DynamicTabs!.ActivatePanelAsync(panel);
+        return true;
     }
 
-    public void ActivateLastTab()
+    private Task HandleAddTab() => ItemAdded.InvokeAsync();
+
+    private Task HandleCloseTab(MudTabPanel panel)
     {
-        ActivateTab(DynamicTabs.Panels.Count - 1);
+        var item = Items.FirstOrDefault(x => Equals((x as SirenNetworkRequest)?.Id, panel.ID));
+        return item is null ? Task.CompletedTask : ItemClosed.InvokeAsync(item);
     }
 
-    public class TabView
+    private Task HandleActivePanelIndexChanged(int index)
     {
-        public string Label { get; set; }
-        public string Content { get; set; }
-        public Guid Id { get; set; }
-        public bool ShowCloseIcon { get; set; } = true;
+        // The strip reports -1 while it has no panel, and can report an index from before a close
+        if (index < 0 || index >= Items.Count)
+            return Task.CompletedTask;
+
+        return TabChanged.InvokeAsync(Items[index]);
     }
 
-    public class TabView<T>
-    {
-        public string Label { get; set; }
-        public T ChildContent { get; set; }
-        public Guid Id { get; set; }
-        public bool ShowCloseIcon { get; set; } = true;
-    }
-
-    public MudDynamicTabs DynamicTabs;
-    public List<TabView> UserTabs { get; set; } = new();
-    public int UserIndex;
-    bool _stateHasChanged;
-    bool _showCloseIcon = false;
-
-    protected override void OnInitialized()
-    {
-
-        base.OnInitialized();
-    }
-
-    protected override void OnAfterRender(bool firstRender)
-    {
-        base.OnAfterRender(firstRender);
-        if (_stateHasChanged)
-        {
-            _stateHasChanged = false;
-            StateHasChanged();
-        }
-    }
-
-    public void AddTab(Guid id, string label = "untitled")
-    {
-        UserTabs.Add(new TabView { Id = id, Label = label, Content = $"" });
-        UserIndex = UserTabs.Count - 1; // Automatically switch to the new tab.
-        _stateHasChanged = true;
-    }
-
-    public void RemoveTab(Guid id)
-    {
-        var tabView = UserTabs.SingleOrDefault((t) => Equals(t.Id, id));
-        if (tabView is not null)
-        {
-            UserTabs.Remove(tabView);
-            _stateHasChanged = true;
-        }
-    }
-
-    public void ItemStateChanged()
-    {
-        _stateHasChanged = true;
-    }
-
-    async Task AddTabCallback()
-    {
-        if (Items == null)
-        {
-            //Dynamic managed mode
-            AddTab(Guid.NewGuid());
-        }
-        else
-        {
-            await ItemAdded.InvokeAsync();
-            await Task.Yield();
-            StateHasChanged();
-            UserIndex = Items.Count;
-            await DynamicTabs.ActivatePanelAsync(DynamicTabs.Panels.Last());
-            _stateHasChanged = true;
-        }
-    }
-
-    async Task CloseTabCallback(MudTabPanel panel)
-    {
-        if (Items == null)
-        {
-            RemoveTab((Guid)panel.ID);
-        }
-        else
-        {
-            var item = Items.FirstOrDefault(x => (x as SirenNetworkRequest).Id.Equals((Guid)panel.ID));
-            await ItemClosed.InvokeAsync(item);
-            await Task.Yield();
-            var replacement = DynamicTabs.ActivePanel;
-            var ri = Items.FirstOrDefault(x => (x as SirenNetworkRequest).Id.Equals((Guid)replacement.ID));
-            await TabChanged.InvokeAsync(ri);
-
-            if (Items.Count == 0)
-                await AddTabCallback();
-        }
-    }
-
-    async Task HandleDuplicate(T item)
-    {
-        await TabDuplicated.InvokeAsync(item);
-    }
+    private Task HandleDuplicate(T item) => TabDuplicated.InvokeAsync(item);
 }
