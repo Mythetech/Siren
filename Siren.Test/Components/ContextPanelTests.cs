@@ -55,6 +55,15 @@ public class ContextPanelTests : TestContext
         PanelIds(cut).ShouldNotContain(SirenPanels.SessionStats);
     }
 
+    [Fact(DisplayName = "The Mock Server entry belongs to the mock server pages")]
+    public void MockServerEntry_BelongsToTheMockServerPages()
+    {
+        var cut = RenderComponent<ContextPanel>();
+
+        var mockServer = cut.FindComponents<RailItem>().Single(item => item.Instance.Id == SirenPanels.MockServer).Instance;
+        mockServer.RoutePrefix.ShouldBe("/mock-server");
+    }
+
     // The layout owns the drawer the rail sits in, so a click that opens a panel has to reach it
     [Fact(DisplayName = "Clicking a panel's entry on the collapsed rail asks the layout to open the drawer")]
     public async Task ClickOnCollapsedRail_AsksTheLayoutToOpenTheDrawer()
