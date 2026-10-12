@@ -64,6 +64,19 @@ public class ContextPanelTests : TestContext
         mockServer.RoutePrefix.ShouldBe("/mock-server");
     }
 
+    // The page that is open and the panel that is open are two states, and the rail must not draw them alike
+    [Fact(DisplayName = "An entry lit for its page is not marked like an entry lit for its open panel")]
+    public void PageEntry_IsNotMarkedLikeAnOpenPanel()
+    {
+        var cut = RenderComponent<ContextPanel>();
+
+        var pageEntries = cut.FindComponents<RailItem>().Select(item => item.Instance)
+            .Where(item => !string.IsNullOrEmpty(item.RoutePrefix)).ToList();
+
+        pageEntries.ShouldNotBeEmpty();
+        pageEntries.ShouldAllBe(item => item.ActiveRouteClass != item.ActivePanelClass);
+    }
+
     // The layout owns the drawer the rail sits in, so a click that opens a panel has to reach it
     [Fact(DisplayName = "Clicking a panel's entry on the collapsed rail asks the layout to open the drawer")]
     public async Task ClickOnCollapsedRail_AsksTheLayoutToOpenTheDrawer()

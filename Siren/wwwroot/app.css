@@ -661,7 +661,17 @@ button:focus {
     margin-left: -0.5px;
 }
 
-/* The lit entry keeps its tint under the pointer, with the hover tint over it */
+/* The page that is open has the tint alone, and the panel that is open has the tint and the edge.
+   Iris and Cerberus draw the two the other way round; Siren's rail is nearly all panels. */
+.siren-page-active {
+    border-radius: 0;
+}
+
+/* A lit entry keeps its tint under the pointer, with the hover tint over it */
+.app-context-icon-bar .context-panel-item-wrapper--fill:has(> .siren-page-active) {
+    background-color: color-mix(in srgb, var(--mud-palette-primary) 15%, transparent 85%);
+}
+
 .app-context-icon-bar .context-panel-item-wrapper--fill:has(> .context-item-active) {
     background-color: color-mix(in srgb, var(--mud-palette-primary) 20%, transparent 80%);
 }
