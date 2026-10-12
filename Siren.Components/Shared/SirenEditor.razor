@@ -38,6 +38,8 @@
 
     [Inject] private ILogger<SirenEditor> Logger { get; set; } = default!;
 
+    [Inject] private SirenAppState AppState { get; set; } = default!;
+
     private StandaloneCodeEditor _editor = default!;
     private EventCallback<ModelContentChangedEvent> _contentChanged;
     private EditorTextSync? _sync;
@@ -78,6 +80,7 @@
             ReadOnly = ReadOnly,
             AutomaticLayout = true,
             Language = "json",
+            Theme = MonacoTheme.For(AppState.IsDarkMode),
             Value = text
         };
     }

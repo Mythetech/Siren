@@ -30,6 +30,7 @@
 <MudDialogProvider />
 <MudSnackbarProvider />
 <GlobalCommandSnackbarProvider />
+<MonacoThemeSync />
 <DialogCommandProvider />
 <JsApiCommandProvider />
 <CommandPaletteHost BackgroundClass="siren-dialog" />
@@ -190,17 +191,9 @@
         await base.OnAfterRenderAsync(firstRender);
     }
 
-    protected async void HandleDarkModeChange(bool isDarkMode)
+    private void HandleDarkModeChange(bool isDarkMode)
     {
-        try
-        {
-            await BlazorMonaco.Editor.Global.SetTheme(JS, isDarkMode ? "vs-dark" : "vs");
-            StateHasChanged();
-        }
-        catch (Exception ex)
-        {
-            Logger.LogWarning(ex, "Failed to set Monaco editor theme");
-        }
+        InvokeAsync(StateHasChanged);
     }
 
     protected async Task OpenSettingsDialog()

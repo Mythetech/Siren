@@ -1,0 +1,54 @@
+@using Microsoft.Extensions.Logging
+@using Microsoft.JSInterop
+@using Mythetech.Framework.Infrastructure.Guards
+@implements IDisposable
+
+@code {
+    [Inject] private SirenAppState AppState { get; set; } = default!;
+
+    [Inject] private IJsGuardService JsGuards { get; set; } = default!;
+
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+
+    [Inject] private ILogger<MonacoThemeSync> Logger { get; set; } = default!;
+
+    private bool _themeIsStale;
+
+    protected override void OnInitialized()
+    {
+        AppState.OnDarkModeChanged += HandleDarkModeChanged;
+    }
+
+    private void HandleDarkModeChanged(bool isDarkMode)
+    {
+        _themeIsStale = true;
+        InvokeAsync(StateHasChanged);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_themeIsStale)
+            return;
+
+        _themeIsStale = false;
+
+        // Startup settles the color mode before Monaco's script has finished loading, and the call
+        // fails without it. Nothing is lost by skipping it: an editor takes the theme when it is created.
+        if (!JsGuards.IsReady("monaco"))
+            return;
+
+        try
+        {
+            await BlazorMonaco.Editor.Global.SetTheme(JS, MonacoTheme.For(AppState.IsDarkMode));
+        }
+        catch (JSException ex)
+        {
+            Logger.LogWarning(ex, "Failed to set the Monaco editor theme");
+        }
+    }
+
+    public void Dispose()
+    {
+        AppState.OnDarkModeChanged -= HandleDarkModeChanged;
+    }
+}
