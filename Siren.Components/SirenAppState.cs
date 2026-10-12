@@ -90,14 +90,6 @@ namespace Siren.Components
                 await OnFormatRequest.Invoke();
         }
 
-        public event Func<string, Task>? OnOpenContextPanel;
-
-        public async Task TriggerOpenContextPanel(string panelName)
-        {
-            if (OnOpenContextPanel != null)
-                await OnOpenContextPanel.Invoke(panelName);
-        }
-
         public event Func<string, Task>? OnOpenRequestContextPanel;
 
         public async Task TriggerOpenRequestContextPanel(string tabName)

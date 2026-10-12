@@ -1,4 +1,5 @@
 ﻿@implements IDisposable
+@using Mythetech.Framework.Components.AppContextDrawer
 @using Mythetech.Framework.Infrastructure.Plugins
 @using Mythetech.Framework.Infrastructure.Plugins.Components
 @using Siren.Components.Settings
@@ -9,113 +10,96 @@
 @using Siren.Components.MockServer
 @using MouseEvent = MudBlazor.MouseEvent
 
-<SirenStack Spacing="1" Class="app-context-panel" Style="" AlignItems="MudBlazor.AlignItems.Center">
-    <SirenIconButton Class="m-1 p-1" Icon="app-icon" OnClick="@OpenAboutSiren" />
+<AppContextDrawer IsOpen="@AppState.SideBarOpen" IsOpenChanged="@HandleDrawerOpenChanged" @bind-ActivePanelId="@_activePanelId"
+                  ShowPluginPanels="false" CloseIcon="@SirenIcons.Close"
+                  ContentClass="" ContentSpacing="0" HeaderClass="pa-2 mb-2" HeaderSpacing="3"
+                  FullWidthItems="true" ItemColor="Color.Inherit" TooltipColor="Color.Default">
+    <IconBarHeader>
+        <SirenIconButton Class="m-1 p-1" Icon="app-icon" OnClick="@OpenAboutSiren" />
+    </IconBarHeader>
 
-    @*Side bar Panel*@
-    <ContextPanelItem Active="@(_activeItem?.Title == "History")" @ref="@_contextPanelItems["History"]" Title="History"
-        Icon="@SirenIcons.History" ContextPanelItemClicked="HandleContextPanelItemClicked">
-        <PanelContent>
-            <HistoryPanel IsDarkMode="@IsDarkMode" />
-        </PanelContent>
-    </ContextPanelItem>
-    <ContextPanelItem Active="@(_activeItem?.Title == "Collections")" @ref="@_contextPanelItems["Collections"]"
-        Title="Collections" Icon="@SirenIcons.Collections" ContextPanelItemClicked="HandleContextPanelItemClicked">
-        <PanelContent>
-            <CollectionsPanel />
-        </PanelContent>
-    </ContextPanelItem>
-    <ContextPanelItem Active="@(_activeItem?.Title == "Variables")" @ref="@_contextPanelItems["Variables"]"
-        Title="Variables" Icon="@SirenIcons.Variables" ContextPanelItemClicked="HandleContextPanelItemClicked">
-        <PanelContent>
-            <VariablesPanel />
-        </PanelContent>
-    </ContextPanelItem>
-    <ContextPanelItem Active="@(_activeItem?.Title == "Mock Server")" @ref="@_contextPanelItems["Mock Server"]"
-        Title="Mock Server" Icon="@SirenIcons.MockServer" ContextPanelItemClicked="HandleContextPanelItemClicked">
-        <PanelContent>
-            <MockServerPanel />
-        </PanelContent>
-    </ContextPanelItem>
-    @if (SessionStatsSettings.ShowSessionStats)
-    {
-        <ContextPanelItem Active="@(_activeItem?.Title == "Session Stats")" @ref="@_contextPanelItems["Session Stats"]"
-            Title="Session Stats" Icon="@SirenIcons.Stats" ContextPanelItemClicked="HandleContextPanelItemClicked">
+    <PanelNavContent>
+        <ContextPanelItem Id="@SirenPanels.History" Title="History" Icon="@SirenIcons.History">
             <PanelContent>
-                <SessionStatsPanel />
+                <HistoryPanel IsDarkMode="@IsDarkMode" />
             </PanelContent>
         </ContextPanelItem>
-    }
-    @if (Plugins.PluginsActive && Plugins.EnabledPlugins.Any(x => x.ContextPanelComponents.Count > 0))
-    {
-        <MudDivider Class="my-1" Style="max-height: 2px;" />
-        @foreach (var plugin in Plugins.EnabledPlugins.Where(x => x.ContextPanelComponents.Count > 0))
+        <ContextPanelItem Id="@SirenPanels.Collections" Title="Collections" Icon="@SirenIcons.Collections">
+            <PanelContent>
+                <CollectionsPanel />
+            </PanelContent>
+        </ContextPanelItem>
+        <ContextPanelItem Id="@SirenPanels.Variables" Title="Variables" Icon="@SirenIcons.Variables">
+            <PanelContent>
+                <VariablesPanel />
+            </PanelContent>
+        </ContextPanelItem>
+        <ContextPanelItem Id="@SirenPanels.MockServer" Title="Mock Server" Icon="@SirenIcons.MockServer"
+                          RoutePrefix="/mock-server" ActiveRouteClass="siren-page-active">
+            <PanelContent>
+                <MockServerPanel />
+            </PanelContent>
+        </ContextPanelItem>
+        @if (SessionStatsSettings.ShowSessionStats)
         {
-            @foreach (var component in plugin.ContextPanelComponentsMetadata)
+            <ContextPanelItem Id="@SirenPanels.SessionStats" Title="Session Stats" Icon="@SirenIcons.Stats">
+                <PanelContent>
+                    <SessionStatsPanel />
+                </PanelContent>
+            </ContextPanelItem>
+        }
+        @if (Plugins.PluginsActive && Plugins.EnabledPlugins.Any(x => x.ContextPanelComponents.Count > 0))
+        {
+            <MudDivider Class="my-1" Style="max-height: 2px;" />
+            @foreach (var plugin in Plugins.EnabledPlugins.Where(x => x.ContextPanelComponents.Count > 0))
             {
-                <ContextPanelItem Active="@(_activeItem?.Title == component.Title)" @ref="@_contextPanelItems[component.Title]"
-                    Title="@component.Title" Icon="@(component.Icon)" ContextPanelItemClicked="HandleContextPanelItemClicked">
-                    <PanelContent>
-                       <PluginGuard Metadata="component" PluginInfo="plugin">
-                            <DynamicComponent Type="component.ComponentType" />
-                       </PluginGuard>                   
-                    </PanelContent>
-                </ContextPanelItem>
+                @foreach (var component in plugin.ContextPanelComponentsMetadata)
+                {
+                    <ContextPanelItem @key="component.ComponentType" Id="@($"plugin-{component.ComponentType.FullName}")"
+                                      Title="@component.Title" Icon="@component.Icon">
+                        <PanelContent>
+                            <PluginGuard Metadata="component" PluginInfo="plugin">
+                                <DynamicComponent Type="component.ComponentType" />
+                            </PluginGuard>
+                        </PanelContent>
+                    </ContextPanelItem>
+                }
             }
         }
-    }
-    <MudSpacer />
+    </PanelNavContent>
 
-    <MudMenu ActivationEvent="MouseEvent.MouseOver" AnchorOrigin="Origin.TopRight">
-        <ActivatorContent>
+    <PanelFooterContent>
+        <MudMenu ActivationEvent="MouseEvent.MouseOver" AnchorOrigin="Origin.TopRight">
+            <ActivatorContent>
                 <MudIconButton Icon="@(AppState.IsDarkMode? SirenIcons.DarkMode: SirenIcons.LightMode)"
-                    Color="Color.Primary" Variant="Variant.Text" OnClick="@DarkModeToggled" />
-        </ActivatorContent>
-        <ChildContent>
-            <MudToggleGroup T="string" Size="Size.Small" Value="@SelectedColorMode"
-                ValueChanged="HandleColorModeChanged" Style="align-items: center">
-                <ToggleIcon Value="light" Icon="@SirenIcons.LightMode" Text="Light Mode" />
-                <ToggleIcon Value="dark" Icon="@SirenIcons.DarkMode" Text="Dark Mode" />
-                <ToggleIcon Value="system" Icon="@SirenIcons.Round("laptop")" Text="System Default" />
-            </MudToggleGroup>
-        </ChildContent>
-    </MudMenu>
-    <MudTooltip Text="Settings" Placement="Placement.Right">
-        <MudIconButton Color="Color.Primary" Icon="@SirenIcons.Settings" OnClick="OpenSettingsDialog" />
-    </MudTooltip>
+                               Color="Color.Primary" Variant="Variant.Text" OnClick="@DarkModeToggled" />
+            </ActivatorContent>
+            <ChildContent>
+                <MudToggleGroup T="string" Size="Size.Small" Value="@SelectedColorMode"
+                                ValueChanged="HandleColorModeChanged" Style="align-items: center">
+                    <ToggleIcon Value="light" Icon="@SirenIcons.LightMode" Text="Light Mode" />
+                    <ToggleIcon Value="dark" Icon="@SirenIcons.DarkMode" Text="Dark Mode" />
+                    <ToggleIcon Value="system" Icon="@SirenIcons.Round("laptop")" Text="System Default" />
+                </MudToggleGroup>
+            </ChildContent>
+        </MudMenu>
+        <MudTooltip Text="Settings" Placement="Placement.Right">
+            <MudIconButton Color="Color.Primary" Icon="@SirenIcons.Settings" OnClick="OpenSettingsDialog" />
+        </MudTooltip>
 
-    <MudIconButton Icon="@(AppState.SideBarOpen? SirenIcons.CollapseLeft: SirenIcons.ExpandRight)" Color="Color.Inherit"
-        OnClick="@DrawerToggled" />
-</SirenStack>
+        <MudIconButton Icon="@(AppState.SideBarOpen? SirenIcons.CollapseLeft: SirenIcons.ExpandRight)" Color="Color.Inherit"
+                       OnClick="@DrawerToggled" />
+    </PanelFooterContent>
 
-<MudStack Class="p-0 mud-width-full" Style="@($"overflow:hidden;transition:width 0.2s ease;{(!AppState.SideBarOpen ? "width:0px;" : "")}")">
-    <MudPaper Class="h-100 w-100"
-        Style="@($"max-width:calc(var(--mud-drawer-width-left) - var(--mud-drawer-width-mini-left));max-height:100dvh")"
-        Square="true">
-        <SirenStack Spacing="0" Class="w-100 h-100">
-            @if (_activeItem != null)
-            {
-                <SirenStack Row="true" Class="w-100 pa-2 mb-2" Spacing="3" AlignItems="AlignItems.Center">
-                    <SirenIcon Icon="@_activeItem.Icon" Color="Color.Primary" />
-                    <SirenText Typo="Typo.h6">@_activeItem.Title</SirenText>
-                    <SirenSpacer />
-                    <SirenIconButton Tooltip="Close" Icon="@SirenIcons.Close" Variant="Variant.Text"
-                        OnClick="@CloseContextPanel" />
-                </SirenStack>
-                @_activeItem.PanelContent
-            }
-            else
-            {
-                <SirenStack Row="true" Class="w-100 pa-4">
-                    <SirenText Typo="Typo.subtitle1">No Item Selected</SirenText>
-                    <SirenSpacer />
-                    <MudIconButton Icon="@SirenIcons.Close" Variant="Variant.Text" OnClick="@CloseContextPanel" />
-                </SirenStack>
-                <SirenText Typo="Typo.subtitle2" Class="mud-text-secondary">Select an item from the side menu</SirenText>
-            }
+    <EmptyContent>
+        <SirenStack Row="true" Class="w-100 pa-4">
+            <SirenText Typo="Typo.subtitle1">No Item Selected</SirenText>
+            <SirenSpacer />
+            <MudIconButton Icon="@SirenIcons.Close" Variant="Variant.Text" OnClick="@DrawerToggled" />
         </SirenStack>
-    </MudPaper>
-</MudStack>
+        <SirenText Typo="Typo.subtitle2" Class="mud-text-secondary">Select an item from the side menu</SirenText>
+    </EmptyContent>
+</AppContextDrawer>
 
 @code {
     [Inject]
@@ -139,15 +123,9 @@
     [Parameter]
     public EventCallback DrawerToggled { get; set; }
 
-    [Parameter]
-    public string DrawerBackgroundColor { get; set; } = "background-color:#FFFFFF";
-
     private string SelectedColorMode => AppState.IsDarkMode ? "dark" : "light";
 
-    private ContextPanelItem? _activeItem;
-
-    private Dictionary<string, ContextPanelItem>
-    _contextPanelItems = new();
+    private string? _activePanelId;
 
     protected async Task HandleColorModeChanged(string s)
     {
@@ -178,12 +156,16 @@
     }
     protected void SideBarChanged()
     {
-        if (AppState.SideBarOpen)
-        {
-            _activeItem = null;
-        }
+        InvokeAsync(StateHasChanged);
+    }
 
-        StateHasChanged();
+    // The layout owns the MudDrawer this rail sits in, so it is the layout that has to open or close it
+    private async Task HandleDrawerOpenChanged(bool isOpen)
+    {
+        if (AppState.SideBarOpen != isOpen)
+        {
+            await DrawerToggled.InvokeAsync();
+        }
     }
 
     public void Dispose()
@@ -191,32 +173,6 @@
         AppState.OnChange -= SideBarChanged;
         Plugins.StateChanged -= PluginStateChanged;
         Settings.SettingsChanged -= SettingsStateChanged;
-    }
-
-    protected async Task CloseContextPanel()
-    {
-        if (AppState.SideBarOpen)
-        {
-            await DrawerToggled.InvokeAsync();
-            _activeItem = null;
-            StateHasChanged();
-        }
-    }
-
-    protected async Task HandleContextPanelItemClicked(ContextPanelItem item)
-    {
-        if (!AppState.SideBarOpen)
-        {
-            await DrawerToggled.InvokeAsync();
-        }
-        else if (_activeItem?.Title == item.Title)
-        {
-            _activeItem = null;
-            await DrawerToggled.InvokeAsync();
-        }
-        
-        _activeItem = item;
-        StateHasChanged();
     }
 
     protected async Task OpenSettingsDialog()
@@ -243,18 +199,5 @@
 
         var dialog = await DialogService.ShowAsync<AboutSiren>("About", options);
         var result = await dialog.Result;
-    }
-
-    public async Task OpenHistoryPanel() => await OpenPanel("History");
-    public async Task OpenCollectionsPanel() => await OpenPanel("Collections");
-    public async Task OpenVariablesPanel() => await OpenPanel("Variables");
-    public async Task OpenMockServerPanel() => await OpenPanel("Mock Server");
-
-    private async Task OpenPanel(string panelName)
-    {
-        if (_contextPanelItems.TryGetValue(panelName, out var item))
-        {
-            await HandleContextPanelItemClicked(item);
-        }
     }
 }

@@ -1,5 +1,8 @@
 using Microsoft.AspNetCore.Components;
+using Mythetech.Framework.Components.AppContextDrawer.Commands;
 using Mythetech.Framework.Components.CommandPalette;
+using Mythetech.Framework.Infrastructure.MessageBus;
+using Siren.Components.AppContextPanel;
 using Siren.Components.Http;
 using Siren.Components.Theme;
 
@@ -11,9 +14,11 @@ public sealed class SirenCommandProvider : ICommandProvider
     private readonly NavigationManager _nav;
     private readonly RequestTabsState _tabs;
     private readonly IRequestSender _sender;
+    private readonly IMessageBus _bus;
 
-    public SirenCommandProvider(SirenAppState appState, NavigationManager nav, RequestTabsState tabs, IRequestSender sender)
+    public SirenCommandProvider(SirenAppState appState, NavigationManager nav, RequestTabsState tabs, IRequestSender sender, IMessageBus bus)
     {
+        _bus = bus;
         _appState = appState;
         _nav = nav;
         _tabs = tabs;
@@ -49,7 +54,7 @@ public sealed class SirenCommandProvider : ICommandProvider
                 Description: "Ctrl+Shift+H",
                 Icon: SirenIcons.History,
                 Keywords: ["history", "past", "recent", "log"],
-                InvokeAsync: _ => _appState.TriggerOpenContextPanel("History"),
+                InvokeAsync: _ => _bus.PublishAsync(new ActivatePanel(SirenPanels.History)),
                 Group: "Panels"),
 
             new(
@@ -58,7 +63,7 @@ public sealed class SirenCommandProvider : ICommandProvider
                 Description: "Ctrl+Shift+C",
                 Icon: SirenIcons.Collections,
                 Keywords: ["collections", "saved", "folders", "organize"],
-                InvokeAsync: _ => _appState.TriggerOpenContextPanel("Collections"),
+                InvokeAsync: _ => _bus.PublishAsync(new ActivatePanel(SirenPanels.Collections)),
                 Group: "Panels"),
 
             new(
@@ -67,7 +72,7 @@ public sealed class SirenCommandProvider : ICommandProvider
                 Description: "Ctrl+Shift+V",
                 Icon: SirenIcons.Variables,
                 Keywords: ["variables", "environment", "env", "substitution"],
-                InvokeAsync: _ => _appState.TriggerOpenContextPanel("Variables"),
+                InvokeAsync: _ => _bus.PublishAsync(new ActivatePanel(SirenPanels.Variables)),
                 Group: "Panels"),
 
             new(
@@ -76,7 +81,7 @@ public sealed class SirenCommandProvider : ICommandProvider
                 Description: null,
                 Icon: SirenIcons.MockServer,
                 Keywords: ["mock", "server", "panel", "sidebar"],
-                InvokeAsync: _ => _appState.TriggerOpenContextPanel("Mock Server"),
+                InvokeAsync: _ => _bus.PublishAsync(new ActivatePanel(SirenPanels.MockServer)),
                 Group: "Panels"),
 
             new(

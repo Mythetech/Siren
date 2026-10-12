@@ -1,7 +1,10 @@
 using FluentAssertions;
 using Microsoft.AspNetCore.Components;
+using Mythetech.Framework.Components.AppContextDrawer.Commands;
+using Mythetech.Framework.Infrastructure.MessageBus;
 using NSubstitute;
 using Siren.Components;
+using Siren.Components.AppContextPanel;
 using Siren.Components.CommandPalette;
 using Siren.Components.Http;
 using Siren.Components.Theme;
@@ -15,12 +18,13 @@ public class SirenCommandProviderTests
     private readonly SirenAppState _appState;
     private readonly TestNavigationManager _nav = new();
     private readonly IRequestSender _sender = Substitute.For<IRequestSender>();
+    private readonly IMessageBus _bus = Substitute.For<IMessageBus>();
     private readonly SirenCommandProvider _provider;
 
     public SirenCommandProviderTests()
     {
         _appState = TestState.AppState();
-        _provider = new SirenCommandProvider(_appState, _nav, _tabs, _sender);
+        _provider = new SirenCommandProvider(_appState, _nav, _tabs, _sender, _bus);
     }
 
     // The real NavigationManager is abstract and refuses to work until it is given a base address
@@ -41,6 +45,18 @@ public class SirenCommandProviderTests
     {
         var commands = await _provider.GetCommandsAsync("", CancellationToken.None);
         await commands.Single(c => c.Id == commandId).InvokeAsync(CancellationToken.None);
+    }
+
+    [Theory]
+    [InlineData("panel.history", SirenPanels.History)]
+    [InlineData("panel.collections", SirenPanels.Collections)]
+    [InlineData("panel.variables", SirenPanels.Variables)]
+    [InlineData("panel.mock-server", SirenPanels.MockServer)]
+    public async Task PanelCommand_AsksTheDrawerToShowItsPanel(string commandId, string panelId)
+    {
+        await InvokeAsync(commandId);
+
+        await _bus.Received(1).PublishAsync(new ActivatePanel(panelId));
     }
 
     [Fact]
