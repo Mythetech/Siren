@@ -3,6 +3,7 @@ using BlazorMonaco.Editor;
 using Bunit;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
+using Siren.Components;
 using Siren.Components.Shared;
 using Siren.Test.Infrastructure;
 
@@ -15,9 +16,12 @@ public class SirenEditorTests : TestContext
     private const string SetValue = "blazorMonaco.editor.setValue";
     private const string SetEventListener = "blazorMonaco.editor.setEventListener";
 
+    private readonly SirenAppState _appState = TestState.AppState();
+
     public SirenEditorTests()
     {
         Services.AddLogging();
+        Services.AddSingleton(_appState);
         this.AddReadyJsGuards();
         JSInterop.Mode = JSRuntimeMode.Loose;
         this.AddMudServicesWithPopover();
@@ -38,6 +42,19 @@ public class SirenEditorTests : TestContext
         var options = (JsonElement)JSInterop.Invocations[Create].ShouldHaveSingleItem().Arguments[1]!;
         options.GetProperty("value").GetString().ShouldBe("""{"name":"Ada"}""");
         JSInterop.Invocations[SetValue].ShouldBeEmpty();
+    }
+
+    [Theory(DisplayName = "A new editor takes the theme of the app's color mode")]
+    [InlineData(true, "vs-dark")]
+    [InlineData(false, "vs")]
+    public void NewEditor_TakesTheAppsColorMode(bool isDarkMode, string theme)
+    {
+        _appState.IsDarkMode = isDarkMode;
+
+        RenderComponent<SirenEditor>();
+
+        var options = (JsonElement)JSInterop.Invocations[Create].ShouldHaveSingleItem().Arguments[1]!;
+        options.GetProperty("theme").GetString().ShouldBe(theme);
     }
 
     [Fact(DisplayName = "A change in the editor is reported with the document it belongs to")]
