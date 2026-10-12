@@ -484,7 +484,7 @@ else
             AutomaticLayout = true,
             Language = "json",
             Value = _selectedEndpoint?.Response.Body ?? "{}",
-            Theme = "vs-dark",
+            Theme = MonacoTheme.For(AppState.IsDarkMode),
             Minimap = new EditorMinimapOptions { Enabled = false },
             FontSize = 13,
             LineNumbers = "on",
