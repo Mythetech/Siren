@@ -15,9 +15,11 @@
 @using Siren.Components.AppContextPanel
 @using Siren.Components.Configuration
 @using Microsoft.Extensions.Logging
+@using Mythetech.Framework.Components.AppContextDrawer.Commands
 @using Mythetech.Framework.Components.CommandPalette
 @using Mythetech.Framework.Infrastructure
 @using Mythetech.Framework.Infrastructure.Initialization
+@using Mythetech.Framework.Infrastructure.MessageBus
 @using Mythetech.Framework.Infrastructure.Plugins
 @using Mythetech.Framework.Infrastructure.Settings
 @using Microsoft.AspNetCore.Components.Routing
@@ -53,10 +55,9 @@
         </div>
     </Hermes.Blazor.Components.HermesTitleBar>
     <MudDrawer @bind-Open="@AppState.SideBarOpen" Variant="DrawerVariant.Mini" Style="overflow: hidden;">
-        <ContextPanel @ref="_contextPanel" IsDarkMode="@AppState.IsDarkMode" DrawerBackgroundColor="@_backgroundColor"
+        <ContextPanel IsDarkMode="@AppState.IsDarkMode"
                       DrawerToggled="@(() => AppState.ToggleSideBar())"
                       DarkModeToggled="@(() => AppState.IsDarkMode = !AppState.IsDarkMode)" />
-        <div class="@($"resizer {(!AppState.SideBarOpen ? "d-none" : "")}")"></div>
     </MudDrawer>
     <MudMainContent Class="pl-2 pr-1 mud-height-full mud-width-full" Style="overflow:hidden;">
         @Body
@@ -64,9 +65,9 @@
     <NativeMenuDispatcher />
     <NativeMenuStateUpdater />
     <Siren.Components.NativeMenu.Consumers.MenuCommandProvider />
-    <SirenKeyCodeProvider OnOpenSettings="OpenSettingsDialog" OnOpenHistory="@(() => _contextPanel?.OpenHistoryPanel())"
-                          OnOpenCollections="@(() => _contextPanel?.OpenCollectionsPanel())"
-                          OnOpenVariables="@(() => _contextPanel?.OpenVariablesPanel())" OnGoToRequests="NavigateToHome"
+    <SirenKeyCodeProvider OnOpenSettings="OpenSettingsDialog" OnOpenHistory="@(() => ShowPanelAsync(SirenPanels.History))"
+                          OnOpenCollections="@(() => ShowPanelAsync(SirenPanels.Collections))"
+                          OnOpenVariables="@(() => ShowPanelAsync(SirenPanels.Variables))" OnGoToRequests="NavigateToHome"
                           OnGoToMockServer="NavigateToMockServer" />
 </MudLayout>
 
@@ -95,6 +96,8 @@
 
     [Inject] protected PluginState PluginState { get; set; } = default!;
 
+    [Inject] protected IMessageBus Bus { get; set; } = default!;
+
     [Inject] protected IPluginAssetLoader PluginLoader { get; set; } = default!;
 
     [Inject] protected ILogger<MainLayout> Logger { get; set; } = default!;
@@ -110,14 +113,9 @@
 
     protected MudThemeProvider _theme { get; set; } = default!;
 
-    private ContextPanel? _contextPanel;
-
     public bool _isDarkMode = false;
     
     private bool _assetsLoaded = false;
-
-    private string _backgroundColor => (!AppState.IsDarkMode ? $"background-color:{_theme.Theme.PaletteLight.OverlayLight}"
-    : $"background-color:{_theme.Theme.PaletteDark.Black}");
 
     private MudTheme Theme { get; } = new SirenTheme();
 
@@ -129,7 +127,6 @@
     {
         AppState.OnDarkModeChanged += HandleDarkModeChange;
         AppState.OnActiveEnvironmentChanged += HandleActiveEnvironmentChanged;
-        AppState.OnOpenContextPanel += HandleOpenContextPanel;
         AppState.OnOpenSettings += HandleOpenSettings;
         VariableState.StateChanged += HandleVariableStateChanged;
         PluginState.StateChanged += OnPluginStateChanged;
@@ -277,27 +274,7 @@
         InvokeAsync(StateHasChanged);
     }
 
-    private async Task HandleOpenContextPanel(string panelName)
-    {
-        await InvokeAsync(async () =>
-        {
-            switch (panelName)
-            {
-                case "History":
-                    if (_contextPanel != null) await _contextPanel.OpenHistoryPanel();
-                    break;
-                case "Collections":
-                    if (_contextPanel != null) await _contextPanel.OpenCollectionsPanel();
-                    break;
-                case "Variables":
-                    if (_contextPanel != null) await _contextPanel.OpenVariablesPanel();
-                    break;
-                case "Mock Server":
-                    if (_contextPanel != null) await _contextPanel.OpenMockServerPanel();
-                    break;
-            }
-        });
-    }
+    private Task ShowPanelAsync(string panelId) => Bus.PublishAsync(new ActivatePanel(panelId));
 
     private async Task HandleOpenSettings()
     {
@@ -318,7 +295,6 @@
     {
         AppState.OnDarkModeChanged -= HandleDarkModeChange;
         AppState.OnActiveEnvironmentChanged -= HandleActiveEnvironmentChanged;
-        AppState.OnOpenContextPanel -= HandleOpenContextPanel;
         AppState.OnOpenSettings -= HandleOpenSettings;
         VariableState.StateChanged -= HandleVariableStateChanged;
         PluginState.StateChanged -= OnPluginStateChanged;

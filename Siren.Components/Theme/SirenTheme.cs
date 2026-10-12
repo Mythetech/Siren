@@ -17,6 +17,7 @@ namespace Siren.Components.Theme
                 AppbarBackground = SirenColors.AppBarBackground,
                 Black = SirenColors.Black,
                 Surface = "FFFFFF",
+                DrawerBackground = "FFFFFF",
                 ActionDefault = SirenColors.Primary,
                 ActionDisabled = SirenColors.ActionDisabled,
                 TableHover = SirenColors.Tertiary,
@@ -33,6 +34,7 @@ namespace Siren.Components.Theme
                 Background = SirenColors.Black,
                 Black = SirenColors.Black,
                 Surface = SirenColors.Black,
+                DrawerBackground = SirenColors.Black,
                 ActionDefault = SirenColors.Primary,
                 GrayDarker = "#222"
             };

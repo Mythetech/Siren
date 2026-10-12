@@ -1,6 +1,6 @@
 ﻿@page "/"
 @page "/index"
-@implements IAsyncDisposable
+@implements IDisposable
 @using Siren.Components.Theme
 @using Siren.Components.Shared
 @using Siren.Components.Shared.Notifications
@@ -84,8 +84,6 @@
 
     [Inject] protected ISmokeTestContext SmokeTest { get; set; } = default!;
 
-    private IJSObjectReference? _module;
-
     private MudSplitPanel _outerSplitter = default!;
 
     private RequestPanel _requestPanel = default!;
@@ -152,8 +150,6 @@
     {
         if (firstRender)
         {
-            _module = await JS.InvokeAsync<IJSObjectReference>("import", "./app.js");
-
             // The packaged builds CI smoke tests count as installed, so without this a smoke run would query the
             // release feed and could offer an update.
             if (!SmokeTest.IsEnabled)
@@ -207,25 +203,13 @@
             await _requestPanel.FocusUriInputAsync();
     }
 
-    public async ValueTask DisposeAsync()
+    public void Dispose()
     {
         _disposed = true;
 
         AppState.OnAppStateChanged -= HandleAppStateChanged;
         AppState.OnFormatRequest -= HandleFormatRequest;
         AppState.OnOpenRequestContextPanel -= HandleOpenRequestContextPanel;
-
-        if (_module == null)
-            return;
-
-        try
-        {
-            await _module.DisposeAsync();
-        }
-        catch (JSDisconnectedException)
-        {
-            // The WebView has already gone, and the module went with it
-        }
     }
 
 }

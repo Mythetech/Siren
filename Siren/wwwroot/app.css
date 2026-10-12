@@ -251,12 +251,6 @@ a, .btn-link {
     color: #00001A !important;
 }
 
-.context-item-active {
-    border-radius: 0%;
-    border-right: solid 2px var(--mud-palette-primary);
-    background-color: color-mix(in srgb, var(--mud-palette-primary) 20%, transparent 80%);
-}
-
 .siren-app-short-tabs {
     height: 38px;
     max-width: 100%;
@@ -646,19 +640,36 @@ button:focus {
     border-radius: 1em;
 }
 
-.app-context-panel {
-    height: 100%;
-    min-width: var(--mud-drawer-width-mini-left);
-    max-width: var(--mud-drawer-width-mini-left);
-    overflow: hidden;
+/* The drawer's icon bar in Siren's colors: the Framework's fades into secondary and has a primary edge */
+.app-context-icon-bar {
     background: linear-gradient(360deg, var(--mud-palette-tertiary), var(--mud-palette-surface));
     border-right: solid 1px var(--mud-palette-tertiary);
-    /*padding-right: 0.05em;*/
+    padding: 0;
 }
 
-.mud-nav-item {
-    max-width: var(--mud-drawer-width-mini-left);
+/* An entry's icon starts 16 px in, where the rail's links have always put it */
+.app-context-icon-bar .context-panel-item-wrapper--fill button {
+    justify-content: flex-start;
+    padding-left: 16px;
 }
+
+/* An entry that is not lit is as wide as the rail with its edge and centred on the rail's inside,
+   as the old links were. That is half a pixel off the grid, for its icon and for its tooltip. */
+.app-context-icon-bar .context-panel-item-wrapper--fill .mud-tooltip-root {
+    flex: none;
+    width: var(--mud-drawer-width-mini-left);
+    margin-left: -0.5px;
+}
+
+/* The lit entry keeps its tint under the pointer, with the hover tint over it */
+.app-context-icon-bar .context-panel-item-wrapper--fill:has(> .context-item-active) {
+    background-color: color-mix(in srgb, var(--mud-palette-primary) 20%, transparent 80%);
+}
+
+.app-context-icon-bar .context-panel-item-wrapper--fill > .context-item-active:not(:hover) {
+    background-color: transparent;
+}
+
 .mud-toggle-group-horizontal:not(.mud-toggle-group-rtl)>.mud-toggle-item:not(:first-child).mud-toggle-item-delimiter, .mud-toggle-group-horizontal:not(.mud-toggle-group-rtl)>:not(:first-child) .mud-toggle-item.mud-toggle-item-delimiter {
     border-left: 0px;
 }
@@ -723,16 +734,6 @@ button:focus {
 
 .mud-icon-button {
     padding: 8px;
-}
-
-.resizer {
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 10px;
-    height: 100%;
-    cursor: ew-resize;
-    z-index: 1;
 }
 
 .max-w-160 {
