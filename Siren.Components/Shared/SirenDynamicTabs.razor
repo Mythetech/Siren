@@ -100,11 +100,15 @@
 
     private Task HandleActivePanelIndexChanged(int index)
     {
-        // The strip reports -1 while it has no panel, and can report an index from before a close
-        if (index < 0 || index >= Items.Count)
+        // The strip removes a closed panel only after a call into the browser, so for a moment its panels and
+        // Items can disagree. The panel at the index says which tab is meant; a place in Items does not.
+        var panels = DynamicTabs?.Panels;
+        if (panels == null || index < 0 || index >= panels.Count)
             return Task.CompletedTask;
 
-        return TabChanged.InvokeAsync(Items[index]);
+        var id = panels[index].ID;
+        var item = Items.FirstOrDefault(x => Equals((x as SirenNetworkRequest)?.Id, id));
+        return item is null ? Task.CompletedTask : TabChanged.InvokeAsync(item);
     }
 
     private Task HandleDuplicate(T item) => TabDuplicated.InvokeAsync(item);
