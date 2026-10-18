@@ -9,8 +9,9 @@ public readonly record struct EditorTextChange(Guid DocumentId, string Text);
 
 /// <summary>
 /// Keeps an editor and the model that owns its text in step. Every change is read straight away, so
-/// the text is on its way to the model before any later click or hotkey is handled, and each read is
-/// credited to the document that was loaded when the read was issued.
+/// the text is on its way to the model before any later click or hotkey is handled. Each read is
+/// credited to the document that was loaded when it was issued, and dropped if that document has been
+/// loaded again since.
 /// </summary>
 public sealed class EditorTextSync
 {
@@ -19,7 +20,10 @@ public sealed class EditorTextSync
     private readonly Func<EditorTextChange, Task> _changed;
     private readonly ILogger _logger;
 
+    private readonly Dictionary<Guid, int> _lastLoadOf = new();
+
     private Task _reads = Task.CompletedTask;
+    private Task _readsBeforeLeaving = Task.CompletedTask;
     private bool _reading;
     private bool _changedDuringRead;
     private int _loads;
@@ -80,9 +84,15 @@ public sealed class EditorTextSync
         if (documentId == DocumentId && text == LastKnownText)
             return Task.CompletedTask;
 
+        // A keystroke in the document being left may not have been reported yet. The editor runs calls
+        // in the order they are sent, so a read sent before the write still holds that document's text.
+        if (documentId != DocumentId)
+            ReadBeforeLeaving();
+
         // The switch and the write are issued together so that every read issued earlier is known
         // to hold the previous load's text, whenever it completes
         _loads++;
+        _lastLoadOf[documentId] = _loads;
         DocumentId = documentId;
         LastKnownText = text;
         return _write(text);
@@ -91,7 +101,28 @@ public sealed class EditorTextSync
     /// <summary>
     /// Completes when every read issued so far has completed and been reported.
     /// </summary>
-    public Task FlushAsync() => _reads;
+    public Task FlushAsync() => Task.WhenAll(_reads, _readsBeforeLeaving);
+
+    private void ReadBeforeLeaving()
+    {
+        var documentId = DocumentId;
+        var load = _loads;
+        var knownText = LastKnownText;
+        var read = ReadAsync();
+        _readsBeforeLeaving = ReportReadBeforeLeavingAsync(FlushAsync(), read, documentId, load, knownText);
+    }
+
+    private async Task ReportReadBeforeLeavingAsync(Task earlier, Task<string?> read, Guid documentId, int load, string knownText)
+    {
+        // Reports keep the order the reads were sent in, and this read was sent after every earlier one
+        await earlier;
+        var text = await read;
+
+        if (text == null || text == knownText || WasLoadedSince(documentId, load))
+            return;
+
+        await _changed(new EditorTextChange(documentId, text));
+    }
 
     private async Task ReadUntilQuietAsync()
     {
@@ -106,7 +137,7 @@ public sealed class EditorTextSync
                 var load = _loads;
                 var text = await ReadAsync();
 
-                if (text == null)
+                if (text == null || WasLoadedSince(documentId, load))
                     continue;
 
                 if (load == _loads)
@@ -126,6 +157,10 @@ public sealed class EditorTextSync
             _reading = false;
         }
     }
+
+    // A load of the same document replaced its text after the read was sent, so the read holds text that is gone
+    private bool WasLoadedSince(Guid documentId, int load)
+        => _lastLoadOf.TryGetValue(documentId, out var lastLoad) && lastLoad > load;
 
     private async Task<string?> ReadAsync()
     {

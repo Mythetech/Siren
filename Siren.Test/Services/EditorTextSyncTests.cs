@@ -12,6 +12,7 @@ public class EditorTextSyncTests
     private readonly List<TaskCompletionSource<string?>> _reads = [];
     private readonly List<string> _writes = [];
     private readonly List<EditorTextChange> _changes = [];
+    private readonly List<string> _calls = [];
     private int _readsInFlight;
     private int _mostReadsInFlight;
 
@@ -20,6 +21,7 @@ public class EditorTextSyncTests
         text,
         read: () =>
         {
+            _calls.Add("read");
             var read = new TaskCompletionSource<string?>();
             _reads.Add(read);
             _mostReadsInFlight = Math.Max(_mostReadsInFlight, ++_readsInFlight);
@@ -27,6 +29,7 @@ public class EditorTextSyncTests
         },
         write: text =>
         {
+            _calls.Add($"write {text}");
             _writes.Add(text);
             return Task.CompletedTask;
         },
@@ -74,8 +77,9 @@ public class EditorTextSyncTests
         var sync = CreateSync();
 
         await sync.LoadAsync(Second, "loaded");
+        CompleteRead(0, "");
         var notified = sync.NotifyChangedAsync();
-        CompleteRead(0, "loaded");
+        CompleteRead(1, "loaded");
         await notified;
 
         _changes.ShouldBeEmpty();
@@ -128,8 +132,8 @@ public class EditorTextSyncTests
         sync.LastKnownText.ShouldBe("second body");
     }
 
-    [Fact(DisplayName = "A read issued before the same document is loaded again is still reported")]
-    public async Task ReadIssuedBeforeReload_IsReported()
+    [Fact(DisplayName = "A read sent before its document is loaded again is dropped")]
+    public async Task ReadIssuedBeforeReload_IsDropped()
     {
         var sync = CreateSync();
 
@@ -139,7 +143,7 @@ public class EditorTextSyncTests
         CompleteRead(0, "first body, typed");
         await notified;
 
-        _changes.ShouldBe([new EditorTextChange(First, "first body, typed")]);
+        _changes.ShouldBeEmpty();
         sync.LastKnownText.ShouldBe("stale first body");
     }
 
@@ -243,5 +247,60 @@ public class EditorTextSyncTests
 
         _changes.ShouldBeEmpty();
         sync.LastKnownText.ShouldBe("body");
+    }
+
+    [Fact(DisplayName = "A switch reads the document being left before writing the next one")]
+    public async Task Switch_ReadsLeavingDocumentFirst()
+    {
+        var sync = CreateSync("first body");
+
+        await sync.LoadAsync(Second, "second body");
+        CompleteRead(0, "first body, typed");
+        await sync.FlushAsync();
+
+        _calls.ShouldBe(["read", "write second body"]);
+        _changes.ShouldBe([new EditorTextChange(First, "first body, typed")]);
+    }
+
+    [Fact(DisplayName = "The read before a switch reports nothing when the text being left did not change")]
+    public async Task Switch_UnchangedText_ReportsNothing()
+    {
+        var sync = CreateSync("first body");
+
+        await sync.LoadAsync(Second, "second body");
+        CompleteRead(0, "first body");
+        await sync.FlushAsync();
+
+        _changes.ShouldBeEmpty();
+    }
+
+    [Fact(DisplayName = "The read before a switch is reported after the reads sent before it")]
+    public async Task Switch_ReadIsReportedInOrder()
+    {
+        var sync = CreateSync();
+
+        var notified = sync.NotifyChangedAsync();
+        await sync.LoadAsync(Second, "second body");
+        CompleteRead(1, "first body, typed twice");
+        CompleteRead(0, "first body, typed");
+        await notified;
+        await sync.FlushAsync();
+
+        _changes.Select(change => change.Text).ShouldBe(["first body, typed", "first body, typed twice"]);
+    }
+
+    [Fact(DisplayName = "A read sent before the document's request is replaced is dropped")]
+    public async Task ReadIssuedBeforeReplace_IsDropped()
+    {
+        var sync = CreateSync("old body");
+
+        var notified = sync.NotifyChangedAsync();
+        await sync.LoadAsync(First, "replaced body");
+        CompleteRead(0, "old body, typed");
+        await notified;
+
+        _changes.ShouldBeEmpty();
+        sync.LastKnownText.ShouldBe("replaced body");
+        _writes.ShouldBe(["replaced body"]);
     }
 }
