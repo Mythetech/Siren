@@ -1413,18 +1413,6 @@ button:focus {
     height: calc(100dvh);
 }
 
-/* The title bar is drawn over dialogs. One that opens at the top of the window, like the command palette,
-   gets the window below the bar, or its top edge would be under it. */
-.mud-dialog-container.mud-dialog-topcenter {
-    top: 38px;
-    height: calc(100% - 38px);
-}
-
-/* It starts lower by the height of the bar, so it can be that much less tall */
-.mud-dialog-container.mud-dialog-topcenter > .mud-dialog {
-    max-height: calc(100dvh - var(--mud-appbar-height) - 38px);
-}
-
 .mud-drawer-transition {
     transition: width 225ms cubic-bezier(0, 0, 0.2, 1);
 }
