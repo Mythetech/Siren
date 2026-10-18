@@ -1,0 +1,37 @@
+@inherits ErrorBoundaryBase
+
+@if (CurrentException is null)
+{
+    @ChildContent
+}
+else
+{
+    <MudAlert Severity="Severity.Error" Dense="true" Class="ma-2">
+        <SirenStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
+            <SirenText Typo="Typo.body2">@($"Something went wrong in the {Area}.")</SirenText>
+            <SirenButton Variant="Variant.Text" Color="Color.Error" OnClick="Recover">Try again</SirenButton>
+        </SirenStack>
+    </MudAlert>
+}
+
+@code {
+    [Inject]
+    private ILogger<SirenErrorBoundary> Logger { get; set; } = default!;
+
+    /// <summary>
+    /// The part of the window the boundary guards, as the alert names it, such as "request panel".
+    /// </summary>
+    [Parameter, EditorRequired]
+    public string Area { get; set; } = "";
+
+    /// <summary>
+    /// Whether the alert is showing in place of the content.
+    /// </summary>
+    public bool ShowsError => CurrentException is not null;
+
+    protected override Task OnErrorAsync(Exception exception)
+    {
+        Logger.LogError(exception, "Unhandled error in the {Area}", Area);
+        return Task.CompletedTask;
+    }
+}
