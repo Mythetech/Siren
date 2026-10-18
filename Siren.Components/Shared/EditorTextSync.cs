@@ -114,14 +114,22 @@ public sealed class EditorTextSync
 
     private async Task ReportReadBeforeLeavingAsync(Task earlier, Task<string?> read, Guid documentId, int load, string knownText)
     {
-        // Reports keep the order the reads were sent in, and this read was sent after every earlier one
-        await earlier;
+        // Reports keep the order the reads were sent in. WhenAny waits for the earlier ones without taking on their failures.
+        await Task.WhenAny(earlier);
         var text = await read;
 
         if (text == null || text == knownText || WasLoadedSince(documentId, load))
             return;
 
-        await _changed(new EditorTextChange(documentId, text));
+        try
+        {
+            await _changed(new EditorTextChange(documentId, text));
+        }
+        catch (Exception ex)
+        {
+            // The next switch waits on this task, so a failure is logged instead of passed down every later flush
+            _logger.LogWarning(ex, "Failed to report the text of the document being left");
+        }
     }
 
     private async Task ReadUntilQuietAsync()

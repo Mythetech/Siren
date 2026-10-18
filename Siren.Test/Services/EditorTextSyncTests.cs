@@ -13,6 +13,7 @@ public class EditorTextSyncTests
     private readonly List<string> _writes = [];
     private readonly List<EditorTextChange> _changes = [];
     private readonly List<string> _calls = [];
+    private bool _failNextChange;
     private int _readsInFlight;
     private int _mostReadsInFlight;
 
@@ -35,6 +36,12 @@ public class EditorTextSyncTests
         },
         changed: change =>
         {
+            if (_failNextChange)
+            {
+                _failNextChange = false;
+                throw new InvalidOperationException("model broke");
+            }
+
             _changes.Add(change);
             return Task.CompletedTask;
         },
@@ -302,5 +309,20 @@ public class EditorTextSyncTests
         _changes.ShouldBeEmpty();
         sync.LastKnownText.ShouldBe("replaced body");
         _writes.ShouldBe(["replaced body"]);
+    }
+
+    [Fact(DisplayName = "A report before a switch that fails does not stop later switches from reporting")]
+    public async Task FailedReportBeforeSwitch_DoesNotStopLaterReports()
+    {
+        var sync = CreateSync("first body");
+        _failNextChange = true;
+        await sync.LoadAsync(Second, "second body");
+        CompleteRead(0, "first body, typed");
+
+        await sync.LoadAsync(First, "first body");
+        CompleteRead(1, "second body, typed");
+        await sync.FlushAsync();
+
+        _changes.ShouldBe([new EditorTextChange(Second, "second body, typed")]);
     }
 }
