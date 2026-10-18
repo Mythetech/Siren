@@ -20,11 +20,4 @@ public static class QueryParameterModelExtensions
             Enabled = true,
         }).ToList();
     }
-
-    public static Dictionary<string, string> ToSafeDictionary(this IEnumerable<QueryParameterModel> viewModels)
-    {
-        return viewModels
-            .Where(x => !string.IsNullOrWhiteSpace(x.Key) && x.Enabled)
-            .ToDictionary(x => x.Key!, x => x.Value ?? "");
-    }
 }

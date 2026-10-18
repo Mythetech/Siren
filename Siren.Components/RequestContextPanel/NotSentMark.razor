@@ -1,0 +1,14 @@
+@if (Shown)
+{
+    <MudTooltip Text="Not sent: a later row has the same name" RootClass="d-flex align-center">
+        <MudIcon Icon="@SirenIcons.NotSent" Color="Color.Warning" Size="Size.Small" />
+    </MudTooltip>
+}
+
+@code {
+    /// <summary>
+    /// Whether the row this mark sits in is left out of the request.
+    /// </summary>
+    [Parameter]
+    public bool Shown { get; set; }
+}

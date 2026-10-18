@@ -35,14 +35,6 @@ namespace Siren.Components.Http.Models
                 Enabled = true,
             }).ToList();
         }
-
-        [Obsolete("Use HeaderModel directly instead of converting to Dictionary. Headers now support duplicate keys.")]
-        public static Dictionary<string, string> ToSafeDictionary(this IEnumerable<HeaderModel> viewModels)
-        {
-            return viewModels
-                .Where(x => !string.IsNullOrWhiteSpace(x.Key))
-                .ToDictionary(x => x.Key, x => x.Value ?? "");
-        }
     }
 }
 

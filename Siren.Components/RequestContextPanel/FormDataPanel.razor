@@ -35,6 +35,7 @@
                     <EditTemplate>
                         <SirenStack Row="true" Class="w-100 hover-zone">
                             <MudTextField Value="@context.Item.Key" ValueChanged="@((string? key) => SetKey(context.Item, key))"/>
+                            <NotSentMark Shown="@formDataEntries.IsShadowed(context.Item)" />
                             <SirenSpacer/>
                             <SirenIconButton OnClick="@(async () =>
                                                       {

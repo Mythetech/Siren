@@ -1,3 +1,4 @@
+using AngleSharp.Dom;
 using Bunit;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
@@ -7,6 +8,7 @@ using Mythetech.Framework.Infrastructure.Files;
 using NSubstitute;
 using Shouldly;
 using Siren.Components.Http;
+using Siren.Components.Http.Models;
 using Siren.Components.RequestContextPanel;
 using Siren.Components.Services;
 using Siren.Components.Shared;
@@ -47,6 +49,30 @@ public class RequestBodyPanelsTests : TestContext
         var button = cut.FindComponents<SirenIconButton>().Single(b => b.Instance.Tooltip == tooltip);
         return button.Find("button").ClickAsync(new MouseEventArgs());
     }
+
+    private IRenderedFragment RenderFormPanel(RequestBodyType bodyType) => bodyType == RequestBodyType.MultipartFormData
+        ? RenderComponent<MultipartFormDataPanel>(p => p.Add(x => x.NetworkRequest, _tabs.Active))
+        : RenderComponent<FormDataPanel>(p => p.Add(x => x.NetworkRequest, _tabs.Active));
+
+    private static Task AddFieldAsync(IRenderedFragment cut, RequestBodyType bodyType)
+    {
+        var tooltip = bodyType == RequestBodyType.MultipartFormData ? "Add Form Field" : "Add Form Data Entry";
+        var button = cut.FindComponents<SirenIconButton>().Single(b => b.Instance.Tooltip == tooltip);
+        return button.Find("button").ClickAsync(new MouseEventArgs());
+    }
+
+    private static IReadOnlyList<DictionaryViewModel> FormRows(IRenderedFragment cut)
+        => (cut.FindComponent<MudDataGrid<DictionaryViewModel>>().Instance.Items ?? []).ToList();
+
+    private static IEnumerable<bool> Marks(IRenderedFragment cut)
+        => cut.FindComponents<NotSentMark>().Select(mark => mark.Instance.Shown);
+
+    /// <summary>
+    /// The text boxes of the form rows in reading order: each row's name, then its value.
+    /// </summary>
+    private static IReadOnlyList<IElement> CellInputs(IRenderedFragment cut)
+        => cut.FindComponent<MudDataGrid<DictionaryViewModel>>().FindAll("input")
+            .Where(input => input.GetAttribute("type") == "text").ToList();
 
     [Fact(DisplayName = "Adding a form field stores it on the tab through the state")]
     public async Task FormData_AddField_StoresOnTab()
@@ -93,5 +119,48 @@ public class RequestBodyPanelsTests : TestContext
         var attachment = _tabs.Active.Request.ShouldNotBeNull().BinaryAttachments.ShouldHaveSingleItem();
         attachment.FileName.ShouldBe(Path.GetFileName(_file));
         _requestChanges.ShouldBe(1);
+    }
+
+    [Theory(DisplayName = "Adding two fields keeps both rows and sends the last")]
+    [InlineData(RequestBodyType.FormData)]
+    [InlineData(RequestBodyType.MultipartFormData)]
+    public async Task TwoAdds_KeepBothRows(RequestBodyType bodyType)
+    {
+        var cut = RenderFormPanel(bodyType);
+
+        await AddFieldAsync(cut, bodyType);
+        await AddFieldAsync(cut, bodyType);
+
+        FormRows(cut).Count.ShouldBe(2);
+        _tabs.Active.Request.ShouldNotBeNull().FormData.ShouldBe(new Dictionary<string, string> { ["Key"] = "Value" });
+    }
+
+    [Theory(DisplayName = "The earlier of two rows with one name is marked as not sent")]
+    [InlineData(RequestBodyType.FormData)]
+    [InlineData(RequestBodyType.MultipartFormData)]
+    public async Task EarlierRow_IsMarked(RequestBodyType bodyType)
+    {
+        var cut = RenderFormPanel(bodyType);
+
+        await AddFieldAsync(cut, bodyType);
+        await AddFieldAsync(cut, bodyType);
+
+        Marks(cut).ShouldBe([true, false]);
+    }
+
+    [Theory(DisplayName = "Renaming the later row clears the mark")]
+    [InlineData(RequestBodyType.FormData)]
+    [InlineData(RequestBodyType.MultipartFormData)]
+    public async Task RenamingLaterRow_ClearsMark(RequestBodyType bodyType)
+    {
+        var cut = RenderFormPanel(bodyType);
+        await AddFieldAsync(cut, bodyType);
+        await AddFieldAsync(cut, bodyType);
+
+        await CellInputs(cut)[2].ChangeAsync(new ChangeEventArgs { Value = "Other" });
+
+        Marks(cut).ShouldBe([false, false]);
+        _tabs.Active.Request.ShouldNotBeNull().FormData
+            .ShouldBe(new Dictionary<string, string> { ["Key"] = "Value", ["Other"] = "Value" });
     }
 }
