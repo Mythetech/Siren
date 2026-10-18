@@ -29,12 +29,16 @@
             <MudSplitPanel Horizontal="true" PanelGap="2" Transparent="true" MinPanelSize="150" Class="w-100 h-100">
                 <FirstPanel>
                     <MudPaper Height="100%" Elevation="0" Width="100%">
-                        <RequestPanel @ref="_requestPanel" SendClicked="HandleSendClicked" />
+                        <SirenErrorBoundary @ref="_requestBoundary" Area="request panel">
+                            <RequestPanel @ref="_requestPanel" SendClicked="HandleSendClicked" />
+                        </SirenErrorBoundary>
                     </MudPaper>
                 </FirstPanel>
                 <SecondPanel>
                     <MudPaper Height="100%" Elevation="0" Width="100%">
-                        <ResponsePanel />
+                        <SirenErrorBoundary Area="response panel">
+                            <ResponsePanel />
+                        </SirenErrorBoundary>
                     </MudPaper>
                 </SecondPanel>
             </MudSplitPanel>
@@ -87,6 +91,11 @@
     private MudSplitPanel _outerSplitter = default!;
 
     private RequestPanel _requestPanel = default!;
+
+    private SirenErrorBoundary? _requestBoundary;
+
+    // While the boundary shows its alert the panel is gone, and the reference still points at it
+    private RequestPanel? LiveRequestPanel => _requestBoundary?.ShowsError == true ? null : _requestPanel;
 
     private RequestContextPanel.RequestContextPanel _requestContextPanel = default!;
 
@@ -144,7 +153,7 @@
     }
 
     private Task HandleFormatRequest()
-        => _requestPanel == null ? Task.CompletedTask : InvokeAsync(() => _requestPanel.FormatDocumentAsync());
+        => LiveRequestPanel is { } panel ? InvokeAsync(() => panel.FormatDocumentAsync()) : Task.CompletedTask;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -166,17 +175,17 @@
 
     protected async Task HandleFocusUri()
     {
-        if (_requestPanel != null)
+        if (LiveRequestPanel is { } panel)
         {
-            await _requestPanel.FocusUriInputAsync();
+            await panel.FocusUriInputAsync();
         }
     }
 
     protected async Task HandleFocusMethod()
     {
-        if (_requestPanel != null)
+        if (LiveRequestPanel is { } panel)
         {
-            await _requestPanel.FocusHttpMethodDropdownAsync();
+            await panel.FocusHttpMethodDropdownAsync();
         }
     }
 
@@ -194,13 +203,13 @@
 
         // The page may have been left while the request ran, and its fields are gone with it. The user
         // may also be working in another tab by now, and focus must not be pulled out of what they type.
-        if (_disposed || Tabs.Active.Id != tab.Id)
+        if (_disposed || Tabs.Active.Id != tab.Id || LiveRequestPanel is not { } panel)
             return;
 
         if (outcome == SendOutcome.MissingMethod)
-            await _requestPanel.FocusHttpMethodDropdownAsync();
+            await panel.FocusHttpMethodDropdownAsync();
         else if (outcome is SendOutcome.MissingUrl or SendOutcome.Failed or SendOutcome.TimedOut)
-            await _requestPanel.FocusUriInputAsync();
+            await panel.FocusUriInputAsync();
     }
 
     public void Dispose()
