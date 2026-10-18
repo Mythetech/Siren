@@ -201,7 +201,7 @@
             _headerRowsTabId = Tab.Id;
             _requestHeaders = headers.ToViewModel();
         }
-        else if (!HeaderRowSync.SentHeaders(_requestHeaders).SequenceEqual(headers))
+        else if (!HeaderRowSync.InStep(_requestHeaders, headers))
         {
             _requestHeaders = HeaderRowSync.Merge(_requestHeaders, headers);
         }

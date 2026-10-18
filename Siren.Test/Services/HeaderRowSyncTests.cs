@@ -78,4 +78,26 @@ public class HeaderRowSyncTests
 
         HeaderRowSync.SentHeaders(merged).ShouldBe(headers);
     }
+
+    [Fact(DisplayName = "A header the tab holds with no name adds no row")]
+    public void NamelessHeader_AddsNoRow()
+    {
+        var blank = Row("", "x");
+
+        var merged = HeaderRowSync.Merge([blank], [Header("", "x")]);
+
+        merged.ShouldBe([blank]);
+    }
+
+    [Fact(DisplayName = "Rows are in step with a tab that holds a header no row could send")]
+    public void InStep_IgnoresNamelessHeaders()
+    {
+        HeaderRowSync.InStep([Row("", "x"), Row("X-A", "1")], [Header("", "x"), Header("X-A", "1")]).ShouldBeTrue();
+    }
+
+    [Fact(DisplayName = "A header with no value is in step with a row whose value is empty")]
+    public void HeaderWithoutValue_IsInStepWithEmptyValue()
+    {
+        HeaderRowSync.InStep([Row("X-A", "")], [new KeyValuePair<string, string>("X-A", null!)]).ShouldBeTrue();
+    }
 }

@@ -348,4 +348,19 @@ public class RequestPanelTests : TestContext
             .Select(h => h.Key).ShouldBe(["X-Ab"]));
         _tabs.Active.Request.ShouldNotBeNull().Headers.ShouldBe([new KeyValuePair<string, string>("X-Ab", "1")]);
     }
+
+    [Fact(DisplayName = "A header with no name on the tab keeps one row as the panel renders again")]
+    public async Task NamelessHeader_KeepsOneRow()
+    {
+        _tabs.SetHeaders(_tabs.Active.Id, [new("", "x")]);
+        var cut = RenderComponent<RequestPanel>();
+        await ShowHeadersViewAsync(cut);
+
+        // Typing in the URL bar renders the panel again
+        _tabs.SetUri(_tabs.Active.Id, "https://api.example.com/a");
+        _tabs.SetUri(_tabs.Active.Id, "https://api.example.com/b");
+        await cut.InvokeAsync(() => { });
+
+        HeaderRowKeys(cut).ShouldBe([""]);
+    }
 }

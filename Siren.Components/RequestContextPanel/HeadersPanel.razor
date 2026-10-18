@@ -280,16 +280,18 @@
     // row keeps its place and a row that is blank or switched off, which the tab does not record, stays.
     private void RefreshRows()
     {
+        var headers = NetworkRequest.Request?.Headers ?? [];
+
         if (_rowsTabId != NetworkRequest.Id)
         {
             // Rows that are blank or switched off belong to the tab they were typed in
             _rowsTabId = NetworkRequest.Id;
-            requestHeaders = new();
+            requestHeaders = headers.ToViewModel();
         }
-
-        var headers = NetworkRequest.Request?.Headers ?? [];
-        if (!HeaderRowSync.SentHeaders(requestHeaders).SequenceEqual(headers))
+        else if (!HeaderRowSync.InStep(requestHeaders, headers))
+        {
             requestHeaders = HeaderRowSync.Merge(requestHeaders, headers);
+        }
 
         responseHeaders = NetworkRequest.Response?.Headers?.ToViewModel() ?? new();
         UpdateAllHeaders();

@@ -16,8 +16,15 @@ public static class HeaderRowSync
         .Select(row => new KeyValuePair<string, string>(row.Key!, row.Value ?? ""));
 
     /// <summary>
-    /// Rows for the tab's headers, made from the rows the editor already has. For headers that were changed
-    /// somewhere else; an editor's own edits reach the tab in the handler that makes them.
+    /// Whether the rows send what the tab records. A header the tab holds that no row could send, such as one
+    /// with no name, does not count.
+    /// </summary>
+    public static bool InStep(IEnumerable<HeaderModel> rows, IEnumerable<KeyValuePair<string, string>> headers)
+        => SentHeaders(rows).SequenceEqual(Sendable(headers));
+
+    /// <summary>
+    /// Rows for the tab's headers, made from the rows the editor already has. It is only for headers changed
+    /// somewhere else, because an editor's own edits reach the tab in the handler that makes them.
     /// </summary>
     public static List<HeaderModel> Merge(IReadOnlyList<HeaderModel> rows, IReadOnlyList<KeyValuePair<string, string>> headers)
     {
@@ -28,7 +35,7 @@ public static class HeaderRowSync
             .ToDictionary(group => group.Key, group => new Queue<HeaderModel>(group), StringComparer.OrdinalIgnoreCase);
 
         var merged = new List<HeaderModel>(rows.Count + headers.Count);
-        foreach (var header in headers)
+        foreach (var header in Sendable(headers))
         {
             if (available.TryGetValue(header.Key, out var matches) && matches.TryDequeue(out var row))
             {
@@ -52,6 +59,11 @@ public static class HeaderRowSync
 
         return merged;
     }
+
+    // An imported header with no name can never be sent, and would come back as a new row on every merge
+    private static IEnumerable<KeyValuePair<string, string>> Sendable(IEnumerable<KeyValuePair<string, string>> headers) => headers
+        .Where(header => !string.IsNullOrWhiteSpace(header.Key))
+        .Select(header => new KeyValuePair<string, string>(header.Key, header.Value ?? ""));
 
     private static bool IsSent(HeaderModel row) => !string.IsNullOrWhiteSpace(row.Key) && row.Enabled;
 }
