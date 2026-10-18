@@ -376,4 +376,50 @@ public class RequestSenderTests : IClassFixture<EchoHostFixture>
 
         tab.DisplayText.ShouldBe("");
     }
+
+    [Fact(DisplayName = "A sending subscriber that throws leaves the tab ready to send again")]
+    public async Task ThrowingSendingSubscriber_LeavesTabReady()
+    {
+        var tab = OpenTab(EchoUrl);
+        var thrown = false;
+        _tabs.SendingChanged += changed =>
+        {
+            if (changed.IsSending && !thrown)
+            {
+                thrown = true;
+                throw new InvalidOperationException("subscriber broke");
+            }
+        };
+
+        var first = await SendAsync(tab);
+
+        first.ShouldBe(SendOutcome.Failed);
+        tab.IsSending.ShouldBeFalse();
+        (await SendAsync(tab)).ShouldBe(SendOutcome.Completed);
+    }
+
+    [Fact(DisplayName = "An unexpected error before the send starts is reported as a failure")]
+    public async Task UnexpectedErrorBeforeSend_IsReported()
+    {
+        _bus.PublishAsync(Arg.Any<CommitRequestEdits>()).ThrowsAsync(new InvalidOperationException("editor broke"));
+        var tab = OpenTab(EchoUrl);
+
+        var outcome = await SendAsync(tab);
+
+        outcome.ShouldBe(SendOutcome.Failed);
+        await ShouldHaveNotifiedAsync("The request failed", Severity.Error);
+    }
+
+    [Fact(DisplayName = "A failure after the response is stored leaves the send completed")]
+    public async Task FailureAfterResponse_LeavesSendCompleted()
+    {
+        _stats.OnStatsChanged += () => throw new InvalidOperationException("stats view broke");
+        var tab = OpenTab(EchoUrl);
+
+        var outcome = await SendAsync(tab);
+
+        outcome.ShouldBe(SendOutcome.Completed);
+        tab.Response.ShouldNotBeNull();
+        await ShouldNotHaveNotifiedAsync();
+    }
 }

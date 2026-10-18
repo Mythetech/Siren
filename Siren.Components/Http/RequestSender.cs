@@ -44,6 +44,7 @@ public class RequestSender : IRequestSender
 {
     private const string UrlRequired = "Request URL Required";
     private const string MethodRequired = "HTTP Method Required";
+    private const string RequestFailed = "The request failed";
 
     private static readonly JsonSerializerOptions DisplayJsonOptions = new()
     {
@@ -108,6 +109,7 @@ public class RequestSender : IRequestSender
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error while sending the request in tab {TabId}", tabId);
+            await NotifyFailureAsync();
             return SendOutcome.Failed;
         }
     }
@@ -121,13 +123,14 @@ public class RequestSender : IRequestSender
     private async Task<SendOutcome> SendTabAsync(Guid tabId, HttpRequest template)
     {
         using var cancellation = new CancellationTokenSource();
-        _sending[tabId] = cancellation;
-        _tabs.SetSending(tabId, true);
-
         string? requestUri = null;
 
         try
         {
+            // Inside the try, so the finally clears both even when a SendingChanged subscriber throws
+            _sending[tabId] = cancellation;
+            _tabs.SetSending(tabId, true);
+
             var composed = await _composer.ComposeAsync(template, _appState.ActiveEnvironment);
 
             if (composed.ResolutionErrors.Count > 0)
@@ -153,7 +156,7 @@ public class RequestSender : IRequestSender
             if (!_tabs.SetResponse(tabId, result, ToDisplayText(result.ResponseText)))
                 return SendOutcome.TabClosed;
 
-            _sessionStats.RecordRequest(requestUri, result.StatusCode, result.Duration.TotalMilliseconds);
+            RecordStats(requestUri, result);
             return SendOutcome.Completed;
         }
         catch (Exception ex)
@@ -199,7 +202,7 @@ public class RequestSender : IRequestSender
         if (error is HttpRequestException or SocketException)
             return "Invalid URL or hostname could not be resolved";
 
-        return "The request failed";
+        return RequestFailed;
     }
 
     // A URL typed as host:port, such as localhost:8000/x, parses as an absolute URL whose scheme is the host
@@ -253,6 +256,32 @@ public class RequestSender : IRequestSender
     {
         await NotifyAsync(message, Severity.Error);
         return outcome;
+    }
+
+    // The response is on screen by now, so a failure here is logged and the send still counts as completed
+    private void RecordStats(string requestUri, RequestResult result)
+    {
+        try
+        {
+            _sessionStats.RecordRequest(requestUri, result.StatusCode, result.Duration.TotalMilliseconds);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Could not record the session stats for {RequestUri}", requestUri);
+        }
+    }
+
+    // Called from the last catch of SendAsync, which promises never to throw, so a toast that fails is only logged
+    private async Task NotifyFailureAsync()
+    {
+        try
+        {
+            await NotifyAsync(RequestFailed, Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Could not show the failure notification");
+        }
     }
 
     private Task NotifyAsync(string message, Severity severity)
