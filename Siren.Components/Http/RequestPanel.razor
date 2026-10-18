@@ -190,29 +190,29 @@
 
     private void HandlePanelViewChanged(RequestPanelViewType newView) => _currentPanelView = newView;
 
-    // Rows can be blank or switched off, which the request does not record, so they are kept here
-    // and rebuilt only when the tab changes or its headers stop matching them
+    // Rows can be blank or switched off, which the request does not record, so they are kept here. They
+    // start again for another tab, and follow the tab when its headers were changed somewhere else.
     private List<HeaderModel> HeaderRows()
     {
         var headers = Tab.Request?.Headers ?? [];
 
-        if (_headerRowsTabId != Tab.Id || !SentHeaders(_requestHeaders).SequenceEqual(headers))
+        if (_headerRowsTabId != Tab.Id)
         {
             _headerRowsTabId = Tab.Id;
             _requestHeaders = headers.ToViewModel();
+        }
+        else if (!HeaderRowSync.SentHeaders(_requestHeaders).SequenceEqual(headers))
+        {
+            _requestHeaders = HeaderRowSync.Merge(_requestHeaders, headers);
         }
 
         return _requestHeaders;
     }
 
-    private static IEnumerable<KeyValuePair<string, string>> SentHeaders(IEnumerable<HeaderModel> rows) => rows
-        .Where(h => !string.IsNullOrWhiteSpace(h.Key) && h.Enabled)
-        .Select(h => new KeyValuePair<string, string>(h.Key!, h.Value ?? ""));
-
     private void HandleRequestHeadersChanged(List<HeaderModel> headers)
     {
         _requestHeaders = headers;
-        Tabs.SetHeaders(Tab.Id, SentHeaders(headers));
+        Tabs.SetHeaders(Tab.Id, HeaderRowSync.SentHeaders(headers));
     }
 
     private void HandleQueryParamsUriChanged(string newUri) => Tabs.SetUri(Tab.Id, newUri);

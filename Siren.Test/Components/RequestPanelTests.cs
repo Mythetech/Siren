@@ -299,4 +299,17 @@ public class RequestPanelTests : TestContext
 
         cut.WaitForAssertion(() => FormRows(cut).Select(row => row.Key).ShouldBe(["second"]));
     }
+
+    [Fact(DisplayName = "A blank header row stays when the headers change in the other editor")]
+    public async Task BlankHeaderRow_SurvivesChangeElsewhere()
+    {
+        _tabs.SetHeaders(_tabs.Active.Id, [new("X-A", "1")]);
+        var cut = RenderComponent<RequestPanel>();
+        await ShowHeadersViewAsync(cut);
+        await CellInputs<HeadersEditor>(cut)[0].ChangeAsync(new ChangeEventArgs { Value = "" });
+
+        _tabs.SetHeaders(_tabs.Active.Id, [new("X-B", "2")]);
+
+        cut.WaitForAssertion(() => HeaderRowKeys(cut).ShouldBe(["", "X-B"]));
+    }
 }

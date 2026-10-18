@@ -40,6 +40,9 @@ public class HeadersPanelTests : TestContext
     private static IReadOnlyList<IElement> CellInputs(IRenderedComponent<HeadersPanel> cut)
         => cut.FindAll("input").Where(input => input.GetAttribute("type") == "text").ToList();
 
+    private static List<HeaderModel> Rows(IRenderedComponent<HeadersPanel> cut)
+        => (cut.FindComponent<MudDataGrid<HeaderModel>>().Instance.Items ?? []).ToList();
+
     [Fact(DisplayName = "The panel shows the active tab's header rows")]
     public void Panel_ShowsActiveTabHeaders()
     {
@@ -142,5 +145,32 @@ public class HeadersPanelTests : TestContext
         }
 
         cut.WaitForAssertion(() => RowKeys(cut).ShouldBe(["Key", "Key"]));
+    }
+
+    [Fact(DisplayName = "A header renamed in the other editor is not kept or sent again")]
+    public async Task HeaderRenamedElsewhere_IsNotKept()
+    {
+        _tabs.SetHeaders(_tabs.Active.Id, [new("X-Old", "1")]);
+        var cut = RenderComponent<HeadersPanel>();
+
+        _tabs.SetHeaders(_tabs.Active.Id, [new("X-New", "1")]);
+        cut.WaitForAssertion(() => RowKeys(cut).ShouldBe(["X-New"]));
+
+        await CellInputs(cut)[1].ChangeAsync(new ChangeEventArgs { Value = "2" });
+
+        _tabs.Active.Request.ShouldNotBeNull().Headers.ShouldBe([new KeyValuePair<string, string>("X-New", "2")]);
+    }
+
+    [Fact(DisplayName = "Two rows with one name keep their rows when the headers change elsewhere")]
+    public void RepeatedNames_KeepRows()
+    {
+        _tabs.SetHeaders(_tabs.Active.Id, [new("X", "1"), new("X", "2")]);
+        var cut = RenderComponent<HeadersPanel>();
+        var rows = Rows(cut);
+
+        _tabs.SetHeaders(_tabs.Active.Id, [new("X", "3"), new("X", "4")]);
+
+        cut.WaitForAssertion(() => RowValues(cut).ShouldBe(["3", "4"]));
+        Rows(cut).ShouldBe(rows);
     }
 }

@@ -1,4 +1,5 @@
 ﻿@using Siren.Components.Http
+@using Siren.Components.Http.Headers
 @using Siren.Components.Http.Models
 @implements IDisposable
 @{ RefreshRows(); }
@@ -285,48 +286,11 @@
         }
 
         var headers = NetworkRequest.Request?.Headers ?? [];
-        if (!SentHeaders().SequenceEqual(headers))
-            MergeHeaders(headers);
+        if (!HeaderRowSync.SentHeaders(requestHeaders).SequenceEqual(headers))
+            requestHeaders = HeaderRowSync.Merge(requestHeaders, headers);
 
         responseHeaders = NetworkRequest.Response?.Headers?.ToViewModel() ?? new();
         UpdateAllHeaders();
-    }
-
-    // Only for headers that were changed somewhere else. The panel's own edits reach the tab in the
-    // handler that makes them, so they never get here.
-    private void MergeHeaders(List<KeyValuePair<string, string>> headers)
-    {
-        var newHeaders = headers.ToViewModel();
-        var existingHeadersByKey = new Dictionary<string, HeaderModel>(StringComparer.OrdinalIgnoreCase);
-        foreach (var header in requestHeaders.Where(h => !string.IsNullOrWhiteSpace(h.Key)))
-        {
-            // Two rows can share a name. The first keeps its row, and the merge must not throw while rendering.
-            existingHeadersByKey.TryAdd(header.Key!, header);
-        }
-
-        var mergedHeaders = new List<HeaderModel>();
-
-        foreach (var newHeader in newHeaders)
-        {
-            var keyLower = newHeader.Key?.ToLowerInvariant();
-            if (keyLower != null && existingHeadersByKey.TryGetValue(keyLower, out var existingHeader))
-            {
-                existingHeader.Value = newHeader.Value;
-                mergedHeaders.Add(existingHeader);
-                existingHeadersByKey.Remove(keyLower);
-            }
-            else
-            {
-                mergedHeaders.Add(newHeader);
-            }
-        }
-
-        foreach (var remainingHeader in existingHeadersByKey.Values)
-        {
-            mergedHeaders.Add(remainingHeader);
-        }
-
-        requestHeaders = mergedHeaders;
     }
 
     private void UpdateAllHeaders()
@@ -446,11 +410,7 @@
         UpdateAllHeaders();
     }
 
-    private IEnumerable<KeyValuePair<string, string>> SentHeaders() => requestHeaders
-        .Where(x => !string.IsNullOrWhiteSpace(x.Key) && x.Enabled)
-        .Select(x => new KeyValuePair<string, string>(x.Key!, x.Value ?? ""));
-
-    private void SyncToNetworkRequest() => Tabs.SetHeaders(NetworkRequest.Id, SentHeaders());
+    private void SyncToNetworkRequest() => Tabs.SetHeaders(NetworkRequest.Id, HeaderRowSync.SentHeaders(requestHeaders));
 
 }
 
