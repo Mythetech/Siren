@@ -42,7 +42,7 @@
                             <MudBlazor.PropertyColumn Property="x => x.Key" Title="Key">
                                 <EditTemplate>
                                     <SirenStack Row="true" Class="w-100 hover-zone">
-                                        <MudTextField Value="@context.Item.Key" ValueChanged="@((string? key) => SetKey(context.Item, key))" />
+                                        <MudTextField Value="@context.Item.Key" ValueChanged="@((string? key) => SetKey(context.Item, key))" Immediate="true" />
                                         <NotSentMark Shown="@formDataEntries.IsShadowed(context.Item)" />
                                     </SirenStack>
                                 </EditTemplate>
@@ -51,7 +51,7 @@
                             <MudBlazor.PropertyColumn Property="x => x.Value" Title="Value">
                                 <EditTemplate>
                                     <SirenStack Row="true" Class="w-100 hover-zone">
-                                        <MudTextField Value="@context.Item.Value" ValueChanged="@((string? value) => SetValue(context.Item, value))" />
+                                        <MudTextField Value="@context.Item.Value" ValueChanged="@((string? value) => SetValue(context.Item, value))" Immediate="true" />
                                     </SirenStack>
                                 </EditTemplate>
                             </MudBlazor.PropertyColumn>

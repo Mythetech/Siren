@@ -39,6 +39,7 @@
                             <EditTemplate>
                                 <MudTextField Value="@context.Item.Key"
                                               ValueChanged="@((string? key) => SetKey(context.Item, key))"
+                                              Immediate="true"
                                               Disabled="@context.Item.IsSystemHeader"
                                               Class="w-100"/>
                             </EditTemplate>
@@ -54,6 +55,7 @@
                             <EditTemplate>
                                 <MudTextField Value="@context.Item.Value"
                                               ValueChanged="@((string? value) => SetValue(context.Item, value))"
+                                              Immediate="true"
                                               Disabled="@context.Item.IsSystemHeader"
                                               Class="w-100"/>
                             </EditTemplate>

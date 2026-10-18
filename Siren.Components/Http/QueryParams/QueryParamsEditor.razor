@@ -31,8 +31,9 @@
             <Columns>
                 <MudBlazor.PropertyColumn Property="x => x.Key" Title="Key">
                     <EditTemplate>
-                        <MudTextField @bind-Value="@context.Item.Key"
-                                      OnBlur="@(() => UpdateParameter(context.Item))"
+                        <MudTextField Value="@context.Item.Key"
+                                      ValueChanged="@((string? key) => SetKey(context.Item, key))"
+                                      Immediate="true"
                                       Class="w-100"/>
                     </EditTemplate>
                     <CellTemplate>
@@ -44,8 +45,9 @@
 
                 <MudBlazor.PropertyColumn Property="x => x.Value" Title="Value">
                     <EditTemplate>
-                        <MudTextField @bind-Value="@context.Item.Value"
-                                      OnBlur="@(() => UpdateParameter(context.Item))"
+                        <MudTextField Value="@context.Item.Value"
+                                      ValueChanged="@((string? value) => SetValue(context.Item, value))"
+                                      Immediate="true"
                                       Class="w-100"/>
                     </EditTemplate>
                     <CellTemplate>
@@ -238,6 +240,19 @@
     {
         _queryParams.Add(new QueryParameterModel { Key = "", Value = "" });
         StateHasChanged();
+    }
+
+    // A row and the URL change in the same handler, so no render sees them disagree
+    private Task SetKey(QueryParameterModel row, string? key)
+    {
+        row.Key = key;
+        return SyncToUri();
+    }
+
+    private Task SetValue(QueryParameterModel row, string? value)
+    {
+        row.Value = value;
+        return SyncToUri();
     }
 
     private async Task<DataGridEditFormAction> UpdateParameter(QueryParameterModel model)

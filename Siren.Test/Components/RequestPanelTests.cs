@@ -13,6 +13,7 @@ using Siren.Components.Http;
 using Siren.Components.Http.Commands;
 using Siren.Components.Http.Headers;
 using Siren.Components.Http.Models;
+using Siren.Components.Http.QueryParams;
 using Siren.Components.RequestContextPanel;
 using Siren.Components.RequestContextPanel.Authentication;
 using Siren.Components.Services;
@@ -63,6 +64,12 @@ public class RequestPanelTests : TestContext
     {
         var dropdown = cut.FindComponent<PanelViewDropdown<RequestPanelViewType>>();
         return cut.InvokeAsync(() => dropdown.Instance.ValueChanged.InvokeAsync(RequestPanelViewType.Headers));
+    }
+
+    private static Task ShowQueryParamsViewAsync(IRenderedComponent<RequestPanel> cut)
+    {
+        var dropdown = cut.FindComponent<PanelViewDropdown<RequestPanelViewType>>();
+        return cut.InvokeAsync(() => dropdown.Instance.ValueChanged.InvokeAsync(RequestPanelViewType.QueryParams));
     }
 
     private static IEnumerable<string?> HeaderRowKeys(IRenderedComponent<RequestPanel> cut)
@@ -192,26 +199,13 @@ public class RequestPanelTests : TestContext
         cut.WaitForAssertion(() => cut.FindComponent<HttpRequestMethodDropdown>().Instance.SelectedMethod.ShouldBe("POST"));
     }
 
-    [Fact(DisplayName = "A header edit reaches the tab when it is committed, before the field loses focus")]
-    public async Task HeaderEdit_ReachesTabOnCommit()
-    {
-        _tabs.SetHeaders(_tabs.Active.Id, [new("X-A", "1")]);
-        var cut = RenderComponent<RequestPanel>();
-        await ShowHeadersViewAsync(cut);
-
-        // Enter commits a text box without moving focus, so the browser sends a change and no blur
-        await CellInputs<HeadersEditor>(cut)[1].ChangeAsync(new ChangeEventArgs { Value = "2" });
-
-        _tabs.Active.Request.ShouldNotBeNull().Headers.ShouldBe([new KeyValuePair<string, string>("X-A", "2")]);
-    }
-
     [Fact(DisplayName = "A committed header edit survives the next render of the panel")]
     public async Task CommittedHeaderEdit_SurvivesRender()
     {
         _tabs.SetHeaders(_tabs.Active.Id, [new("X-A", "1")]);
         var cut = RenderComponent<RequestPanel>();
         await ShowHeadersViewAsync(cut);
-        await CellInputs<HeadersEditor>(cut)[1].ChangeAsync(new ChangeEventArgs { Value = "2" });
+        await CellInputs<HeadersEditor>(cut)[1].InputAsync(new ChangeEventArgs { Value = "2" });
 
         // A send starting on the tab renders the panel again
         _tabs.SetSending(_tabs.Active.Id, true);
@@ -229,8 +223,8 @@ public class RequestPanelTests : TestContext
         var cut = RenderComponent<RequestPanel>();
         var rows = FormRows(cut);
 
-        // Tab commits the cell and moves on, which the browser reports as a change and then a blur
-        await CellInputs<MudDataGrid<DictionaryViewModel>>(cut)[0].ChangeAsync(new ChangeEventArgs { Value = "fullName" });
+        // Typing reaches the field as an input, and Tab then moves on, which the browser reports as a blur
+        await CellInputs<MudDataGrid<DictionaryViewModel>>(cut)[0].InputAsync(new ChangeEventArgs { Value = "fullName" });
         await CellInputs<MudDataGrid<DictionaryViewModel>>(cut)[0].BlurAsync(new FocusEventArgs());
         await cut.InvokeAsync(() => { });
 
@@ -238,19 +232,6 @@ public class RequestPanelTests : TestContext
             .ShouldBe(new Dictionary<string, string> { ["fullName"] = "Ada", ["role"] = "admin" });
         // The grid keys a row by its object, so a new object would throw away the cell that has just taken focus
         FormRows(cut).ShouldBe(rows);
-    }
-
-    [Theory(DisplayName = "A form field edit reaches the tab when it is committed, before the field loses focus")]
-    [InlineData(RequestBodyType.FormData)]
-    [InlineData(RequestBodyType.MultipartFormData)]
-    public async Task FormFieldEdit_ReachesTabOnCommit(RequestBodyType bodyType)
-    {
-        ArrangeForm(bodyType, ("name", "Ada"));
-        var cut = RenderComponent<RequestPanel>();
-
-        await CellInputs<MudDataGrid<DictionaryViewModel>>(cut)[1].ChangeAsync(new ChangeEventArgs { Value = "Grace" });
-
-        _tabs.Active.Request.ShouldNotBeNull().FormData.ShouldBe(new Dictionary<string, string> { ["name"] = "Grace" });
     }
 
     [Theory(DisplayName = "A form row whose name was cleared stays in the panel")]
@@ -261,7 +242,7 @@ public class RequestPanelTests : TestContext
         ArrangeForm(bodyType, ("name", "Ada"), ("role", "admin"));
         var cut = RenderComponent<RequestPanel>();
 
-        await CellInputs<MudDataGrid<DictionaryViewModel>>(cut)[0].ChangeAsync(new ChangeEventArgs { Value = "" });
+        await CellInputs<MudDataGrid<DictionaryViewModel>>(cut)[0].InputAsync(new ChangeEventArgs { Value = "" });
         await CellInputs<MudDataGrid<DictionaryViewModel>>(cut)[0].BlurAsync(new FocusEventArgs());
         await cut.InvokeAsync(() => { });
 
@@ -306,10 +287,65 @@ public class RequestPanelTests : TestContext
         _tabs.SetHeaders(_tabs.Active.Id, [new("X-A", "1")]);
         var cut = RenderComponent<RequestPanel>();
         await ShowHeadersViewAsync(cut);
-        await CellInputs<HeadersEditor>(cut)[0].ChangeAsync(new ChangeEventArgs { Value = "" });
+        await CellInputs<HeadersEditor>(cut)[0].InputAsync(new ChangeEventArgs { Value = "" });
 
         _tabs.SetHeaders(_tabs.Active.Id, [new("X-B", "2")]);
 
         cut.WaitForAssertion(() => HeaderRowKeys(cut).ShouldBe(["", "X-B"]));
+    }
+
+    [Fact(DisplayName = "Typing in a header cell reaches the tab before the cell is left")]
+    public async Task HeaderTyping_ReachesTab()
+    {
+        _tabs.SetHeaders(_tabs.Active.Id, [new("X-A", "1")]);
+        var cut = RenderComponent<RequestPanel>();
+        await ShowHeadersViewAsync(cut);
+        var rows = cut.FindComponent<HeadersEditor>().Instance.Headers.ToList();
+
+        await CellInputs<HeadersEditor>(cut)[1].InputAsync(new ChangeEventArgs { Value = "2" });
+
+        _tabs.Active.Request.ShouldNotBeNull().Headers.ShouldBe([new KeyValuePair<string, string>("X-A", "2")]);
+        cut.FindComponent<HeadersEditor>().Instance.Headers.ShouldBe(rows);
+    }
+
+    [Fact(DisplayName = "Typing in a query cell reaches the tab's URL before the cell is left")]
+    public async Task QueryTyping_ReachesTab()
+    {
+        _tabs.SetUri(_tabs.Active.Id, "https://api.example.com/users?tag=a");
+        var cut = RenderComponent<RequestPanel>();
+        await ShowQueryParamsViewAsync(cut);
+
+        await CellInputs<QueryParamsEditor>(cut)[1].InputAsync(new ChangeEventArgs { Value = "b" });
+
+        _tabs.Active.Request.ShouldNotBeNull().RequestUri.ShouldBe("https://api.example.com/users?tag=b");
+    }
+
+    [Fact(DisplayName = "Typing a query value the URL has to escape keeps the row as typed")]
+    public async Task QueryTyping_EscapesInUrlOnly()
+    {
+        _tabs.SetUri(_tabs.Active.Id, "https://api.example.com/search?q=x");
+        var cut = RenderComponent<RequestPanel>();
+        await ShowQueryParamsViewAsync(cut);
+
+        await CellInputs<QueryParamsEditor>(cut)[1].InputAsync(new ChangeEventArgs { Value = "a b&c" });
+
+        _tabs.Active.Request.ShouldNotBeNull().RequestUri.ShouldBe("https://api.example.com/search?q=a%20b%26c");
+        CellInputs<QueryParamsEditor>(cut)[1].GetAttribute("value").ShouldBe("a b&c");
+    }
+
+    [Fact(DisplayName = "Renaming a header one letter at a time leaves only the final name in the side panel")]
+    public async Task HeaderRenamedLetterByLetter_LeavesFinalNameInSidePanel()
+    {
+        _tabs.SetHeaders(_tabs.Active.Id, [new("X", "1")]);
+        var cut = RenderComponent<RequestPanel>();
+        var side = RenderComponent<HeadersPanel>();
+        await ShowHeadersViewAsync(cut);
+
+        foreach (var name in new[] { "X-", "X-A", "X-Ab" })
+            await CellInputs<HeadersEditor>(cut)[0].InputAsync(new ChangeEventArgs { Value = name });
+
+        side.WaitForAssertion(() => (side.FindComponent<MudDataGrid<HeaderModel>>().Instance.Items ?? [])
+            .Select(h => h.Key).ShouldBe(["X-Ab"]));
+        _tabs.Active.Request.ShouldNotBeNull().Headers.ShouldBe([new KeyValuePair<string, string>("X-Ab", "1")]);
     }
 }

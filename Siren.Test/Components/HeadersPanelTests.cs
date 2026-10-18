@@ -87,8 +87,8 @@ public class HeadersPanelTests : TestContext
         _tabs.SetHeaders(_tabs.Active.Id, [new("X-A", "1")]);
         var cut = RenderComponent<HeadersPanel>();
 
-        // The browser reports a cell edit as a change, then a blur when focus leaves the cell
-        await CellInputs(cut)[1].ChangeAsync(new ChangeEventArgs { Value = "2" });
+        // The browser reports each keystroke as an input, then a blur when focus leaves the cell
+        await CellInputs(cut)[1].InputAsync(new ChangeEventArgs { Value = "2" });
         await CellInputs(cut)[1].BlurAsync(new FocusEventArgs());
 
         _tabs.Active.Request.ShouldNotBeNull().Headers.ShouldBe([new KeyValuePair<string, string>("X-A", "2")]);
@@ -101,7 +101,7 @@ public class HeadersPanelTests : TestContext
         _tabs.SetHeaders(_tabs.Active.Id, [new("X-Old", "1")]);
         var cut = RenderComponent<HeadersPanel>();
 
-        await CellInputs(cut)[0].ChangeAsync(new ChangeEventArgs { Value = "X-New" });
+        await CellInputs(cut)[0].InputAsync(new ChangeEventArgs { Value = "X-New" });
         await CellInputs(cut).Single(input => input.GetAttribute("value") == "X-New").BlurAsync(new FocusEventArgs());
 
         _tabs.Active.Request.ShouldNotBeNull().Headers.ShouldBe([new KeyValuePair<string, string>("X-New", "1")]);
@@ -156,7 +156,7 @@ public class HeadersPanelTests : TestContext
         _tabs.SetHeaders(_tabs.Active.Id, [new("X-New", "1")]);
         cut.WaitForAssertion(() => RowKeys(cut).ShouldBe(["X-New"]));
 
-        await CellInputs(cut)[1].ChangeAsync(new ChangeEventArgs { Value = "2" });
+        await CellInputs(cut)[1].InputAsync(new ChangeEventArgs { Value = "2" });
 
         _tabs.Active.Request.ShouldNotBeNull().Headers.ShouldBe([new KeyValuePair<string, string>("X-New", "2")]);
     }
@@ -171,6 +171,19 @@ public class HeadersPanelTests : TestContext
         _tabs.SetHeaders(_tabs.Active.Id, [new("X", "3"), new("X", "4")]);
 
         cut.WaitForAssertion(() => RowValues(cut).ShouldBe(["3", "4"]));
+        Rows(cut).ShouldBe(rows);
+    }
+
+    [Fact(DisplayName = "Typing in a header cell reaches the tab before the cell is left")]
+    public async Task Typing_ReachesTab()
+    {
+        _tabs.SetHeaders(_tabs.Active.Id, [new("X-A", "1")]);
+        var cut = RenderComponent<HeadersPanel>();
+        var rows = Rows(cut);
+
+        await CellInputs(cut)[1].InputAsync(new ChangeEventArgs { Value = "2" });
+
+        _tabs.Active.Request.ShouldNotBeNull().Headers.ShouldBe([new KeyValuePair<string, string>("X-A", "2")]);
         Rows(cut).ShouldBe(rows);
     }
 }

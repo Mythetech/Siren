@@ -157,10 +157,40 @@ public class RequestBodyPanelsTests : TestContext
         await AddFieldAsync(cut, bodyType);
         await AddFieldAsync(cut, bodyType);
 
-        await CellInputs(cut)[2].ChangeAsync(new ChangeEventArgs { Value = "Other" });
+        await CellInputs(cut)[2].InputAsync(new ChangeEventArgs { Value = "Other" });
 
         Marks(cut).ShouldBe([false, false]);
         _tabs.Active.Request.ShouldNotBeNull().FormData
             .ShouldBe(new Dictionary<string, string> { ["Key"] = "Value", ["Other"] = "Value" });
+    }
+
+    [Theory(DisplayName = "Typing in a field reaches the tab before the cell is left")]
+    [InlineData(RequestBodyType.FormData)]
+    [InlineData(RequestBodyType.MultipartFormData)]
+    public async Task Typing_ReachesTabBeforeCellIsLeft(RequestBodyType bodyType)
+    {
+        _tabs.SetFormData(_tabs.Active.Id, new Dictionary<string, string> { ["name"] = "Ada" });
+        var cut = RenderFormPanel(bodyType);
+        var rows = FormRows(cut);
+
+        await CellInputs(cut)[1].InputAsync(new ChangeEventArgs { Value = "Grace" });
+
+        _tabs.Active.Request.ShouldNotBeNull().FormData.ShouldBe(new Dictionary<string, string> { ["name"] = "Grace" });
+        // The grid keys a row by its object, so a new object would throw away the cell being typed in
+        FormRows(cut).ShouldBe(rows);
+    }
+
+    [Theory(DisplayName = "A field whose name is emptied while typing stays and is not sent")]
+    [InlineData(RequestBodyType.FormData)]
+    [InlineData(RequestBodyType.MultipartFormData)]
+    public async Task EmptiedName_StaysAndIsNotSent(RequestBodyType bodyType)
+    {
+        _tabs.SetFormData(_tabs.Active.Id, new Dictionary<string, string> { ["name"] = "Ada", ["role"] = "admin" });
+        var cut = RenderFormPanel(bodyType);
+
+        await CellInputs(cut)[0].InputAsync(new ChangeEventArgs { Value = "" });
+
+        FormRows(cut).Count.ShouldBe(2);
+        _tabs.Active.Request.ShouldNotBeNull().FormData.ShouldBe(new Dictionary<string, string> { ["role"] = "admin" });
     }
 }
