@@ -193,4 +193,12 @@ public class RequestBodyPanelsTests : TestContext
         FormRows(cut).Count.ShouldBe(2);
         _tabs.Active.Request.ShouldNotBeNull().FormData.ShouldBe(new Dictionary<string, string> { ["role"] = "admin" });
     }
+
+    [Fact(DisplayName = "The not sent mark tells a screen reader what it means")]
+    public void NotSentMark_HasTextForScreenReaders()
+    {
+        var cut = RenderComponent<NotSentMark>(p => p.Add(x => x.Shown, true));
+
+        cut.Find(".sr-only").TextContent.ShouldBe("Not sent: a later row has the same name");
+    }
 }

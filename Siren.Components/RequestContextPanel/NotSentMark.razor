@@ -1,11 +1,14 @@
 @if (Shown)
 {
-    <MudTooltip Text="Not sent: a later row has the same name" RootClass="d-flex align-center">
+    <MudTooltip Text="@Explanation" RootClass="d-flex align-center">
         <MudIcon Icon="@SirenIcons.NotSent" Color="Color.Warning" Size="Size.Small" />
+        <span class="sr-only">@Explanation</span>
     </MudTooltip>
 }
 
 @code {
+    private const string Explanation = "Not sent: a later row has the same name";
+
     /// <summary>
     /// Whether the row this mark sits in is left out of the request.
     /// </summary>
