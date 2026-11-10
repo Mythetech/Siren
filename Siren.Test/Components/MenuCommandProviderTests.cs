@@ -137,6 +137,21 @@ public class MenuCommandProviderTests : TestContext
         await _installer.Received(1).ImportFromFileAsync("/plugins/bad.dll");
         await _installer.Received(1).ImportFromFileAsync("/plugins/good.dll");
         await _bus.Received(1).PublishAsync(Arg.Is<AddNotification>(n =>
+            n.Message == "bad.dll: Couldn't load a plugin from that file." && n.Severity == Severity.Error));
+    }
+
+    [Fact(DisplayName = "Import Plugin does not prefix the failure with a file name when only one file was selected")]
+    public async Task ImportPlugin_SingleFileFails_NotifiesWithoutFileName()
+    {
+        _fileOpen.OpenFileAsync(Arg.Any<string>(), Arg.Any<string?>(), true, Arg.Any<FileFilter[]?>())
+            .Returns(["/plugins/bad.dll"]);
+        _installer.ImportFromFileAsync("/plugins/bad.dll")
+            .Returns(new PluginInstallResult(false, [], "Couldn't load a plugin from that file."));
+        var cut = RenderComponent<MenuCommandProvider>();
+
+        await cut.InvokeAsync(() => cut.Instance.Consume(new ImportPlugin()));
+
+        await _bus.Received(1).PublishAsync(Arg.Is<AddNotification>(n =>
             n.Message == "Couldn't load a plugin from that file." && n.Severity == Severity.Error));
     }
 }

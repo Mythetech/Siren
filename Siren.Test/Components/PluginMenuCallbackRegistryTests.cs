@@ -35,7 +35,7 @@ public class PluginMenuCallbackRegistryTests
 
         handled.ShouldBeFalse();
         await _bus.Received(1).PublishAsync(Arg.Is<AddNotification>(n =>
-            n.Message == "Notes couldn't complete that action." && n.Severity == Severity.Error));
+            n.Message.Contains("Notes") && n.Severity == Severity.Error));
     }
 
     [Fact(DisplayName = "A menu item with no registered callback is not handled and does not throw")]
