@@ -140,7 +140,7 @@
                                     ItemId = itemId,
                                     Disabled = item.Disabled,
                                 });
-                                CallbackRegistry.Register(itemId, item.OnClick);
+                                CallbackRegistry.Register(itemId, item.OnClick, plugin.Manifest.Name);
                                 index++;
                             }
                         }

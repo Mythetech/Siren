@@ -10,22 +10,28 @@ namespace Siren.Components.NativeMenu;
 /// </summary>
 public class PluginMenuCallbackRegistry
 {
-    private readonly Dictionary<string, Func<PluginContext, Task>> _callbacks = new();
+    private readonly record struct Entry(Func<PluginContext, Task> Callback, string? PluginName);
+
+    private readonly PluginMenuItemInvoker _invoker;
+    private readonly Dictionary<string, Entry> _callbacks = new();
+
+    public PluginMenuCallbackRegistry(PluginMenuItemInvoker invoker)
+    {
+        _invoker = invoker;
+    }
 
     public void Clear() => _callbacks.Clear();
 
-    public void Register(string itemId, Func<PluginContext, Task> callback)
+    public void Register(string itemId, Func<PluginContext, Task> callback, string? pluginName = null)
     {
-        _callbacks[itemId] = callback;
+        _callbacks[itemId] = new Entry(callback, pluginName);
     }
 
     public async Task<bool> TryInvoke(string itemId, PluginContext context)
     {
-        if (_callbacks.TryGetValue(itemId, out var callback))
-        {
-            await callback(context);
-            return true;
-        }
-        return false;
+        if (!_callbacks.TryGetValue(itemId, out var entry))
+            return false;
+
+        return await _invoker.InvokeAsync(entry.Callback, context, entry.PluginName);
     }
 }

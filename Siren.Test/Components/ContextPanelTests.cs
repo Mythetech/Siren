@@ -1,6 +1,7 @@
 using Bunit;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Mythetech.Framework.Infrastructure.MessageBus;
 using Mythetech.Framework.Infrastructure.Plugins;
 using NSubstitute;
@@ -16,6 +17,7 @@ namespace Siren.Test.Components;
 public class ContextPanelTests : TestContext
 {
     private readonly SessionStatsSettings _sessionStats = new();
+    private readonly PluginState _pluginState = new();
 
     public ContextPanelTests()
     {
@@ -23,7 +25,7 @@ public class ContextPanelTests : TestContext
         Services.AddSingleton(TestState.AppState());
         Services.AddSingleton(TestState.Settings());
         Services.AddSingleton(_sessionStats);
-        Services.AddSingleton(new PluginState());
+        Services.AddSingleton(_pluginState);
         Services.AddSingleton(Substitute.For<IMessageBus>());
         JSInterop.Mode = JSRuntimeMode.Loose;
         this.AddMudServicesWithPopover();
@@ -62,6 +64,20 @@ public class ContextPanelTests : TestContext
 
         var mockServer = cut.FindComponents<RailItem>().Single(item => item.Instance.Id == SirenPanels.MockServer).Instance;
         mockServer.RoutePrefix.ShouldBe("/mock-server");
+    }
+
+    [Fact(DisplayName = "A plugin change raised off the UI thread re-renders the rail without throwing")]
+    public async Task PluginChangeOffUiThread_DoesNotThrow()
+    {
+        var logger = Substitute.For<ILogger<PluginState>>();
+        _pluginState.SetLogger(logger);
+        RenderComponent<ContextPanel>();
+
+        await Task.Run(() => _pluginState.NotifyStateChanged());
+
+        logger.ReceivedCalls()
+            .Where(c => c.GetMethodInfo().Name == "Log" && (LogLevel)c.GetArguments()[0]! == LogLevel.Error)
+            .ShouldBeEmpty();
     }
 
     // The page that is open and the panel that is open are two states, and the rail must not draw them alike

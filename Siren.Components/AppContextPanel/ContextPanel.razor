@@ -144,7 +144,7 @@
         StateHasChanged();
     }
 
-    private void PluginStateChanged(object? sender, EventArgs args) => StateHasChanged();
+    private void PluginStateChanged(object? sender, EventArgs args) => InvokeAsync(StateHasChanged);
 
     private void SettingsStateChanged(SettingsState s) => StateHasChanged();
 

@@ -51,11 +51,11 @@ public class MenuCommandProviderTests : TestContext
         Services.AddSingleton(Substitute.For<IJsApiService>());
         Services.AddSingleton(pluginState);
         Services.AddSingleton<PluginLoader>();
+        Services.AddSingleton<PluginMenuItemInvoker>();
         Services.AddSingleton<PluginMenuCallbackRegistry>();
-        Services.AddSingleton(provider => new PluginContext
+        Services.AddSingleton(_ => new PluginContext
         {
             MessageBus = _bus,
-            Services = provider,
             StateStore = new PluginStateStore(pluginState),
         });
         Services.AddLogging();
