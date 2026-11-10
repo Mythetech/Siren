@@ -110,7 +110,7 @@ public class MenuCommandProviderTests : TestContext
     public async Task ImportPlugin_EachSelectedFileIsImported()
     {
         string[] paths = ["/plugins/a.dll", "/plugins/b.dll"];
-        _fileOpen.OpenFileAsync(Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<bool>(), Arg.Any<FileFilter[]?>()).Returns(paths);
+        _fileOpen.OpenFileAsync(Arg.Any<string>(), Arg.Any<string?>(), true, Arg.Any<FileFilter[]?>()).Returns(paths);
         _installer.ImportFromFileAsync(Arg.Any<string>())
             .Returns(new PluginInstallResult(true, [], string.Empty));
         var cut = RenderComponent<MenuCommandProvider>();
@@ -124,7 +124,7 @@ public class MenuCommandProviderTests : TestContext
     [Fact(DisplayName = "Import Plugin imports the other files and notifies when one fails")]
     public async Task ImportPlugin_OneFails_OthersStillImportAndFailureIsNotified()
     {
-        _fileOpen.OpenFileAsync(Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<bool>(), Arg.Any<FileFilter[]?>())
+        _fileOpen.OpenFileAsync(Arg.Any<string>(), Arg.Any<string?>(), true, Arg.Any<FileFilter[]?>())
             .Returns(["/plugins/bad.dll", "/plugins/good.dll"]);
         _installer.ImportFromFileAsync("/plugins/bad.dll")
             .Returns(new PluginInstallResult(false, [], "Couldn't load a plugin from that file."));

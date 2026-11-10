@@ -349,6 +349,7 @@
         {
             var files = await FileOpenService.OpenFileAsync(
                 title: "Select Plugin DLL",
+                multiSelect: true,
                 filters: [new FileFilter("Plugin DLLs", ["*.dll"])]);
 
             if (files.Length == 0) return;
