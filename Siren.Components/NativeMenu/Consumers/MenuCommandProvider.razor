@@ -14,6 +14,7 @@
 @using Mythetech.Framework.Infrastructure.Files
 @using Mythetech.Framework.Infrastructure.Plugins
 @using Mythetech.Framework.Infrastructure.Plugins.Components
+@using Mythetech.Framework.Infrastructure.Plugins.Installation
 @implements IConsumer<NewRequest>
 @implements IConsumer<SaveActiveRequest>
 @implements IConsumer<SaveActiveResponse>
@@ -46,7 +47,7 @@
     [Inject] private ICurlGenerator CurlGenerator { get; set; } = default!;
     [Inject] private IFileOpenService FileOpenService { get; set; } = default!;
     [Inject] private PluginState PluginState { get; set; } = default!;
-    [Inject] private PluginLoader PluginLoader { get; set; } = default!;
+    [Inject] private IPluginInstaller PluginInstaller { get; set; } = default!;
     [Inject] private IJsApiService JsApiService { get; set; } = default!;
     [Inject] private ILogger<MenuCommandProvider> Logger { get; set; } = default!;
     [Inject] private PluginMenuCallbackRegistry PluginCallbackRegistry { get; set; } = default!;
@@ -354,10 +355,10 @@
 
             foreach (var dllPath in files)
             {
-                var pluginInfo = PluginLoader.LoadPlugin(dllPath);
-                if (pluginInfo is not null)
+                var result = await PluginInstaller.ImportFromFileAsync(dllPath);
+                if (!result.Succeeded)
                 {
-                    await PluginState.RegisterPluginAsync(pluginInfo);
+                    await Bus.PublishAsync(new Mythetech.Framework.Infrastructure.Commands.AddNotification(result.Message, Severity.Error));
                 }
             }
         });

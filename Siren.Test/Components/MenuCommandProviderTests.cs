@@ -1,9 +1,11 @@
 using Bunit;
 using Microsoft.Extensions.DependencyInjection;
 using MudBlazor;
+using AddNotification = Mythetech.Framework.Infrastructure.Commands.AddNotification;
 using Mythetech.Framework.Infrastructure.Files;
 using Mythetech.Framework.Infrastructure.MessageBus;
 using Mythetech.Framework.Infrastructure.Plugins;
+using Mythetech.Framework.Infrastructure.Plugins.Installation;
 using NSubstitute;
 using Shouldly;
 using Siren.Components.Collections;
@@ -27,6 +29,8 @@ public class MenuCommandProviderTests : TestContext
 
     private readonly RequestTabsState _tabs;
     private readonly IMessageBus _bus = Substitute.For<IMessageBus>();
+    private readonly IFileOpenService _fileOpen = Substitute.For<IFileOpenService>();
+    private readonly IPluginInstaller _installer = Substitute.For<IPluginInstaller>();
 
     public MenuCommandProviderTests()
     {
@@ -47,10 +51,10 @@ public class MenuCommandProviderTests : TestContext
         Services.AddSingleton(Substitute.For<ICollectionsService>());
         Services.AddSingleton(Substitute.For<IHistoryService>());
         Services.AddSingleton(Substitute.For<ICurlGenerator>());
-        Services.AddSingleton(Substitute.For<IFileOpenService>());
+        Services.AddSingleton(_fileOpen);
         Services.AddSingleton(Substitute.For<IJsApiService>());
         Services.AddSingleton(pluginState);
-        Services.AddSingleton<PluginLoader>();
+        Services.AddSingleton(_installer);
         Services.AddSingleton<PluginMenuItemInvoker>();
         Services.AddSingleton<PluginMenuCallbackRegistry>();
         Services.AddSingleton(_ => new PluginContext
@@ -100,5 +104,39 @@ public class MenuCommandProviderTests : TestContext
 
         _tabs.Tabs.Count.ShouldBe(before + 1);
         _tabs.Active.Request.ShouldNotBeNull().Method.ShouldBe(HttpMethod.Post);
+    }
+
+    [Fact(DisplayName = "Import Plugin imports each selected file")]
+    public async Task ImportPlugin_EachSelectedFileIsImported()
+    {
+        string[] paths = ["/plugins/a.dll", "/plugins/b.dll"];
+        _fileOpen.OpenFileAsync(Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<bool>(), Arg.Any<FileFilter[]?>()).Returns(paths);
+        _installer.ImportFromFileAsync(Arg.Any<string>())
+            .Returns(new PluginInstallResult(true, [], string.Empty));
+        var cut = RenderComponent<MenuCommandProvider>();
+
+        await cut.InvokeAsync(() => cut.Instance.Consume(new ImportPlugin()));
+
+        foreach (var path in paths)
+            await _installer.Received(1).ImportFromFileAsync(path);
+    }
+
+    [Fact(DisplayName = "Import Plugin imports the other files and notifies when one fails")]
+    public async Task ImportPlugin_OneFails_OthersStillImportAndFailureIsNotified()
+    {
+        _fileOpen.OpenFileAsync(Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<bool>(), Arg.Any<FileFilter[]?>())
+            .Returns(["/plugins/bad.dll", "/plugins/good.dll"]);
+        _installer.ImportFromFileAsync("/plugins/bad.dll")
+            .Returns(new PluginInstallResult(false, [], "Couldn't load a plugin from that file."));
+        _installer.ImportFromFileAsync("/plugins/good.dll")
+            .Returns(new PluginInstallResult(true, [], string.Empty));
+        var cut = RenderComponent<MenuCommandProvider>();
+
+        await cut.InvokeAsync(() => cut.Instance.Consume(new ImportPlugin()));
+
+        await _installer.Received(1).ImportFromFileAsync("/plugins/bad.dll");
+        await _installer.Received(1).ImportFromFileAsync("/plugins/good.dll");
+        await _bus.Received(1).PublishAsync(Arg.Is<AddNotification>(n =>
+            n.Message == "Couldn't load a plugin from that file." && n.Severity == Severity.Error));
     }
 }
